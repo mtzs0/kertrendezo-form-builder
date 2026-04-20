@@ -9,8 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Sprout } from "lucide-react";
 import { FormView } from "@/form/FormView";
 import { useDoubleHotkey, useIsMobile } from "@/form/hooks";
 import { usePublishedForm } from "@/form/usePublishedForm";
@@ -45,20 +43,14 @@ const Index = () => {
       >
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-12">
           <header className="flex flex-col gap-3 mb-8">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Sprout className="h-5 w-5" />
-              </span>
-              <Badge variant="secondary" className="font-medium">
-                Kertrendező
-              </Badge>
-            </div>
-            <h1
-              id="kr-form-title"
-              className="text-3xl md:text-4xl font-semibold text-foreground"
-            >
-              {title}
-            </h1>
+            {title && (
+              <h1
+                id="kr-form-title"
+                className="text-3xl md:text-4xl font-semibold text-foreground"
+              >
+                {title}
+              </h1>
+            )}
             {description && (
               <p className="text-muted-foreground max-w-2xl">{description}</p>
             )}
