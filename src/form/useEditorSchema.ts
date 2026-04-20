@@ -373,11 +373,62 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       if ("min" in patch) fp.sliderMin = (patch as { min?: number | null }).min ?? null;
       if ("max" in patch) fp.sliderMax = (patch as { max?: number | null }).max ?? null;
       if ("unit" in patch) fp.sliderUnit = (patch as { unit?: string | null }).unit ?? null;
+      // Date / image extras
+      if ("withTime" in patch) fp.withTime = (patch as { withTime?: boolean }).withTime;
+      if ("multiple" in patch) fp.multipleImages = (patch as { multiple?: boolean }).multiple;
+      // Option-field extras
+      const op = patch as Partial<FormField> & {
+        useImages?: boolean;
+        uniqueNotePerOption?: boolean;
+        columns?: number;
+        optionLabelPosition?: "above" | "below" | null;
+        fieldImagePosition?: "above" | "below" | "left" | "right" | null;
+        placeholderImageUrl?: string | null;
+        placeholderNote?: { value: string; position: "above" | "below" | "side" } | null;
+      };
+      if ("useImages" in op) fp.useImages = op.useImages;
+      if ("uniqueNotePerOption" in op) fp.uniqueNotePerOption = op.uniqueNotePerOption;
+      if ("columns" in op) fp.columns = op.columns;
+      if ("optionLabelPosition" in op) fp.optionLabelPosition = op.optionLabelPosition ?? null;
+      if ("fieldImagePosition" in op) fp.fieldImagePosition = op.fieldImagePosition ?? null;
+      if ("placeholderImageUrl" in op) fp.placeholderImageUrl = op.placeholderImageUrl ?? null;
+      if ("placeholderNote" in op) {
+        fp.placeholderNoteValue = op.placeholderNote?.value ?? null;
+        fp.placeholderNotePosition = op.placeholderNote?.position ?? null;
+      }
       const buf = fieldPatchBuf.current.get(id) ?? {};
       fieldPatchBuf.current.set(id, { ...buf, ...fp });
       scheduleFlush();
     },
     [scheduleFlush]
+  );
+
+  const setFieldOptions = useCallback(
+    async (fieldId: string, options: FieldOption[]) => {
+      // Optimistic local update
+      setBundle((b) =>
+        b
+          ? {
+              ...b,
+              fields: b.fields.map((f) =>
+                f.id === fieldId && (f.type === "radio" || f.type === "checkbox" || f.type === "select")
+                  ? ({ ...f, options } as FormField)
+                  : f
+              ),
+            }
+          : b
+      );
+      setSaveStatus("saving");
+      try {
+        await replaceFieldOptions(fieldId, options);
+        setSaveStatus("saved");
+        window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+      } catch (e) {
+        console.error("Save options failed", e);
+        setSaveStatus("error");
+      }
+    },
+    []
   );
 
   const removeField = useCallback(async (id: string) => {
