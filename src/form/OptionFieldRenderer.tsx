@@ -105,7 +105,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
     return <SelectFieldRenderer field={field} value={value} onChange={onChange} />;
   }
 
-  const cols = COL_CLASS[Math.max(1, Math.min(4, field.columns ?? 1))] ?? COL_CLASS[1];
+  const cols = COL_CLASS[Math.max(1, Math.min(8, field.columns ?? 1))] ?? COL_CLASS[1];
 
   if (field.type === "radio") {
     const selectedVal = (value as string) ?? "";
