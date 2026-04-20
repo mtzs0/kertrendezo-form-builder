@@ -6,6 +6,7 @@ import { FormView } from "./FormView";
 import { useEditorSchema } from "./useEditorSchema";
 import { StructureEditor } from "./editor/StructureEditor";
 import { FieldConfigPanel } from "./editor/FieldConfigPanel";
+import { FieldPicker } from "./editor/FieldPicker";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
@@ -123,15 +124,36 @@ export function EditorView({ slug = "default", onExit }: Props) {
           </TabsContent>
 
           <TabsContent value="field" className="mt-4">
-            <FieldConfigPanel
-              field={selectedField}
-              onChange={(patch) => selectedField && editor.patchField(selectedField.id, patch)}
-              onDelete={async () => {
-                if (!selectedField) return;
-                await editor.removeField(selectedField.id);
-                setSelectedFieldId(null);
-              }}
-            />
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5">
+                <FieldPicker
+                  fields={editor.fields}
+                  groups={editor.groups}
+                  subGroups={editor.subGroups}
+                  selectedFieldId={selectedFieldId}
+                  onSelectField={setSelectedFieldId}
+                  onAddField={async (type, opts) => {
+                    const id = await editor.addField(type, opts);
+                    setSelectedFieldId(id);
+                  }}
+                />
+                <div>
+                  <FieldConfigPanel
+                    field={selectedField}
+                    onChange={(patch) =>
+                      selectedField && editor.patchField(selectedField.id, patch)
+                    }
+                    onDelete={async () => {
+                      if (!selectedField) return;
+                      await editor.removeField(selectedField.id);
+                      setSelectedFieldId(null);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="preview" className="mt-4">
