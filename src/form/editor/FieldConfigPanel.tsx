@@ -112,15 +112,17 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
             placeholder="Pl. Neved"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cfg_placeholder">Helykitöltő</Label>
-          <Input
-            id="cfg_placeholder"
-            value={field.placeholder ?? ""}
-            onChange={(e) => onChange({ placeholder: e.target.value })}
-            placeholder="Pl. Kovács Anna"
-          />
-        </div>
+        {!isOptionType && (
+          <div className="space-y-1.5">
+            <Label htmlFor="cfg_placeholder">Helykitöltő</Label>
+            <Input
+              id="cfg_placeholder"
+              value={field.placeholder ?? ""}
+              onChange={(e) => onChange({ placeholder: e.target.value })}
+              placeholder="Pl. Kovács Anna"
+            />
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="cfg_type">Típus</Label>
           <Select
