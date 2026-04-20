@@ -10,7 +10,10 @@
 // condition. Saving an empty/undefined condition deletes the row.
 
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import type { ConditionGroup, FieldCondition } from "./types";
+
+type Json = Database["public"]["Tables"]["form_field_conditions"]["Insert"]["rules"];
 
 interface ConditionRow {
   field_id: string;
@@ -55,7 +58,7 @@ export async function saveFieldCondition(
   const payload = {
     field_id: fieldId,
     combinator: group.combinator,
-    rules: group.rules as unknown as object,
+    rules: group.rules as unknown as Json,
   };
   // Try update first; if no row exists, insert.
   const { data: existing, error: selErr } = await supabase
