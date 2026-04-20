@@ -231,9 +231,13 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
         />
       )}
 
-      <p className="text-xs text-muted-foreground">
-        További típus-specifikus beállítások (opciók, feltétel-szerkesztő stb.) hamarosan érkeznek.
-      </p>
+      {isOptionType && (
+        <OptionTypeConfig
+          field={field as OptionField}
+          onChange={onChange}
+          onChangeOptions={onChangeOptions}
+        />
+      )}
     </div>
   );
 }
