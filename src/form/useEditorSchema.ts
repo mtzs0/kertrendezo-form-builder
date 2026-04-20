@@ -543,5 +543,6 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     removeField,
     reorderFields,
     setFieldOptions,
+    setFieldCondition,
   };
 }
