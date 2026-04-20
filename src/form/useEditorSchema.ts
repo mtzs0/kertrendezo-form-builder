@@ -503,5 +503,6 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     patchField,
     removeField,
     reorderFields,
+    setFieldOptions,
   };
 }
