@@ -200,15 +200,17 @@ export async function createGroup(formId: string, position: number) {
   return data as GroupRow;
 }
 
-export async function updateGroup(id: string, patch: Partial<{ internalName: string; label: string; position: number }>) {
-  const { error } = await supabase
-    .from("form_groups")
-    .update({
-      internal_name: patch.internalName,
-      label: patch.label,
-      position: patch.position,
-    })
-    .eq("id", id);
+export async function updateGroup(
+  id: string,
+  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
+) {
+  const u: Database["public"]["Tables"]["form_groups"]["Update"] & WidthCol = {
+    internal_name: patch.internalName,
+    label: patch.label,
+    position: patch.position,
+  };
+  if (patch.width !== undefined) u.width_percent = patch.width;
+  const { error } = await supabase.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -235,16 +237,15 @@ export async function createSubGroup(formId: string, groupId: string, position: 
 
 export async function updateSubGroup(
   id: string,
-  patch: Partial<{ internalName: string; label: string; position: number }>
+  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
 ) {
-  const { error } = await supabase
-    .from("form_sub_groups")
-    .update({
-      internal_name: patch.internalName,
-      label: patch.label,
-      position: patch.position,
-    })
-    .eq("id", id);
+  const u: Database["public"]["Tables"]["form_sub_groups"]["Update"] & WidthCol = {
+    internal_name: patch.internalName,
+    label: patch.label,
+    position: patch.position,
+  };
+  if (patch.width !== undefined) u.width_percent = patch.width;
+  const { error } = await supabase.from("form_sub_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -299,10 +300,11 @@ export interface FieldPatch {
   useImages?: boolean;
   uniqueNotePerOption?: boolean;
   columns?: number;
+  width?: WidthPercent | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
-  const u: Database["public"]["Tables"]["form_fields"]["Update"] = {
+  const u: Database["public"]["Tables"]["form_fields"]["Update"] & WidthCol = {
     internal_name: patch.internalName,
     label: patch.label,
     placeholder: patch.placeholder,
@@ -323,6 +325,7 @@ export async function updateField(id: string, patch: FieldPatch) {
     unique_note_per_option: patch.uniqueNotePerOption,
     columns: patch.columns,
   };
+  if (patch.width !== undefined) u.width_percent = patch.width;
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];
