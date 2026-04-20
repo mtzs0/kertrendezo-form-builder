@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Sprout } from "lucide-react";
-import { sampleSchema } from "@/form/sampleSchema";
 import { FormView } from "@/form/FormView";
 import { useDoubleHotkey, useIsMobile } from "@/form/hooks";
+import { usePublishedForm } from "@/form/usePublishedForm";
 import { EditorPlaceholder } from "@/form/EditorPlaceholder";
 
 const Index = () => {
