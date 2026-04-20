@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      form_submissions: {
+        Row: {
+          created_at: string
+          form_id: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          values: Json
+          webhook_response: string | null
+          webhook_status: string | null
+        }
+        Insert: {
+          created_at?: string
+          form_id: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          values?: Json
+          webhook_response?: string | null
+          webhook_status?: string | null
+        }
+        Update: {
+          created_at?: string
+          form_id?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          values?: Json
+          webhook_response?: string | null
+          webhook_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_submissions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forms: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          published: boolean
+          schema: Json
+          slug: string
+          title: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          published?: boolean
+          schema?: Json
+          slug: string
+          title: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          published?: boolean
+          schema?: Json
+          slug?: string
+          title?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
