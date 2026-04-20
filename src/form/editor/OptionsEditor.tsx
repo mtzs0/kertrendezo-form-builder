@@ -105,7 +105,7 @@ export function OptionsEditor({ field, onChange }: Props) {
       <div className="space-y-3">
         {draft.map((opt, idx) => (
           <OptionRow
-            key={`${idx}-${opt.dataName}`}
+            key={idx}
             field={field}
             option={opt}
             index={idx}
