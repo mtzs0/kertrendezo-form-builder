@@ -163,6 +163,24 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
 
   // ---------- Mutations ----------
 
+  const patchForm = useCallback(
+    (patch: Partial<{ title: string; description: string | null }>) => {
+      setForm((f) =>
+        f
+          ? {
+              ...f,
+              title: patch.title !== undefined ? patch.title : f.title,
+              description:
+                patch.description !== undefined ? patch.description : f.description,
+            }
+          : f
+      );
+      formPatchBuf.current = { ...formPatchBuf.current, ...patch };
+      scheduleFlush();
+    },
+    [scheduleFlush]
+  );
+
   const addGroup = useCallback(async () => {
     if (!form || !bundle) return;
     // New groups start as 'unplaced' (position = 0). User drags into structure.
@@ -401,6 +419,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     fields: bundle?.fields ?? [],
     schema,
     saveStatus,
+    patchForm,
     addGroup,
     patchGroup,
     removeGroup,
