@@ -61,7 +61,9 @@ const WIDTH_LABELS: Record<WidthPercent | 100, string> = {
   100: "100% (teljes sor)",
 };
 
-export function FieldConfigPanel({ field, onChange, onDelete }: Props) {
+export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }: Props) {
+  const isOptionType =
+    field?.type === "radio" || field?.type === "checkbox" || field?.type === "select";
   if (!field) {
     return (
       <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
