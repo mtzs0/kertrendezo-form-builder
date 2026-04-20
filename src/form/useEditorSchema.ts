@@ -70,6 +70,8 @@ export interface UseEditorSchemaResult {
   ) => Promise<void>;
   /** Replace the full set of options for an option-type field (immediate save). */
   setFieldOptions: (fieldId: string, options: FieldOption[]) => Promise<void>;
+  /** Save a field's display condition (or remove it when undefined). */
+  setFieldCondition: (fieldId: string, condition: ConditionGroup | undefined) => Promise<void>;
 }
 
 /**
@@ -98,10 +100,19 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     (async () => {
       try {
         const f = await ensureForm(slug, defaults);
-        const b = await loadEditorBundle(f.id);
+        const [b, conditions] = await Promise.all([
+          loadEditorBundle(f.id),
+          loadConditions(f.id),
+        ]);
         if (cancelled) return;
+        // Merge loaded conditions into fields.
+        const fieldsWithCond: FormField[] = b.fields.map((field) =>
+          conditions.has(field.id)
+            ? ({ ...field, condition: conditions.get(field.id) } as FormField)
+            : field
+        );
         setForm(f);
-        setBundle(b);
+        setBundle({ ...b, fields: fieldsWithCond });
         setError(null);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
