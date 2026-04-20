@@ -66,6 +66,8 @@ export interface UseEditorSchemaResult {
     container: { groupId?: string | null; subGroupId?: string | null },
     orderedIds: string[]
   ) => Promise<void>;
+  /** Replace the full set of options for an option-type field (immediate save). */
+  setFieldOptions: (fieldId: string, options: FieldOption[]) => Promise<void>;
 }
 
 /**
