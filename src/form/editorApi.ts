@@ -183,6 +183,13 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
         columns: f.columns ?? 1,
         useImages: f.use_images,
         uniqueNotePerOption: f.unique_note_per_option,
+        optionLabelPosition: (f.option_label_position ?? undefined) as OptionLabelPosition | undefined,
+        fieldImagePosition: (f.field_image_position ?? undefined) as FieldImagePosition | undefined,
+        placeholderImageUrl: f.placeholder_image_url ?? undefined,
+        placeholderNote:
+          f.placeholder_note_value && f.placeholder_note_position
+            ? { value: f.placeholder_note_value, position: f.placeholder_note_position as NotePosition }
+            : undefined,
         options: opts
           .slice()
           .sort((a, b) => a.position - b.position)
