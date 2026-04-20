@@ -400,6 +400,44 @@ export async function setSubGroupPositions(updates: Array<{ id: string; position
   );
 }
 
+// ---------- Field options ----------
+
+/** Replace the full set of options for a field. */
+export async function replaceFieldOptions(fieldId: string, options: FieldOption[]) {
+  const { error: delErr } = await supabase
+    .from("form_field_options")
+    .delete()
+    .eq("field_id", fieldId);
+  if (delErr) throw delErr;
+  if (!options.length) return;
+  const rows = options.map((o, idx) => ({
+    field_id: fieldId,
+    display_name: o.displayName,
+    data_name: o.dataName,
+    position: idx + 1,
+    image_url: o.imageUrl ?? null,
+    note_value: o.note?.value ?? null,
+    note_position: o.note?.position ?? null,
+  }));
+  const { error: insErr } = await supabase.from("form_field_options").insert(rows);
+  if (insErr) throw insErr;
+}
+
+/** Upload an image to the public option-images bucket and return its public URL. */
+export async function uploadOptionImage(
+  file: File,
+  opts: { fieldId: string; key: string }
+): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `${opts.fieldId}/${opts.key}-${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from("form-option-images")
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+  if (upErr) throw upErr;
+  const { data } = supabase.storage.from("form-option-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
 /** Build a FormSchema from the editor bundle so the existing renderer can preview it. */
 export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "form">): FormSchema {
   return {
