@@ -120,6 +120,7 @@ export type Database = {
           unique_note_per_option: boolean
           updated_at: string
           use_images: boolean
+          width_percent: number | null
           with_time: boolean
         }
         Insert: {
@@ -145,6 +146,7 @@ export type Database = {
           unique_note_per_option?: boolean
           updated_at?: string
           use_images?: boolean
+          width_percent?: number | null
           with_time?: boolean
         }
         Update: {
@@ -170,6 +172,7 @@ export type Database = {
           unique_note_per_option?: boolean
           updated_at?: string
           use_images?: boolean
+          width_percent?: number | null
           with_time?: boolean
         }
         Relationships: [
@@ -205,6 +208,7 @@ export type Database = {
           label: string
           position: number
           updated_at: string
+          width_percent: number | null
         }
         Insert: {
           created_at?: string
@@ -214,6 +218,7 @@ export type Database = {
           label: string
           position?: number
           updated_at?: string
+          width_percent?: number | null
         }
         Update: {
           created_at?: string
@@ -223,6 +228,7 @@ export type Database = {
           label?: string
           position?: number
           updated_at?: string
+          width_percent?: number | null
         }
         Relationships: [
           {
@@ -244,6 +250,7 @@ export type Database = {
           label: string
           position: number
           updated_at: string
+          width_percent: number | null
         }
         Insert: {
           created_at?: string
@@ -254,6 +261,7 @@ export type Database = {
           label: string
           position?: number
           updated_at?: string
+          width_percent?: number | null
         }
         Update: {
           created_at?: string
@@ -264,6 +272,7 @@ export type Database = {
           label?: string
           position?: number
           updated_at?: string
+          width_percent?: number | null
         }
         Relationships: [
           {

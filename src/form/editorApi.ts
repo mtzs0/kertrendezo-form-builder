@@ -7,12 +7,24 @@ import type {
   FormSchema,
   FormSubGroup,
   NotePosition,
+  WidthPercent,
 } from "./types";
 
-type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"];
-type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"];
-type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"];
+// The generated Database types may not yet contain `width_percent` (added in a
+// recent migration). We extend the Row/Insert/Update shapes locally with an
+// optional column so the rest of the file stays type-safe without requiring a
+// types regeneration.
+type WidthCol = { width_percent?: number | null };
+type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
+type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
+type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & WidthCol;
 type OptionRow = Database["public"]["Tables"]["form_field_options"]["Row"];
+
+function asWidth(v: number | null | undefined): WidthPercent | undefined {
+  if (v == null) return undefined;
+  if (v === 25 || v === 33 || v === 40 || v === 50 || v === 60 || v === 100) return v;
+  return undefined;
+}
 
 export interface EditorForm {
   id: string;
@@ -90,6 +102,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
     internalName: g.internal_name,
     label: g.label,
     location: g.position,
+    width: asWidth(g.width_percent),
   }));
 
   const subGroups: FormSubGroup[] = (subGroupsRes.data ?? []).map((s: SubGroupRow) => ({
@@ -98,6 +111,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
     internalName: s.internal_name,
     label: s.label,
     location: s.position,
+    width: asWidth(s.width_percent),
   }));
 
   const optionsByField = new Map<string, OptionRow[]>();
@@ -126,6 +140,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
     location: f.position,
     groupId: f.group_id ?? undefined,
     subGroupId: f.sub_group_id ?? undefined,
+    width: asWidth(f.width_percent),
   };
 
   switch (f.type) {
@@ -185,15 +200,17 @@ export async function createGroup(formId: string, position: number) {
   return data as GroupRow;
 }
 
-export async function updateGroup(id: string, patch: Partial<{ internalName: string; label: string; position: number }>) {
-  const { error } = await supabase
-    .from("form_groups")
-    .update({
-      internal_name: patch.internalName,
-      label: patch.label,
-      position: patch.position,
-    })
-    .eq("id", id);
+export async function updateGroup(
+  id: string,
+  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
+) {
+  const u: Database["public"]["Tables"]["form_groups"]["Update"] & WidthCol = {
+    internal_name: patch.internalName,
+    label: patch.label,
+    position: patch.position,
+  };
+  if (patch.width !== undefined) u.width_percent = patch.width;
+  const { error } = await supabase.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -220,16 +237,15 @@ export async function createSubGroup(formId: string, groupId: string, position: 
 
 export async function updateSubGroup(
   id: string,
-  patch: Partial<{ internalName: string; label: string; position: number }>
+  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
 ) {
-  const { error } = await supabase
-    .from("form_sub_groups")
-    .update({
-      internal_name: patch.internalName,
-      label: patch.label,
-      position: patch.position,
-    })
-    .eq("id", id);
+  const u: Database["public"]["Tables"]["form_sub_groups"]["Update"] & WidthCol = {
+    internal_name: patch.internalName,
+    label: patch.label,
+    position: patch.position,
+  };
+  if (patch.width !== undefined) u.width_percent = patch.width;
+  const { error } = await supabase.from("form_sub_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -284,10 +300,11 @@ export interface FieldPatch {
   useImages?: boolean;
   uniqueNotePerOption?: boolean;
   columns?: number;
+  width?: WidthPercent | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
-  const u: Database["public"]["Tables"]["form_fields"]["Update"] = {
+  const u: Database["public"]["Tables"]["form_fields"]["Update"] & WidthCol = {
     internal_name: patch.internalName,
     label: patch.label,
     placeholder: patch.placeholder,
@@ -308,6 +325,7 @@ export async function updateField(id: string, patch: FieldPatch) {
     unique_note_per_option: patch.uniqueNotePerOption,
     columns: patch.columns,
   };
+  if (patch.width !== undefined) u.width_percent = patch.width;
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];

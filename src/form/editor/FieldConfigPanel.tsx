@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import type { FieldType, FormField, NotePosition } from "@/form/types";
+import type { FieldType, FormField, NotePosition, SliderField, WidthPercent } from "@/form/types";
+import { WIDTH_OPTIONS } from "@/form/types";
 
 interface Props {
   field: FormField | null;
@@ -35,6 +36,15 @@ const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
   above: "Mező felett",
   below: "Mező alatt",
   side: "Mező mellett",
+};
+
+const WIDTH_LABELS: Record<WidthPercent | 100, string> = {
+  25: "25%",
+  33: "33%",
+  40: "40%",
+  50: "50%",
+  60: "60%",
+  100: "100% (teljes sor)",
 };
 
 export function FieldConfigPanel({ field, onChange, onDelete }: Props) {
@@ -171,8 +181,107 @@ export function FieldConfigPanel({ field, onChange, onDelete }: Props) {
         )}
       </div>
 
+      <div className="space-y-3 rounded-lg border border-border p-3">
+        <Label className="text-sm font-medium">Szélesség</Label>
+        <Select
+          value={String(field.width ?? 100)}
+          onValueChange={(v) => {
+            const num = Number(v) as WidthPercent;
+            onChange({ width: num === 100 ? undefined : num } as Partial<FormField>);
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {([100, ...WIDTH_OPTIONS.filter((w) => w !== 100)] as WidthPercent[]).map((w) => (
+              <SelectItem key={w} value={String(w)}>
+                {WIDTH_LABELS[w]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          A szomszédos mezők egymás mellé kerülnek, ha a szélességeik 100%-ot adnak ki.
+        </p>
+      </div>
+
+      {field.type === "slider" && (
+        <SliderConfig
+          field={field as SliderField}
+          onChange={(p) => onChange(p as Partial<FormField>)}
+        />
+      )}
+
       <p className="text-xs text-muted-foreground">
-        Tipus-specifikus beállítások (opciók, csúszka határai, feltétel-szerkesztő stb.) a következő körben érkeznek.
+        További típus-specifikus beállítások (opciók, feltétel-szerkesztő stb.) hamarosan érkeznek.
+      </p>
+    </div>
+  );
+}
+
+interface SliderConfigProps {
+  field: SliderField;
+  onChange: (patch: Partial<SliderField>) => void;
+}
+
+function SliderConfig({ field, onChange }: SliderConfigProps) {
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <Label className="text-sm font-medium">Csúszka beállítások</Label>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_min" className="text-xs text-muted-foreground">
+            Minimum
+          </Label>
+          <Input
+            id="cfg_slider_min"
+            type="number"
+            value={field.min ?? 0}
+            onChange={(e) => onChange({ min: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_max" className="text-xs text-muted-foreground">
+            Maximum
+          </Label>
+          <Input
+            id="cfg_slider_max"
+            type="number"
+            value={field.max ?? 100}
+            onChange={(e) => onChange({ max: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_step" className="text-xs text-muted-foreground">
+            Lépések
+          </Label>
+          <Input
+            id="cfg_slider_step"
+            type="number"
+            min={0}
+            value={field.step ?? ""}
+            placeholder="pl. 10"
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ step: v === "" ? undefined : Number(v) });
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_unit" className="text-xs text-muted-foreground">
+            Mértékegység
+          </Label>
+          <Input
+            id="cfg_slider_unit"
+            value={field.unit ?? ""}
+            placeholder="pl. m²"
+            onChange={(e) => onChange({ unit: e.target.value || undefined })}
+          />
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Pl. min=10, max=100, lépések=10 → csak 10, 20, …, 100 választható.
       </p>
     </div>
   );

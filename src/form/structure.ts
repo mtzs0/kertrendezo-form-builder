@@ -4,6 +4,7 @@ import type {
   FormField,
   FormSchema,
   FormValues,
+  WidthPercent,
 } from "./types";
 
 /** Sort by location ascending (stable). */
@@ -15,6 +16,7 @@ export interface RenderSubGroup {
   id: string;
   label: string;
   location: number;
+  width?: WidthPercent;
   fields: FormField[];
 }
 
@@ -28,6 +30,7 @@ export interface RenderGroup {
   id: string;
   label: string;
   location: number;
+  width?: WidthPercent;
   /** Sub-groups (each containing their fields) plus group-level fields, in order. */
   children: Array<RenderSubGroup | RenderGroupChild>;
 }
@@ -82,6 +85,7 @@ export function buildRenderTree(schema: FormSchema): RenderItem[] {
         id: sg.id,
         label: sg.label,
         location: sg.location,
+        width: sg.width,
         fields: schema.fields
           .filter((f) => f.groupId === group.id && f.subGroupId === sg.id)
           .sort(byLocation),
@@ -105,6 +109,7 @@ export function buildRenderTree(schema: FormSchema): RenderItem[] {
         id: group.id,
         label: group.label,
         location: group.location,
+        width: group.width,
         children,
       };
     });
@@ -156,4 +161,53 @@ export function evalConditionGroup(
 export function isFieldVisible(field: FormField, values: FormValues): boolean {
   if (!field.condition) return true;
   return evalConditionGroup(field.condition, values);
+}
+
+// ---------- Width-based row packing ----------
+
+/**
+ * Pack consecutive items into rows based on their width (% of row).
+ *
+ * Rule: items whose widths sum to ≤ 100% go in the same row. As soon as
+ * adding the next item would exceed 100%, it starts a new row. An item with
+ * undefined width is treated as 100% (own row). The remainder of an
+ * incomplete row still renders side-by-side with the declared widths.
+ *
+ * Returns rows with the resolved width (number) for each item so the renderer
+ * can apply `flex-basis` directly.
+ */
+export interface PackedItem<T> {
+  item: T;
+  width: number; // resolved percent (1..100)
+}
+export function packByWidth<T>(items: T[], getWidth: (it: T) => WidthPercent | undefined): PackedItem<T>[][] {
+  const rows: PackedItem<T>[][] = [];
+  let current: PackedItem<T>[] = [];
+  let sum = 0;
+  for (const it of items) {
+    const w = getWidth(it) ?? 100;
+    if (w >= 100) {
+      if (current.length) rows.push(current);
+      rows.push([{ item: it, width: 100 }]);
+      current = [];
+      sum = 0;
+      continue;
+    }
+    if (sum + w > 100 + 0.5) {
+      // Doesn't fit — flush current row and start a new one with this item.
+      if (current.length) rows.push(current);
+      current = [{ item: it, width: w }];
+      sum = w;
+    } else {
+      current.push({ item: it, width: w });
+      sum += w;
+      if (sum >= 100 - 0.5) {
+        rows.push(current);
+        current = [];
+        sum = 0;
+      }
+    }
+  }
+  if (current.length) rows.push(current);
+  return rows;
 }

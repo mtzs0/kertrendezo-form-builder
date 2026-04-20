@@ -127,6 +127,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             internalName: patch.internalName,
             label: patch.label,
             position: patch.location,
+            width: patch.width === undefined ? undefined : patch.width ?? null,
           })
         ),
         ...subGroupEntries.map(([id, patch]) =>
@@ -134,6 +135,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             internalName: patch.internalName,
             label: patch.label,
             position: patch.location,
+            width: patch.width === undefined ? undefined : patch.width ?? null,
           })
         ),
         ...(hasFormMeta && form ? [updateFormMeta(form.id, formMeta)] : []),
@@ -339,7 +341,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       setBundle((b) =>
         b ? { ...b, fields: b.fields.map((f) => (f.id === id ? ({ ...f, ...patch } as FormField) : f)) } : b
       );
-      // Translate to FieldPatch (only the basic-config keys for this pass).
+      // Translate to FieldPatch (basic config + slider step + width).
       const fp: FieldPatch = {};
       if ("internalName" in patch) fp.internalName = patch.internalName;
       if ("label" in patch) fp.label = patch.label;
@@ -353,6 +355,14 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
         fp.noteValue = patch.note?.value ?? null;
         fp.notePosition = patch.note?.position ?? null;
       }
+      if ("width" in patch) {
+        fp.width = patch.width ?? null;
+      }
+      // Slider-only attributes
+      if ("step" in patch) fp.sliderStep = (patch as { step?: number | null }).step ?? null;
+      if ("min" in patch) fp.sliderMin = (patch as { min?: number | null }).min ?? null;
+      if ("max" in patch) fp.sliderMax = (patch as { max?: number | null }).max ?? null;
+      if ("unit" in patch) fp.sliderUnit = (patch as { unit?: string | null }).unit ?? null;
       const buf = fieldPatchBuf.current.get(id) ?? {};
       fieldPatchBuf.current.set(id, { ...buf, ...fp });
       scheduleFlush();
