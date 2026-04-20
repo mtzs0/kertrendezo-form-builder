@@ -178,11 +178,14 @@ function DropZone({
   children,
   empty,
   className,
+  stack,
 }: {
   target: DropTarget;
   children: React.ReactNode;
   empty?: string;
   className?: string;
+  /** When true, lay children out vertically (one per row). */
+  stack?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dropId(target), data: { target } });
   return (
@@ -194,7 +197,9 @@ function DropZone({
         className
       )}
     >
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+      <div className={cn(stack ? "flex flex-col gap-1.5 items-stretch" : "flex flex-wrap gap-1.5")}>
+        {children}
+      </div>
       {empty && (
         <p className="text-[11px] text-muted-foreground italic px-1 py-1">{empty}</p>
       )}
