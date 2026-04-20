@@ -70,12 +70,14 @@ function OptionCard({
   const stack = (
     <div
       className={cn(
-        "flex flex-col gap-2",
-        labelPos === "above" ? "" : "flex-col-reverse"
+        "flex flex-col gap-2 h-full",
+        labelPos === "above" ? "" : "flex-col-reverse justify-end"
       )}
     >
+      <div className="text-center min-h-[2.5rem] flex items-center justify-center">
+        {labelEl}
+      </div>
       {imgEl}
-      <div className="text-center">{labelEl}</div>
     </div>
   );
 
@@ -122,7 +124,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               key={opt.dataName}
               htmlFor={`${field.id}_${opt.dataName}`}
               className={cn(
-                "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors",
+                "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col",
                 "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
               )}
             >
@@ -153,7 +155,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
             key={opt.dataName}
             htmlFor={`${field.id}_${opt.dataName}`}
             className={cn(
-              "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors",
+              "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col",
               "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
             )}
           >
