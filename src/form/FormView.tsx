@@ -3,16 +3,20 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { FieldRenderer } from "./FieldRenderer";
 import { buildRenderTree, isFieldVisible } from "./structure";
+import { submitForm } from "./api";
 import type { FormSchema, FormValues, FormField } from "./types";
 
 interface Props {
   schema: FormSchema;
   /** "horizontal" = desktop/tablet wide layout, "vertical" = mobile stacked. */
   layout: "horizontal" | "vertical";
+  /** When provided, submissions are persisted to Supabase under this form id. */
+  formId?: string | null;
 }
 
-export function FormView({ schema, layout }: Props) {
+export function FormView({ schema, layout, formId }: Props) {
   const [values, setValues] = useState<FormValues>({});
+  const [submitting, setSubmitting] = useState(false);
   const tree = useMemo(() => buildRenderTree(schema), [schema]);
 
   const handleChange = (id: string, v: FormValues[string]) =>
@@ -37,11 +41,24 @@ export function FormView({ schema, layout }: Props) {
       ? "grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5"
       : "flex flex-col gap-4";
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Foundation pass — submission wiring (Cloud + webhook) comes next.
-    toast.success("Köszönjük! A foglalást rögzítettük (próba mód).");
-    console.log("Form submitted", values);
+    if (!formId) {
+      toast.success("Köszönjük! (Próba mód – nincs cloud forma kötve.)");
+      console.log("Form submitted (local only)", values);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await submitForm(formId, values);
+      toast.success("Köszönjük! A foglalást rögzítettük.");
+      setValues({});
+    } catch (err) {
+      console.error(err);
+      toast.error("Hiba történt a beküldés során. Próbáld újra.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
