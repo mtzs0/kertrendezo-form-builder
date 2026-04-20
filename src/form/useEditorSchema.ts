@@ -13,6 +13,7 @@ import {
   setGroupPositions,
   setSubGroupPositions,
   updateField,
+  updateFormMeta,
   updateGroup,
   updateSubGroup,
   type EditorBundle,
