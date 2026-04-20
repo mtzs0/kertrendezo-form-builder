@@ -103,9 +103,10 @@ export function FormView({ schema, layout, formId }: Props) {
         <Button
           type="submit"
           size="lg"
+          disabled={submitting}
           className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
         >
-          Küldés
+          {submitting ? "Küldés…" : "Küldés"}
         </Button>
       </div>
     </form>
