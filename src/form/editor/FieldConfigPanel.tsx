@@ -308,3 +308,199 @@ function SliderConfig({ field, onChange }: SliderConfigProps) {
     </div>
   );
 }
+
+interface OptionTypeConfigProps {
+  field: OptionField;
+  onChange: (patch: Partial<FormField> & { type?: FieldType }) => void;
+  onChangeOptions?: (fieldId: string, options: FieldOption[]) => void;
+}
+
+function OptionTypeConfig({ field, onChange, onChangeOptions }: OptionTypeConfigProps) {
+  const isSelect = field.type === "select";
+  const isList = field.type === "radio" || field.type === "checkbox";
+
+  return (
+    <div className="space-y-3">
+      {/* Toggles */}
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="cursor-pointer">Illusztrációk használata</Label>
+            <p className="text-xs text-muted-foreground">
+              Minden opcióhoz külön kép tartozhat.
+            </p>
+          </div>
+          <Switch
+            checked={!!field.useImages}
+            onCheckedChange={(v) => onChange({ useImages: v } as Partial<FormField>)}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label className="cursor-pointer">Egyedi megjegyzés opciónként</Label>
+            <p className="text-xs text-muted-foreground">
+              Mindegyik opcióhoz külön rövid leírás.
+            </p>
+          </div>
+          <Switch
+            checked={!!field.uniqueNotePerOption}
+            onCheckedChange={(v) =>
+              onChange({ uniqueNotePerOption: v } as Partial<FormField>)
+            }
+          />
+        </div>
+      </div>
+
+      {/* Layout */}
+      {isList && (
+        <div className="grid grid-cols-2 gap-3 rounded-lg border border-border p-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Oszlopok száma</Label>
+            <Select
+              value={String(field.columns ?? 1)}
+              onValueChange={(v) => onChange({ columns: Number(v) } as Partial<FormField>)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4].map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {field.useImages && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Felirat helye</Label>
+              <Select
+                value={field.optionLabelPosition ?? "below"}
+                onValueChange={(v) =>
+                  onChange({
+                    optionLabelPosition: v as OptionLabelPosition,
+                  } as Partial<FormField>)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="above">Kép felett</SelectItem>
+                  <SelectItem value="below">Kép alatt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Select-specific: image position + placeholder image + placeholder note */}
+      {isSelect && field.useImages && (
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Előnézeti kép helye</Label>
+            <Select
+              value={field.fieldImagePosition ?? "above"}
+              onValueChange={(v) =>
+                onChange({
+                  fieldImagePosition: v as FieldImagePosition,
+                } as Partial<FormField>)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="above">Lista felett</SelectItem>
+                <SelectItem value="below">Lista alatt</SelectItem>
+                <SelectItem value="left">Lista mellett (bal)</SelectItem>
+                <SelectItem value="right">Lista mellett (jobb)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Helykitöltő kép</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Akkor látható, amíg a felhasználó nem választott.
+            </p>
+            <ImageUploader
+              fieldId={field.id}
+              storageKey="placeholder"
+              url={field.placeholderImageUrl}
+              onChange={(url) =>
+                onChange({ placeholderImageUrl: url ?? null } as Partial<FormField>)
+              }
+              size="md"
+              label="Helykitöltő"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">Helykitöltő megjegyzés</Label>
+              <Switch
+                checked={!!field.placeholderNote}
+                onCheckedChange={(v) =>
+                  onChange({
+                    placeholderNote: v
+                      ? {
+                          value: field.placeholderNote?.value ?? "",
+                          position: field.placeholderNote?.position ?? "below",
+                        }
+                      : null,
+                  } as Partial<FormField>)
+                }
+              />
+            </div>
+            {field.placeholderNote && (
+              <>
+                <Textarea
+                  rows={2}
+                  placeholder="Pl. Válassz egy stílust az előnézethez."
+                  value={field.placeholderNote.value}
+                  onChange={(e) =>
+                    onChange({
+                      placeholderNote: {
+                        value: e.target.value,
+                        position: field.placeholderNote!.position,
+                      },
+                    } as Partial<FormField>)
+                  }
+                />
+                <Select
+                  value={field.placeholderNote.position}
+                  onValueChange={(v) =>
+                    onChange({
+                      placeholderNote: {
+                        value: field.placeholderNote!.value,
+                        position: v as NotePosition,
+                      },
+                    } as Partial<FormField>)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="above">Kép felett</SelectItem>
+                    <SelectItem value="below">Kép alatt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {onChangeOptions && (
+        <OptionsEditor
+          field={field}
+          onChange={(opts) => onChangeOptions(field.id, opts)}
+        />
+      )}
+    </div>
+  );
+}
