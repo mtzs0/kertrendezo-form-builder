@@ -56,10 +56,19 @@ export function usePublishedForm(slug = "default"): UseFormResult {
           return;
         }
         const f: EditorForm = row as EditorForm;
-        const bundle = await loadEditorBundle(f.id);
+        const [bundle, conditions] = await Promise.all([
+          loadEditorBundle(f.id),
+          loadConditions(f.id),
+        ]);
         if (cancelled) return;
+        // Merge per-field conditions into the bundle so isFieldVisible works.
+        const mergedFields: FormField[] = bundle.fields.map((field) =>
+          conditions.has(field.id)
+            ? ({ ...field, condition: conditions.get(field.id) } as FormField)
+            : field
+        );
         setForm(f);
-        setSchema(bundleToSchema(f, bundle));
+        setSchema(bundleToSchema(f, { ...bundle, fields: mergedFields }));
         setError(null);
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
