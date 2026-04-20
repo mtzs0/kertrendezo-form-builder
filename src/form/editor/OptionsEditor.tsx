@@ -194,7 +194,16 @@ function OptionRow({
             <Label className="text-xs text-muted-foreground">Adat név</Label>
             <Input
               value={option.dataName}
-              onChange={(e) => onUpdate(index, { dataName: onSlugify(e.target.value) })}
+              onChange={(e) =>
+                onUpdate(index, {
+                  dataName: e.target.value
+                    .toLowerCase()
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .replace(/[^a-z0-9_]+/g, "_")
+                    .slice(0, 40),
+                })
+              }
               placeholder="igen"
             />
           </div>
