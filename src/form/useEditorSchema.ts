@@ -156,8 +156,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
 
   const addGroup = useCallback(async () => {
     if (!form || !bundle) return;
-    const position = (bundle.groups.reduce((m, g) => Math.max(m, g.location), 0) || 0) + 1;
-    const row = await createGroup(form.id, position);
+    // New groups start as 'unplaced' (position = 0). User drags into structure.
+    const row = await createGroup(form.id, 0);
     setBundle((b) =>
       b
         ? {
@@ -223,9 +223,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const addSubGroup = useCallback(
     async (groupId: string) => {
       if (!form || !bundle) return;
-      const position =
-        (bundle.subGroups.filter((s) => s.groupId === groupId).reduce((m, s) => Math.max(m, s.location), 0) || 0) + 1;
-      const row = await createSubGroup(form.id, groupId, position);
+      // New sub-groups start as 'unplaced' (position = 0).
+      const row = await createSubGroup(form.id, groupId, 0);
       setBundle((b) =>
         b
           ? {
@@ -296,12 +295,10 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const addField = useCallback(
     async (type: FieldType, opts?: { groupId?: string; subGroupId?: string }) => {
       if (!form || !bundle) throw new Error("Editor not loaded");
-      // Position within the same container.
-      const sameContainer = bundle.fields.filter(
-        (f) => (f.groupId ?? null) === (opts?.groupId ?? null) && (f.subGroupId ?? null) === (opts?.subGroupId ?? null)
-      );
-      const position = (sameContainer.reduce((m, f) => Math.max(m, f.location), 0) || 0) + 1;
-      const row = await createField(form.id, type, position, opts?.groupId, opts?.subGroupId);
+      // New fields start as 'unplaced' (position = 0). User drags them into the
+      // structure on the Űrlap tab. groupId/subGroupId stay untouched if not
+      // provided so the field starts at the global unplaced area.
+      const row = await createField(form.id, type, 0, opts?.groupId, opts?.subGroupId);
       // Re-load that field via row mapping (reuse loader for consistency)
       const fresh = await loadEditorBundle(form.id);
       setBundle(fresh);
