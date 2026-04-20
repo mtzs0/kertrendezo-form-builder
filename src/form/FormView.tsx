@@ -61,6 +61,14 @@ export function FormView({ schema, layout, formId }: Props) {
     }
   };
 
+  if (tree.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Az űrlap üres.
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
       {tree.map((item) => {
