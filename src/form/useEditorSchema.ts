@@ -35,6 +35,9 @@ export interface UseEditorSchemaResult {
   schema: FormSchema;
   saveStatus: SaveStatus;
 
+  // Form meta ops
+  patchForm: (patch: Partial<{ title: string; description: string | null }>) => void;
+
   // Group ops
   addGroup: () => Promise<void>;
   patchGroup: (id: string, patch: Partial<FormGroup>) => void;
