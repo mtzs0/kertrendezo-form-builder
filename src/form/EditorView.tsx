@@ -113,6 +113,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   <FieldConfigPanel
                     field={selectedField}
                     onChange={(patch) => selectedField && editor.patchField(selectedField.id, patch)}
+                    onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
                     onDelete={async () => {
                       if (!selectedField) return;
                       await editor.removeField(selectedField.id);
@@ -146,6 +147,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     onChange={(patch) =>
                       selectedField && editor.patchField(selectedField.id, patch)
                     }
+                    onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
                     onDelete={async () => {
                       if (!selectedField) return;
                       await editor.removeField(selectedField.id);

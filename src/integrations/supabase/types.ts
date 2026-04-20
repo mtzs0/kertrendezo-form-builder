@@ -100,6 +100,7 @@ export type Database = {
         Row: {
           columns: number
           created_at: string
+          field_image_position: string | null
           form_id: string
           group_id: string | null
           id: string
@@ -108,7 +109,13 @@ export type Database = {
           multiple_images: boolean
           note_position: Database["public"]["Enums"]["note_position"] | null
           note_value: string | null
+          option_label_position: string | null
           placeholder: string | null
+          placeholder_image_url: string | null
+          placeholder_note_position:
+            | Database["public"]["Enums"]["note_position"]
+            | null
+          placeholder_note_value: string | null
           position: number
           required: boolean
           slider_max: number | null
@@ -126,6 +133,7 @@ export type Database = {
         Insert: {
           columns?: number
           created_at?: string
+          field_image_position?: string | null
           form_id: string
           group_id?: string | null
           id?: string
@@ -134,7 +142,13 @@ export type Database = {
           multiple_images?: boolean
           note_position?: Database["public"]["Enums"]["note_position"] | null
           note_value?: string | null
+          option_label_position?: string | null
           placeholder?: string | null
+          placeholder_image_url?: string | null
+          placeholder_note_position?:
+            | Database["public"]["Enums"]["note_position"]
+            | null
+          placeholder_note_value?: string | null
           position?: number
           required?: boolean
           slider_max?: number | null
@@ -152,6 +166,7 @@ export type Database = {
         Update: {
           columns?: number
           created_at?: string
+          field_image_position?: string | null
           form_id?: string
           group_id?: string | null
           id?: string
@@ -160,7 +175,13 @@ export type Database = {
           multiple_images?: boolean
           note_position?: Database["public"]["Enums"]["note_position"] | null
           note_value?: string | null
+          option_label_position?: string | null
           placeholder?: string | null
+          placeholder_image_url?: string | null
+          placeholder_note_position?:
+            | Database["public"]["Enums"]["note_position"]
+            | null
+          placeholder_note_value?: string | null
           position?: number
           required?: boolean
           slider_max?: number | null

@@ -1,12 +1,15 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type {
+  FieldImagePosition,
+  FieldOption,
   FieldType,
   FormField,
   FormGroup,
   FormSchema,
   FormSubGroup,
   NotePosition,
+  OptionLabelPosition,
   WidthPercent,
 } from "./types";
 
@@ -15,9 +18,17 @@ import type {
 // optional column so the rest of the file stays type-safe without requiring a
 // types regeneration.
 type WidthCol = { width_percent?: number | null };
+type FieldExtraCols = {
+  width_percent?: number | null;
+  placeholder_image_url?: string | null;
+  placeholder_note_value?: string | null;
+  placeholder_note_position?: NotePosition | null;
+  option_label_position?: OptionLabelPosition | null;
+  field_image_position?: FieldImagePosition | null;
+};
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
 type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
-type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & WidthCol;
+type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & FieldExtraCols;
 type OptionRow = Database["public"]["Tables"]["form_field_options"]["Row"];
 
 function asWidth(v: number | null | undefined): WidthPercent | undefined {
@@ -172,6 +183,13 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
         columns: f.columns ?? 1,
         useImages: f.use_images,
         uniqueNotePerOption: f.unique_note_per_option,
+        optionLabelPosition: (f.option_label_position ?? undefined) as OptionLabelPosition | undefined,
+        fieldImagePosition: (f.field_image_position ?? undefined) as FieldImagePosition | undefined,
+        placeholderImageUrl: f.placeholder_image_url ?? undefined,
+        placeholderNote:
+          f.placeholder_note_value && f.placeholder_note_position
+            ? { value: f.placeholder_note_value, position: f.placeholder_note_position as NotePosition }
+            : undefined,
         options: opts
           .slice()
           .sort((a, b) => a.position - b.position)
@@ -301,10 +319,15 @@ export interface FieldPatch {
   uniqueNotePerOption?: boolean;
   columns?: number;
   width?: WidthPercent | null;
+  optionLabelPosition?: OptionLabelPosition | null;
+  fieldImagePosition?: FieldImagePosition | null;
+  placeholderImageUrl?: string | null;
+  placeholderNoteValue?: string | null;
+  placeholderNotePosition?: NotePosition | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
-  const u: Database["public"]["Tables"]["form_fields"]["Update"] & WidthCol = {
+  const u: Database["public"]["Tables"]["form_fields"]["Update"] & FieldExtraCols = {
     internal_name: patch.internalName,
     label: patch.label,
     placeholder: patch.placeholder,
@@ -326,6 +349,11 @@ export async function updateField(id: string, patch: FieldPatch) {
     columns: patch.columns,
   };
   if (patch.width !== undefined) u.width_percent = patch.width;
+  if (patch.optionLabelPosition !== undefined) u.option_label_position = patch.optionLabelPosition;
+  if (patch.fieldImagePosition !== undefined) u.field_image_position = patch.fieldImagePosition;
+  if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
+  if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
+  if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];
@@ -370,6 +398,44 @@ export async function setSubGroupPositions(updates: Array<{ id: string; position
       supabase.from("form_sub_groups").update({ position: u.position }).eq("id", u.id)
     )
   );
+}
+
+// ---------- Field options ----------
+
+/** Replace the full set of options for a field. */
+export async function replaceFieldOptions(fieldId: string, options: FieldOption[]) {
+  const { error: delErr } = await supabase
+    .from("form_field_options")
+    .delete()
+    .eq("field_id", fieldId);
+  if (delErr) throw delErr;
+  if (!options.length) return;
+  const rows = options.map((o, idx) => ({
+    field_id: fieldId,
+    display_name: o.displayName,
+    data_name: o.dataName,
+    position: idx + 1,
+    image_url: o.imageUrl ?? null,
+    note_value: o.note?.value ?? null,
+    note_position: o.note?.position ?? null,
+  }));
+  const { error: insErr } = await supabase.from("form_field_options").insert(rows);
+  if (insErr) throw insErr;
+}
+
+/** Upload an image to the public option-images bucket and return its public URL. */
+export async function uploadOptionImage(
+  file: File,
+  opts: { fieldId: string; key: string }
+): Promise<string> {
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `${opts.fieldId}/${opts.key}-${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from("form-option-images")
+    .upload(path, file, { upsert: true, contentType: file.type || undefined });
+  if (upErr) throw upErr;
+  const { data } = supabase.storage.from("form-option-images").getPublicUrl(path);
+  return data.publicUrl;
 }
 
 /** Build a FormSchema from the editor bundle so the existing renderer can preview it. */
