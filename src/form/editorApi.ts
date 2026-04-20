@@ -319,10 +319,15 @@ export interface FieldPatch {
   uniqueNotePerOption?: boolean;
   columns?: number;
   width?: WidthPercent | null;
+  optionLabelPosition?: OptionLabelPosition | null;
+  fieldImagePosition?: FieldImagePosition | null;
+  placeholderImageUrl?: string | null;
+  placeholderNoteValue?: string | null;
+  placeholderNotePosition?: NotePosition | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
-  const u: Database["public"]["Tables"]["form_fields"]["Update"] & WidthCol = {
+  const u: Database["public"]["Tables"]["form_fields"]["Update"] & FieldExtraCols = {
     internal_name: patch.internalName,
     label: patch.label,
     placeholder: patch.placeholder,
@@ -344,6 +349,11 @@ export async function updateField(id: string, patch: FieldPatch) {
     columns: patch.columns,
   };
   if (patch.width !== undefined) u.width_percent = patch.width;
+  if (patch.optionLabelPosition !== undefined) u.option_label_position = patch.optionLabelPosition;
+  if (patch.fieldImagePosition !== undefined) u.field_image_position = patch.fieldImagePosition;
+  if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
+  if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
+  if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];
