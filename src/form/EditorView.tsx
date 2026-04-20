@@ -52,8 +52,14 @@ function SaveIndicator({ status }: { status: "idle" | "saving" | "saved" | "erro
 export function EditorView({ slug = "default", onExit }: Props) {
   const editor = useEditorSchema(slug, DEFAULTS);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [conditionEnabledByField, setConditionEnabledByField] = useState<
+    Record<string, boolean>
+  >({});
 
   const selectedField = editor.fields.find((f) => f.id === selectedFieldId) ?? null;
+  const hasCondition = !!(selectedField?.condition && selectedField.condition.rules.length > 0);
+  const showConditionEditor =
+    !!selectedField && (hasCondition || !!conditionEnabledByField[selectedField.id]);
 
   return (
     <main className="min-h-screen kr-surface">
