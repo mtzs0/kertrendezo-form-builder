@@ -10,7 +10,12 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { useSortable, SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  useSortable,
+  SortableContext,
+  horizontalListSortingStrategy,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -173,11 +178,14 @@ function DropZone({
   children,
   empty,
   className,
+  stack,
 }: {
   target: DropTarget;
   children: React.ReactNode;
   empty?: string;
   className?: string;
+  /** When true, lay children out vertically (one per row). */
+  stack?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: dropId(target), data: { target } });
   return (
@@ -189,7 +197,9 @@ function DropZone({
         className
       )}
     >
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+      <div className={cn(stack ? "flex flex-col gap-1.5 items-stretch" : "flex flex-wrap gap-1.5")}>
+        {children}
+      </div>
       {empty && (
         <p className="text-[11px] text-muted-foreground italic px-1 py-1">{empty}</p>
       )}
@@ -475,13 +485,14 @@ export function StructureEditor(props: Props) {
             </p>
             <DropZone
               target={{ kind: "fields-of", groupId: null, subGroupId: null }}
+              stack
               empty={
                 fieldsIn(null, null).length ? undefined : "Húzz ide mezőt a csoport nélküli megjelenítéshez."
               }
             >
               <SortableContext
                 items={fieldsIn(null, null).map((f) => f.id)}
-                strategy={horizontalListSortingStrategy}
+                strategy={verticalListSortingStrategy}
               >
                 {fieldsIn(null, null).map((f) => (
                   <DraggableChip
@@ -535,13 +546,14 @@ export function StructureEditor(props: Props) {
                       </p>
                       <DropZone
                         target={{ kind: "fields-of", groupId: g.id, subGroupId: null }}
+                        stack
                         empty={
                           fieldsIn(g.id, null).length ? undefined : "Húzz ide mezőt a csoport szintre."
                         }
                       >
                         <SortableContext
                           items={fieldsIn(g.id, null).map((f) => f.id)}
-                          strategy={horizontalListSortingStrategy}
+                          strategy={verticalListSortingStrategy}
                         >
                           {fieldsIn(g.id, null).map((f) => (
                             <DraggableChip
@@ -604,13 +616,14 @@ export function StructureEditor(props: Props) {
                           </p>
                           <DropZone
                             target={{ kind: "fields-of", groupId: g.id, subGroupId: sg.id }}
+                            stack
                             empty={
                               fieldsIn(g.id, sg.id).length ? undefined : "Húzz ide mezőt."
                             }
                           >
                             <SortableContext
                               items={fieldsIn(g.id, sg.id).map((f) => f.id)}
-                              strategy={horizontalListSortingStrategy}
+                              strategy={verticalListSortingStrategy}
                             >
                               {fieldsIn(g.id, sg.id).map((f) => (
                                 <DraggableChip
