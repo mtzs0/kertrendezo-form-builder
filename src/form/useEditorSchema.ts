@@ -444,6 +444,32 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     []
   );
 
+  const setFieldCondition = useCallback(
+    async (fieldId: string, condition: ConditionGroup | undefined) => {
+      // Optimistic local update
+      setBundle((b) =>
+        b
+          ? {
+              ...b,
+              fields: b.fields.map((f) =>
+                f.id === fieldId ? ({ ...f, condition } as FormField) : f
+              ),
+            }
+          : b
+      );
+      setSaveStatus("saving");
+      try {
+        await saveFieldCondition(fieldId, condition);
+        setSaveStatus("saved");
+        window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+      } catch (e) {
+        console.error("Save condition failed", e);
+        setSaveStatus("error");
+      }
+    },
+    []
+  );
+
   const removeField = useCallback(async (id: string) => {
     await deleteField(id);
     setBundle((b) => (b ? { ...b, fields: b.fields.filter((f) => f.id !== id) } : b));
