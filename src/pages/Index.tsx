@@ -14,12 +14,18 @@ import { Sprout } from "lucide-react";
 import { FormView } from "@/form/FormView";
 import { useDoubleHotkey, useIsMobile } from "@/form/hooks";
 import { usePublishedForm } from "@/form/usePublishedForm";
-import { EditorPlaceholder } from "@/form/EditorPlaceholder";
+import { EditorView } from "@/form/EditorView";
+
+/**
+ * What the user sees when they land on `/`.
+ * Flip this back to "form" to make the public end-user form the default again.
+ */
+const DEFAULT_VIEW: "editor" | "form" = "editor";
 
 const Index = () => {
   const isMobile = useIsMobile();
   const [confirmEditor, setConfirmEditor] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(DEFAULT_VIEW === "editor");
   const { schema, title, description, formId, loading } = usePublishedForm("default");
 
   useDoubleHotkey(() => {
@@ -27,7 +33,7 @@ const Index = () => {
   });
 
   if (editorOpen) {
-    return <EditorPlaceholder schema={schema} onExit={() => setEditorOpen(false)} />;
+    return <EditorView slug="default" onExit={() => setEditorOpen(false)} />;
   }
 
   return (
