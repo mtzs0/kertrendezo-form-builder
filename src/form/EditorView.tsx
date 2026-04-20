@@ -106,6 +106,8 @@ export function EditorView({ slug = "default", onExit }: Props) {
                       location: target.location,
                     })
                   }
+                  onChangeGroupWidth={(id, width) => editor.patchGroup(id, { width })}
+                  onChangeSubGroupWidth={(id, width) => editor.patchSubGroup(id, { width })}
                 />
                 <aside className="lg:sticky lg:top-4 self-start">
                   <FieldConfigPanel

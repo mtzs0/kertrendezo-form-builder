@@ -519,6 +519,13 @@ export function StructureEditor(props: Props) {
                         label={g.label || g.internalName || "(névtelen csoport)"}
                       />
                       <span className="text-xs text-muted-foreground">csoport</span>
+                      <div className="ml-auto flex items-center gap-1.5">
+                        <span className="text-[11px] text-muted-foreground">Szélesség</span>
+                        <WidthInlineSelect
+                          value={g.width}
+                          onChange={(w) => onChangeGroupWidth(g.id, w)}
+                        />
+                      </div>
                     </div>
 
                     {/* Group-level fields */}
@@ -569,12 +576,17 @@ export function StructureEditor(props: Props) {
                           strategy={horizontalListSortingStrategy}
                         >
                           {placedSubs.map((sg) => (
-                            <DraggableChip
-                              key={sg.id}
-                              id={sg.id}
-                              data={{ kind: "subgroup", parentGroupId: sg.groupId }}
-                              label={sg.label || sg.internalName || "(névtelen al-csoport)"}
-                            />
+                            <div key={sg.id} className="inline-flex items-center gap-1">
+                              <DraggableChip
+                                id={sg.id}
+                                data={{ kind: "subgroup", parentGroupId: sg.groupId }}
+                                label={sg.label || sg.internalName || "(névtelen al-csoport)"}
+                              />
+                              <WidthInlineSelect
+                                value={sg.width}
+                                onChange={(w) => onChangeSubGroupWidth(sg.id, w)}
+                              />
+                            </div>
                           ))}
                         </SortableContext>
                       </DropZone>
