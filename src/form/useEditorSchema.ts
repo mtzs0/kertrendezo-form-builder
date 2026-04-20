@@ -21,7 +21,9 @@ import {
   type EditorForm,
   type FieldPatch,
 } from "./editorApi";
+import { loadConditions, saveFieldCondition } from "./conditionApi";
 import type {
+  ConditionGroup,
   FieldOption,
   FieldType,
   FormField,
