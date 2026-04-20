@@ -11,13 +11,27 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import type { FieldType, FormField, NotePosition, SliderField, WidthPercent } from "@/form/types";
+import type {
+  FieldImagePosition,
+  FieldOption,
+  FieldType,
+  FormField,
+  NotePosition,
+  OptionField,
+  OptionLabelPosition,
+  SliderField,
+  WidthPercent,
+} from "@/form/types";
 import { WIDTH_OPTIONS } from "@/form/types";
+import { OptionsEditor } from "./OptionsEditor";
+import { ImageUploader } from "./ImageUploader";
 
 interface Props {
   field: FormField | null;
   onChange: (patch: Partial<FormField> & { type?: FieldType }) => void;
   onDelete: () => void;
+  /** Replace the full options array of this field (immediate save). */
+  onChangeOptions?: (fieldId: string, options: FieldOption[]) => void;
 }
 
 const TYPE_LABELS: Record<FieldType, string> = {
