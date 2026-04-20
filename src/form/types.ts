@@ -14,6 +14,10 @@ export type FieldType =
 
 export type NotePosition = "above" | "below" | "side";
 
+/** Allowed horizontal width values (percent of available row). */
+export type WidthPercent = 25 | 33 | 40 | 50 | 60 | 100;
+export const WIDTH_OPTIONS: WidthPercent[] = [25, 33, 40, 50, 60, 100];
+
 export interface FieldOption {
   /** Display name shown to end-user (Hungarian). */
   displayName: string;
@@ -56,6 +60,8 @@ export interface BaseField {
   subGroupId?: string;
   /** Optional display condition. If undefined, always shown. */
   condition?: ConditionGroup;
+  /** Optional horizontal width as percent of the row. Undefined = 100%. */
+  width?: WidthPercent;
 }
 
 export interface TextField extends BaseField { type: "text" }
@@ -96,6 +102,7 @@ export interface FormGroup {
   internalName: string;
   label: string;
   location: number;
+  width?: WidthPercent;
 }
 
 export interface FormSubGroup {
@@ -104,6 +111,7 @@ export interface FormSubGroup {
   internalName: string;
   label: string;
   location: number;
+  width?: WidthPercent;
 }
 
 export interface FormSchema {
