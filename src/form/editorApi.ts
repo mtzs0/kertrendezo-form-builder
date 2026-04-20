@@ -62,7 +62,7 @@ export async function updateFormMeta(
   id: string,
   patch: Partial<{ title: string; description: string | null }>
 ) {
-  const u: Record<string, unknown> = {};
+  const u: Database["public"]["Tables"]["forms"]["Update"] = {};
   if (patch.title !== undefined) u.title = patch.title;
   if (patch.description !== undefined) u.description = patch.description;
   if (Object.keys(u).length === 0) return;
