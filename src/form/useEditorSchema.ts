@@ -21,7 +21,9 @@ import {
   type EditorForm,
   type FieldPatch,
 } from "./editorApi";
+import { loadConditions, saveFieldCondition } from "./conditionApi";
 import type {
+  ConditionGroup,
   FieldOption,
   FieldType,
   FormField,
@@ -68,6 +70,8 @@ export interface UseEditorSchemaResult {
   ) => Promise<void>;
   /** Replace the full set of options for an option-type field (immediate save). */
   setFieldOptions: (fieldId: string, options: FieldOption[]) => Promise<void>;
+  /** Save a field's display condition (or remove it when undefined). */
+  setFieldCondition: (fieldId: string, condition: ConditionGroup | undefined) => Promise<void>;
 }
 
 /**
@@ -96,10 +100,19 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     (async () => {
       try {
         const f = await ensureForm(slug, defaults);
-        const b = await loadEditorBundle(f.id);
+        const [b, conditions] = await Promise.all([
+          loadEditorBundle(f.id),
+          loadConditions(f.id),
+        ]);
         if (cancelled) return;
+        // Merge loaded conditions into fields.
+        const fieldsWithCond: FormField[] = b.fields.map((field) =>
+          conditions.has(field.id)
+            ? ({ ...field, condition: conditions.get(field.id) } as FormField)
+            : field
+        );
         setForm(f);
-        setBundle(b);
+        setBundle({ ...b, fields: fieldsWithCond });
         setError(null);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
@@ -431,6 +444,32 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     []
   );
 
+  const setFieldCondition = useCallback(
+    async (fieldId: string, condition: ConditionGroup | undefined) => {
+      // Optimistic local update
+      setBundle((b) =>
+        b
+          ? {
+              ...b,
+              fields: b.fields.map((f) =>
+                f.id === fieldId ? ({ ...f, condition } as FormField) : f
+              ),
+            }
+          : b
+      );
+      setSaveStatus("saving");
+      try {
+        await saveFieldCondition(fieldId, condition);
+        setSaveStatus("saved");
+        window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+      } catch (e) {
+        console.error("Save condition failed", e);
+        setSaveStatus("error");
+      }
+    },
+    []
+  );
+
   const removeField = useCallback(async (id: string) => {
     await deleteField(id);
     setBundle((b) => (b ? { ...b, fields: b.fields.filter((f) => f.id !== id) } : b));
@@ -504,5 +543,6 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     removeField,
     reorderFields,
     setFieldOptions,
+    setFieldCondition,
   };
 }

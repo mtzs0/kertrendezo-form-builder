@@ -10,6 +10,7 @@ import { useEditorSchema } from "./useEditorSchema";
 import { StructureEditor } from "./editor/StructureEditor";
 import { FieldConfigPanel } from "./editor/FieldConfigPanel";
 import { FieldPicker } from "./editor/FieldPicker";
+import { ConditionEditor } from "./editor/ConditionEditor";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
@@ -141,7 +142,17 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     setSelectedFieldId(id);
                   }}
                 />
-                <div>
+                <div className="space-y-5">
+                  {selectedField && (
+                    <ConditionEditor
+                      currentFieldId={selectedField.id}
+                      allFields={editor.fields}
+                      value={selectedField.condition}
+                      onChange={(next) =>
+                        editor.setFieldCondition(selectedField.id, next)
+                      }
+                    />
+                  )}
                   <FieldConfigPanel
                     field={selectedField}
                     onChange={(patch) =>
