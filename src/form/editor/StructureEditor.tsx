@@ -14,7 +14,8 @@ import { useSortable, SortableContext, horizontalListSortingStrategy } from "@dn
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FormField, FormGroup, FormSubGroup } from "@/form/types";
+import type { FormField, FormGroup, FormSubGroup, WidthPercent } from "@/form/types";
+import { WIDTH_OPTIONS } from "@/form/types";
 
 interface Props {
   groups: FormGroup[];
@@ -40,6 +41,39 @@ interface Props {
     id: string,
     target: { groupId: string | null; subGroupId: string | null; location: number }
   ) => void;
+
+  /** Width updates for groups and sub-groups (fields use the config panel). */
+  onChangeGroupWidth: (id: string, width: WidthPercent | undefined) => void;
+  onChangeSubGroupWidth: (id: string, width: WidthPercent | undefined) => void;
+}
+
+function WidthInlineSelect({
+  value,
+  onChange,
+}: {
+  value: WidthPercent | undefined;
+  onChange: (w: WidthPercent | undefined) => void;
+}) {
+  return (
+    <select
+      value={value ?? 100}
+      onChange={(e) => {
+        const n = Number(e.target.value) as WidthPercent;
+        onChange(n === 100 ? undefined : n);
+      }}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      className="text-[11px] rounded border border-border bg-background px-1.5 py-0.5 text-muted-foreground hover:text-foreground"
+      title="Szélesség"
+    >
+      <option value={100}>100%</option>
+      {WIDTH_OPTIONS.filter((w) => w !== 100).map((w) => (
+        <option key={w} value={w}>
+          {w}%
+        </option>
+      ))}
+    </select>
+  );
 }
 
 // ---------- Drag item identity ----------
@@ -177,6 +211,8 @@ export function StructureEditor(props: Props) {
     onPlaceGroup,
     onPlaceSubGroup,
     onPlaceField,
+    onChangeGroupWidth,
+    onChangeSubGroupWidth,
   } = props;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
