@@ -109,6 +109,14 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
 
   const cols = COL_CLASS[Math.max(1, Math.min(8, field.columns ?? 1))] ?? COL_CLASS[1];
 
+  const useImg = !!field.useImages;
+  const indicatorClass = useImg
+    ? "absolute top-2 right-2"
+    : "absolute right-3 top-1/2 -translate-y-1/2";
+  const cardLayoutClass = useImg
+    ? "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col"
+    : "relative rounded-lg border bg-card p-3 pr-10 cursor-pointer transition-colors flex items-center";
+
   if (field.type === "radio") {
     const selectedVal = (value as string) ?? "";
     return (
@@ -124,14 +132,14 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               key={opt.dataName}
               htmlFor={`${field.id}_${opt.dataName}`}
               className={cn(
-                "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col",
+                cardLayoutClass,
                 "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
               )}
             >
               <RadioGroupItem
                 id={`${field.id}_${opt.dataName}`}
                 value={opt.dataName}
-                className="absolute top-2 right-2"
+                className={indicatorClass}
               />
               <OptionCard option={opt} field={field} selected={selected} />
             </label>
@@ -155,7 +163,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
             key={opt.dataName}
             htmlFor={`${field.id}_${opt.dataName}`}
             className={cn(
-              "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col",
+              cardLayoutClass,
               "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
             )}
           >
@@ -163,7 +171,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               id={`${field.id}_${opt.dataName}`}
               checked={checked}
               onCheckedChange={(v) => toggle(opt.dataName, Boolean(v))}
-              className="absolute top-2 right-2"
+              className={indicatorClass}
             />
             <OptionCard option={opt} field={field} selected={checked} />
           </label>
