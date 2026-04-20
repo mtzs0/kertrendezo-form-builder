@@ -40,6 +40,20 @@ export interface RenderGlobalField {
 export type RenderItem = RenderGroup | RenderGlobalField;
 
 /**
+ * Strip items that haven't been placed in the structure yet (location <= 0).
+ * Unplaced items live in the editor palette but should never render in the
+ * live form or preview.
+ */
+export function filterPlacedSchema(schema: FormSchema): FormSchema {
+  return {
+    ...schema,
+    groups: schema.groups.filter((g) => g.location > 0),
+    subGroups: schema.subGroups.filter((s) => s.location > 0),
+    fields: schema.fields.filter((f) => f.location > 0),
+  };
+}
+
+/**
  * Build a render tree from a schema:
  * - Top-level: groups (sorted by location) + global fields (no groupId), sorted together by location.
  * - Inside each group: sub-groups + group-level fields (no subGroupId), sorted together by location.

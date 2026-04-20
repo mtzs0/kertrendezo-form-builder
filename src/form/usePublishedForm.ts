@@ -1,74 +1,83 @@
 import { useEffect, useState } from "react";
-import { loadPublishedForm, type FormRecord } from "./api";
-import { sampleSchema } from "./sampleSchema";
+import { supabase } from "@/integrations/supabase/client";
+import { loadEditorBundle, bundleToSchema, type EditorForm } from "./editorApi";
+import type { FormSchema } from "./types";
 
 export interface UseFormResult {
   loading: boolean;
   error: string | null;
-  /** Backing record from Supabase, if loaded. */
-  record: FormRecord | null;
-  /** Render-ready data: either the cloud schema or the local sample fallback. */
+  /** Backing form record from Supabase. */
+  form: EditorForm | null;
+  /** Render-ready data: rebuilt from the normalized tables. */
   title: string;
   description?: string;
-  schema: FormRecord["schema"];
-  /** Form id to attach to submissions. Null when using local fallback. */
+  schema: FormSchema;
+  /** Form id to attach to submissions. Null when no published form exists. */
   formId: string | null;
 }
 
+const EMPTY_SCHEMA: FormSchema = {
+  title: "",
+  description: undefined,
+  groups: [],
+  subGroups: [],
+  fields: [],
+};
+
 /**
- * Loads a published form from Supabase by slug. Falls back to the local
- * sample schema (with no formId) when no published row exists yet, so the
- * embed always has something meaningful to render during development.
+ * Loads a published form by slug from the normalized editor tables. Returns
+ * an empty schema when no published row exists or the form has no fields yet.
  */
 export function usePublishedForm(slug = "default"): UseFormResult {
-  const [record, setRecord] = useState<FormRecord | null>(null);
+  const [form, setForm] = useState<EditorForm | null>(null);
+  const [schema, setSchema] = useState<FormSchema>(EMPTY_SCHEMA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    loadPublishedForm(slug)
-      .then((r) => {
+    (async () => {
+      try {
+        const { data: row, error: selErr } = await supabase
+          .from("forms")
+          .select("id, slug, title, description, published")
+          .eq("slug", slug)
+          .eq("published", true)
+          .maybeSingle();
+        if (selErr) throw selErr;
+        if (!row) {
+          if (!cancelled) {
+            setForm(null);
+            setSchema(EMPTY_SCHEMA);
+            setError(null);
+          }
+          return;
+        }
+        const f: EditorForm = row as EditorForm;
+        const bundle = await loadEditorBundle(f.id);
         if (cancelled) return;
-        setRecord(r);
+        setForm(f);
+        setSchema(bundleToSchema(f, bundle));
         setError(null);
-      })
-      .catch((e: unknown) => {
-        if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Ismeretlen hiba");
-      })
-      .finally(() => !cancelled && setLoading(false));
+      } catch (e: unknown) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, [slug]);
 
-  // Use the cloud record only if it has at least one field defined.
-  // Otherwise, fall back to the local sample so the foundation pass renders
-  // a meaningful preview while the editor (next iteration) populates it.
-  const hasCloudFields =
-    record && Array.isArray(record.schema?.fields) && record.schema.fields.length > 0;
-
-  if (hasCloudFields && record) {
-    return {
-      loading,
-      error,
-      record,
-      title: record.title,
-      description: record.description ?? undefined,
-      schema: record.schema,
-      formId: record.id,
-    };
-  }
-
   return {
     loading,
     error,
-    record,
-    title: record?.title ?? sampleSchema.title,
-    description: record?.description ?? sampleSchema.description,
-    schema: sampleSchema,
-    formId: record?.id ?? null,
+    form,
+    title: form?.title ?? "",
+    description: form?.description ?? undefined,
+    schema,
+    formId: form?.id ?? null,
   };
 }

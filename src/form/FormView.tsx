@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { FieldRenderer } from "./FieldRenderer";
-import { buildRenderTree, isFieldVisible } from "./structure";
+import { buildRenderTree, filterPlacedSchema, isFieldVisible } from "./structure";
 import { submitForm } from "./api";
 import type { FormSchema, FormValues, FormField } from "./types";
 
@@ -17,7 +17,7 @@ interface Props {
 export function FormView({ schema, layout, formId }: Props) {
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
-  const tree = useMemo(() => buildRenderTree(schema), [schema]);
+  const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
   const handleChange = (id: string, v: FormValues[string]) =>
     setValues((prev) => ({ ...prev, [id]: v }));
@@ -60,6 +60,14 @@ export function FormView({ schema, layout, formId }: Props) {
       setSubmitting(false);
     }
   };
+
+  if (tree.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        Az űrlap üres.
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">

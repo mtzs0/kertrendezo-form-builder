@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Check, CircleAlert, Loader2 } from "lucide-react";
 import { FormView } from "./FormView";
@@ -77,6 +80,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
             <TabsTrigger value="form">Űrlap</TabsTrigger>
             <TabsTrigger value="field">Mező</TabsTrigger>
             <TabsTrigger value="preview">Előnézet</TabsTrigger>
+            <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
 
           <TabsContent value="form" className="mt-4">
@@ -156,12 +160,97 @@ export function EditorView({ slug = "default", onExit }: Props) {
               {editor.loading ? (
                 <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
               ) : (
-                <FormView schema={editor.schema} layout="horizontal" formId={editor.form?.id ?? null} />
+                <div className="space-y-6">
+                  {(editor.form?.title || editor.form?.description) && (
+                    <header className="space-y-2">
+                      {editor.form?.title && (
+                        <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
+                          {editor.form.title}
+                        </h2>
+                      )}
+                      {editor.form?.description && (
+                        <p className="text-muted-foreground max-w-2xl">
+                          {editor.form.description}
+                        </p>
+                      )}
+                    </header>
+                  )}
+                  <FormView
+                    schema={editor.schema}
+                    layout="horizontal"
+                    formId={editor.form?.id ?? null}
+                  />
+                </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <SettingsPanel
+                title={editor.form?.title ?? ""}
+                description={editor.form?.description ?? ""}
+                onChangeTitle={(v) => editor.patchForm({ title: v })}
+                onChangeDescription={(v) => editor.patchForm({ description: v || null })}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
     </main>
+  );
+}
+
+interface SettingsPanelProps {
+  title: string;
+  description: string;
+  onChangeTitle: (value: string) => void;
+  onChangeDescription: (value: string) => void;
+}
+
+function SettingsPanel({
+  title,
+  description,
+  onChangeTitle,
+  onChangeDescription,
+}: SettingsPanelProps) {
+  return (
+    <div className="max-w-2xl rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+      <div>
+        <h3 className="text-lg font-semibold">Általános beállítások</h3>
+        <p className="text-sm text-muted-foreground">
+          Az élő nézet és az előnézet tetején megjelenő szövegek.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="settings_title">Cím</Label>
+        <Input
+          id="settings_title"
+          value={title}
+          onChange={(e) => onChangeTitle(e.target.value)}
+          placeholder="Pl. Kerttervezés foglalás"
+        />
+        <p className="text-xs text-muted-foreground">
+          A űrlap főcíme, ami az oldal tetején nagyban jelenik meg.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="settings_subtitle">Alcím</Label>
+        <Textarea
+          id="settings_subtitle"
+          rows={3}
+          value={description}
+          onChange={(e) => onChangeDescription(e.target.value)}
+          placeholder="Pl. Töltsd ki az alábbi űrlapot, és hamarosan visszajelzünk az időpontról."
+        />
+        <p className="text-xs text-muted-foreground">
+          Rövid leírás a cím alatt. Üresen hagyva nem jelenik meg.
+        </p>
+      </div>
+    </div>
   );
 }

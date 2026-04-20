@@ -13,6 +13,7 @@ import {
   setGroupPositions,
   setSubGroupPositions,
   updateField,
+  updateFormMeta,
   updateGroup,
   updateSubGroup,
   type EditorBundle,
@@ -33,6 +34,9 @@ export interface UseEditorSchemaResult {
   /** Schema view of the in-memory state — for preview rendering. */
   schema: FormSchema;
   saveStatus: SaveStatus;
+
+  // Form meta ops
+  patchForm: (patch: Partial<{ title: string; description: string | null }>) => void;
 
   // Group ops
   addGroup: () => Promise<void>;
@@ -72,6 +76,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
   const groupPatchBuf = useRef<Map<string, Partial<FormGroup>>>(new Map());
   const subGroupPatchBuf = useRef<Map<string, Partial<FormSubGroup>>>(new Map());
+  const formPatchBuf = useRef<Partial<{ title: string; description: string | null }>>({});
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
@@ -104,11 +109,14 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     const fieldEntries = Array.from(fieldPatchBuf.current.entries());
     const groupEntries = Array.from(groupPatchBuf.current.entries());
     const subGroupEntries = Array.from(subGroupPatchBuf.current.entries());
+    const formMeta = { ...formPatchBuf.current };
     fieldPatchBuf.current.clear();
     groupPatchBuf.current.clear();
     subGroupPatchBuf.current.clear();
+    formPatchBuf.current = {};
 
-    if (!fieldEntries.length && !groupEntries.length && !subGroupEntries.length) return;
+    const hasFormMeta = Object.keys(formMeta).length > 0;
+    if (!fieldEntries.length && !groupEntries.length && !subGroupEntries.length && !hasFormMeta) return;
 
     setSaveStatus("saving");
     try {
@@ -128,6 +136,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             position: patch.location,
           })
         ),
+        ...(hasFormMeta && form ? [updateFormMeta(form.id, formMeta)] : []),
       ]);
       setSaveStatus("saved");
       window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
@@ -135,7 +144,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       console.error("Editor autosave failed", e);
       setSaveStatus("error");
     }
-  }, []);
+  }, [form]);
 
   const scheduleFlush = useCallback(() => {
     if (flushTimer.current != null) window.clearTimeout(flushTimer.current);
@@ -153,6 +162,24 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   }, [flush]);
 
   // ---------- Mutations ----------
+
+  const patchForm = useCallback(
+    (patch: Partial<{ title: string; description: string | null }>) => {
+      setForm((f) =>
+        f
+          ? {
+              ...f,
+              title: patch.title !== undefined ? patch.title : f.title,
+              description:
+                patch.description !== undefined ? patch.description : f.description,
+            }
+          : f
+      );
+      formPatchBuf.current = { ...formPatchBuf.current, ...patch };
+      scheduleFlush();
+    },
+    [scheduleFlush]
+  );
 
   const addGroup = useCallback(async () => {
     if (!form || !bundle) return;
@@ -392,6 +419,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     fields: bundle?.fields ?? [],
     schema,
     saveStatus,
+    patchForm,
     addGroup,
     patchGroup,
     removeGroup,

@@ -57,6 +57,19 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
   return created as EditorForm;
 }
 
+/** Update form-level metadata (title, description). */
+export async function updateFormMeta(
+  id: string,
+  patch: Partial<{ title: string; description: string | null }>
+) {
+  const u: Database["public"]["Tables"]["forms"]["Update"] = {};
+  if (patch.title !== undefined) u.title = patch.title;
+  if (patch.description !== undefined) u.description = patch.description;
+  if (Object.keys(u).length === 0) return;
+  const { error } = await supabase.from("forms").update(u).eq("id", id);
+  if (error) throw error;
+}
+
 export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundle, "form">> {
   const [groupsRes, subGroupsRes, fieldsRes, optionsRes] = await Promise.all([
     supabase.from("form_groups").select("*").eq("form_id", formId),
