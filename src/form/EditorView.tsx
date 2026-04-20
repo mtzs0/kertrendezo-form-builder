@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,8 +52,14 @@ function SaveIndicator({ status }: { status: "idle" | "saving" | "saved" | "erro
 export function EditorView({ slug = "default", onExit }: Props) {
   const editor = useEditorSchema(slug, DEFAULTS);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [conditionEnabledByField, setConditionEnabledByField] = useState<
+    Record<string, boolean>
+  >({});
 
   const selectedField = editor.fields.find((f) => f.id === selectedFieldId) ?? null;
+  const hasCondition = !!(selectedField?.condition && selectedField.condition.rules.length > 0);
+  const showConditionEditor =
+    !!selectedField && (hasCondition || !!conditionEnabledByField[selectedField.id]);
 
   return (
     <main className="min-h-screen kr-surface">
@@ -143,15 +150,38 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   }}
                 />
                 <div className="space-y-5">
-                  {selectedField && (
+                  {selectedField && showConditionEditor && (
                     <ConditionEditor
                       currentFieldId={selectedField.id}
+                      currentFieldLabel={selectedField.label || selectedField.internalName}
                       allFields={editor.fields}
                       value={selectedField.condition}
                       onChange={(next) =>
                         editor.setFieldCondition(selectedField.id, next)
                       }
                     />
+                  )}
+                  {selectedField && (
+                    <div className="rounded-2xl border border-border bg-card kr-shadow-soft px-5 md:px-6 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Megjelenítési feltétel</p>
+                        <p className="text-xs text-muted-foreground">
+                          A mező csak akkor jelenjen meg, ha a megadott feltétel(ek) igazak.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={showConditionEditor}
+                        onCheckedChange={(v) => {
+                          setConditionEnabledByField((s) => ({
+                            ...s,
+                            [selectedField.id]: v,
+                          }));
+                          if (!v && hasCondition) {
+                            editor.setFieldCondition(selectedField.id, undefined);
+                          }
+                        }}
+                      />
+                    </div>
                   )}
                   <FieldConfigPanel
                     field={selectedField}

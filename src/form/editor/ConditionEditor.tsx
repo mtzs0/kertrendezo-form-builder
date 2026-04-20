@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, FoldVertical, Code2, Eye, Pencil } from "lucide-react";
+import { Plus, Trash2, Code2, Eye, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
   ConditionGroup,
@@ -26,6 +26,8 @@ import {
 interface Props {
   /** The field whose condition is being edited (excluded from the picker). */
   currentFieldId: string;
+  /** Label of the field this condition applies to (for the header). */
+  currentFieldLabel?: string;
   allFields: FormField[];
   value: ConditionGroup | undefined;
   onChange: (next: ConditionGroup | undefined) => void;
@@ -48,80 +50,52 @@ function emptyGroup(): ConditionGroup {
   return { combinator: "and", rules: [] };
 }
 
-/** Build a path-keyed accessor that produces a new tree with an updated node. */
-type Path = number[];
-
-function updateAtPath(
-  group: ConditionGroup,
-  path: Path,
-  updater: (node: ConditionGroup | FieldCondition) => ConditionGroup | FieldCondition | null
-): ConditionGroup {
-  if (path.length === 0) {
-    const next = updater(group);
-    if (!next || !("combinator" in next)) return emptyGroup();
-    return next;
-  }
-  const [head, ...rest] = path;
-  const newRules = group.rules
-    .map((r, i) => {
-      if (i !== head) return r;
-      if (rest.length === 0) {
-        const next = updater(r);
-        return next;
-      }
-      if ("combinator" in r) {
-        return updateAtPath(r, rest, updater);
-      }
-      return r;
-    })
-    .filter((r): r is ConditionGroup | FieldCondition => r !== null);
-  return { ...group, rules: newRules };
-}
-
-function isComplete(c: FieldCondition): boolean {
-  return Boolean(c.fieldId) && c.value !== "" && c.value !== undefined && c.value !== null;
-}
-
-function pruneEmpty(group: ConditionGroup): ConditionGroup {
-  const rules = group.rules
-    .map((r) => ("combinator" in r ? pruneEmpty(r) : r))
-    .filter((r) => {
-      if ("combinator" in r) return r.rules.length > 0;
-      return isComplete(r);
-    });
-  return { ...group, rules };
-}
-
 export function ConditionEditor({
   currentFieldId,
+  currentFieldLabel,
   allFields,
   value,
   onChange,
 }: Props) {
-  const root = value ?? emptyGroup();
+  const root: ConditionGroup = value ?? emptyGroup();
   const [mode, setMode] = useState<"visual" | "text">("visual");
   const otherFields = useMemo(
     () => allFields.filter((f) => f.id !== currentFieldId && f.internalName),
     [allFields, currentFieldId]
   );
 
-  const handleRootChange = (next: ConditionGroup) => {
-    const pruned = pruneEmpty(next);
-    if (pruned.rules.length === 0) onChange(undefined);
-    else onChange(pruned);
+  const commit = (next: ConditionGroup) => {
+    if (next.rules.length === 0) onChange(undefined);
+    else onChange(next);
+  };
+
+  const addRootCondition = () => {
+    commit({
+      ...root,
+      rules: [...root.rules, emptyCondition(otherFields[0]?.id ?? "")],
+    });
   };
 
   return (
     <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Feltétel szerkesztő</p>
-          <h3 className="text-lg font-semibold">Feltétel</h3>
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Feltétel szerkesztő
+          </p>
+          <h3 className="text-lg font-semibold truncate">
+            Feltétel
+            {currentFieldLabel && (
+              <span className="text-muted-foreground font-normal">
+                {" "}— {currentFieldLabel}
+              </span>
+            )}
+          </h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Akkor jelenjen meg a mező, ha az alábbi feltétel igaz.
+            A mező csak akkor jelenik meg, ha az alábbi feltétel(ek) igazak.
           </p>
         </div>
-        <div className="inline-flex rounded-md border border-border overflow-hidden">
+        <div className="inline-flex rounded-md border border-border overflow-hidden shrink-0">
           <button
             type="button"
             onClick={() => setMode("visual")}
@@ -131,7 +105,6 @@ export function ConditionEditor({
                 ? "bg-primary text-primary-foreground"
                 : "bg-background hover:bg-accent"
             )}
-            aria-label="Vizuális szerkesztő"
           >
             <Eye className="h-3.5 w-3.5" /> Vizuális
           </button>
@@ -144,7 +117,6 @@ export function ConditionEditor({
                 ? "bg-primary text-primary-foreground"
                 : "bg-background hover:bg-accent"
             )}
-            aria-label="Szöveges szerkesztő"
           >
             <Code2 className="h-3.5 w-3.5" /> Szöveg
           </button>
@@ -156,206 +128,226 @@ export function ConditionEditor({
           Még nincs másik mező, amire feltételt lehetne építeni.
         </div>
       ) : mode === "visual" ? (
-        <GroupEditor
-          group={root}
-          path={[]}
-          isRoot
-          otherFields={otherFields}
-          onChangeRoot={(updater) =>
-            handleRootChange(updateAtPath(root, [], updater) as ConditionGroup)
-          }
-          onChange={(updater) =>
-            handleRootChange(updateAtPath(root, [], updater) as ConditionGroup)
-          }
-        />
+        <div className="space-y-3">
+          <div className="rounded-lg bg-muted/30 border border-border p-3 space-y-2">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+              Feltételek
+            </div>
+
+            {root.rules.length === 0 && (
+              <p className="text-xs text-muted-foreground italic px-1 py-2">
+                Még nincs feltétel. Adj hozzá egyet az alábbi gombbal.
+              </p>
+            )}
+
+            <RuleList
+              group={root}
+              otherFields={otherFields}
+              onChange={(next) => commit(next)}
+            />
+
+            <div className="pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRootCondition}
+                className="h-7 text-xs"
+              >
+                <Plus className="h-3.5 w-3.5 mr-1" /> Feltétel
+              </Button>
+            </div>
+          </div>
+
+          {value && value.rules.length > 0 && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onChange(undefined)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Összes feltétel
+                eltávolítása
+              </Button>
+            </div>
+          )}
+        </div>
       ) : (
         <TextEditor
           group={root}
           allFields={allFields}
-          onCommit={(g) => handleRootChange(g)}
+          onCommit={(g) => commit(g)}
         />
-      )}
-
-      {value && value.rules.length > 0 && (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange(undefined)}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Feltétel eltávolítása
-          </Button>
-        </div>
       )}
     </div>
   );
 }
 
-// ---------- Visual: Group ----------
+// ---------- Visual: RuleList ----------
+//
+// Renders the rules of a group with a clickable AND/OR connector
+// between siblings (no separate combinator dropdown).
 
-interface GroupEditorProps {
+interface RuleListProps {
   group: ConditionGroup;
-  path: Path;
-  isRoot?: boolean;
   otherFields: FormField[];
-  onChangeRoot: (
-    updater: (n: ConditionGroup | FieldCondition) => ConditionGroup | FieldCondition | null
-  ) => void;
-  onChange: (
-    updater: (n: ConditionGroup | FieldCondition) => ConditionGroup | FieldCondition | null
-  ) => void;
+  onChange: (next: ConditionGroup) => void;
 }
 
-function GroupEditor({
-  group,
-  path,
-  isRoot,
-  otherFields,
-  onChangeRoot,
-  onChange,
-}: GroupEditorProps) {
-  const addCondition = () => {
-    onChange((g) => {
-      if (!("combinator" in g)) return g;
-      return {
-        ...g,
-        rules: [...g.rules, emptyCondition(otherFields[0]?.id ?? "")],
-      };
-    });
-  };
-
-  const addGroup = () => {
-    onChange((g) => {
-      if (!("combinator" in g)) return g;
-      return { ...g, rules: [...g.rules, emptyGroup()] };
-    });
-  };
-
-  const removeChild = (index: number) => {
-    onChange((g) => {
-      if (!("combinator" in g)) return g;
-      return { ...g, rules: g.rules.filter((_, i) => i !== index) };
-    });
-  };
-
-  const updateChild = (
+function RuleList({ group, otherFields, onChange }: RuleListProps) {
+  const updateRule = (
     index: number,
-    next: ConditionGroup | FieldCondition
+    next: ConditionGroup | FieldCondition | null
   ) => {
-    onChange((g) => {
-      if (!("combinator" in g)) return g;
-      const rules = g.rules.slice();
-      rules[index] = next;
-      return { ...g, rules };
+    const rules = group.rules.slice();
+    if (next === null) rules.splice(index, 1);
+    else rules[index] = next;
+    // Unwrap groups with a single rule to flatten the tree.
+    const cleaned = rules.map((r) => {
+      if ("combinator" in r && r.rules.length === 1) {
+        const only = r.rules[0];
+        return only;
+      }
+      return r;
+    });
+    onChange({ ...group, rules: cleaned });
+  };
+
+  // Insert a new rule into a sub-group with the rule at index, creating
+  // the group if needed. This is what "+ Feltétel" under a row does.
+  const addUnderRow = (index: number) => {
+    const existing = group.rules[index];
+    const fresh = emptyCondition(otherFields[0]?.id ?? "");
+    let newGroup: ConditionGroup;
+    if ("combinator" in existing) {
+      newGroup = { ...existing, rules: [...existing.rules, fresh] };
+    } else {
+      newGroup = { combinator: "and", rules: [existing, fresh] };
+    }
+    const rules = group.rules.slice();
+    rules[index] = newGroup;
+    onChange({ ...group, rules });
+  };
+
+  const toggleCombinator = () => {
+    onChange({
+      ...group,
+      combinator: group.combinator === "and" ? "or" : "and",
     });
   };
 
   return (
-    <div
-      className={cn(
-        "rounded-lg p-3 space-y-2",
-        isRoot
-          ? "bg-muted/30 border border-border"
-          : "bg-card border border-dashed border-border"
-      )}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-            {isRoot ? "Feltételek" : "Csoport"}
-          </span>
-          <Select
-            value={group.combinator}
-            onValueChange={(v) =>
-              onChange((g) =>
-                "combinator" in g ? { ...g, combinator: v as "and" | "or" } : g
-              )
-            }
-          >
-            <SelectTrigger className="h-7 w-[110px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="and">ÉS — mind</SelectItem>
-              <SelectItem value="or">VAGY — egy is elég</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {!isRoot && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onChange(() => null)}
-            className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-            aria-label="Csoport törlése"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </div>
-
-      {group.rules.length === 0 && (
-        <p className="text-xs text-muted-foreground italic px-1 py-2">
-          Még nincs feltétel. Adj hozzá egyet az alábbi gombokkal.
-        </p>
-      )}
-
-      <div className="space-y-2">
-        {group.rules.map((rule, i) => {
-          if ("combinator" in rule) {
-            return (
-              <GroupEditor
-                key={i}
-                group={rule}
-                path={[...path, i]}
-                otherFields={otherFields}
-                onChangeRoot={onChangeRoot}
-                onChange={(updater) => {
-                  const next = updater(rule);
-                  if (next === null) {
-                    removeChild(i);
-                  } else if ("combinator" in next) {
-                    updateChild(i, next);
-                  }
-                }}
-              />
-            );
-          }
-          return (
+    <div className="space-y-1.5">
+      {group.rules.map((rule, i) => (
+        <div key={i} className="space-y-1.5">
+          {i > 0 && (
+            <CombinatorChip
+              value={group.combinator}
+              onClick={toggleCombinator}
+            />
+          )}
+          {"combinator" in rule ? (
+            <NestedGroup
+              group={rule}
+              otherFields={otherFields}
+              onChange={(next) => updateRule(i, next)}
+              onAddSibling={() => addUnderRow(i)}
+            />
+          ) : (
             <ConditionRow
-              key={i}
               condition={rule}
               otherFields={otherFields}
-              onChange={(next) => updateChild(i, next)}
-              onRemove={() => removeChild(i)}
+              onChange={(next) => updateRule(i, next)}
+              onRemove={() => updateRule(i, null)}
+              onAddBelow={() => addUnderRow(i)}
             />
-          );
-        })}
-      </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
-      <div className="flex flex-wrap gap-2 pt-1">
+// ---------- Visual: NestedGroup (renders a parenthesized sub-group) ----------
+
+interface NestedGroupProps {
+  group: ConditionGroup;
+  otherFields: FormField[];
+  onChange: (next: ConditionGroup | null) => void;
+  onAddSibling: () => void;
+}
+
+function NestedGroup({
+  group,
+  otherFields,
+  onChange,
+  onAddSibling,
+}: NestedGroupProps) {
+  return (
+    <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-2.5 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+          Csoport
+        </span>
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           size="sm"
-          onClick={addCondition}
-          className="h-7 text-xs"
+          onClick={() => onChange(null)}
+          className="h-6 px-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+          aria-label="Csoport törlése"
         >
-          <Plus className="h-3.5 w-3.5 mr-1" /> Feltétel
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={addGroup}
-          className="h-7 text-xs"
-        >
-          <FoldVertical className="h-3.5 w-3.5 mr-1" /> Csoport
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
+      <RuleList
+        group={group}
+        otherFields={otherFields}
+        onChange={(next) => onChange(next)}
+      />
+      <div className="pt-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onAddSibling}
+          className="h-6 px-2 text-xs"
+        >
+          <Plus className="h-3 w-3 mr-1" /> Feltétel a csoportba
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Visual: AND/OR chip between sibling rules ----------
+
+function CombinatorChip({
+  value,
+  onClick,
+}: {
+  value: "and" | "or";
+  onClick: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 pl-2">
+      <div className="h-px w-3 bg-border" />
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "text-[10px] font-bold uppercase tracking-wide rounded px-2 py-0.5 border transition-colors",
+          value === "and"
+            ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+            : "bg-accent border-border text-foreground hover:bg-accent/80"
+        )}
+        title="Kattints az ÉS / VAGY váltáshoz"
+      >
+        {value === "and" ? "ÉS" : "VAGY"}
+      </button>
+      <div className="h-px flex-1 bg-border" />
     </div>
   );
 }
@@ -367,16 +359,23 @@ interface ConditionRowProps {
   otherFields: FormField[];
   onChange: (next: FieldCondition) => void;
   onRemove: () => void;
+  onAddBelow: () => void;
 }
 
 const NUMERIC_TYPES = new Set(["slider"]);
 
-function ConditionRow({ condition, otherFields, onChange, onRemove }: ConditionRowProps) {
+function ConditionRow({
+  condition,
+  otherFields,
+  onChange,
+  onRemove,
+  onAddBelow,
+}: ConditionRowProps) {
   const field = otherFields.find((f) => f.id === condition.fieldId);
   const isNumeric = field ? NUMERIC_TYPES.has(field.type) : false;
   const isOption =
-    field && (field.type === "radio" || field.type === "checkbox" || field.type === "select");
-  const isBoolean = false; // no boolean field type yet
+    field &&
+    (field.type === "radio" || field.type === "checkbox" || field.type === "select");
 
   const operators: FieldCondition["operator"][] = isNumeric
     ? ["equals", "is_not", "greater_than", "less_than"]
@@ -436,7 +435,6 @@ function ConditionRow({ condition, otherFields, onChange, onRemove }: ConditionR
           <ValueInput
             field={field ?? null}
             isNumeric={isNumeric}
-            isBoolean={isBoolean}
             value={condition.value}
             onChange={(v) => onChange({ ...condition, value: v })}
           />
@@ -452,6 +450,18 @@ function ConditionRow({ condition, otherFields, onChange, onRemove }: ConditionR
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onAddBelow}
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          title="Új feltétel csoportban ezzel"
+        >
+          <Plus className="h-3 w-3 mr-1" /> Feltétel
+        </Button>
+      </div>
     </div>
   );
 }
@@ -459,20 +469,18 @@ function ConditionRow({ condition, otherFields, onChange, onRemove }: ConditionR
 interface ValueInputProps {
   field: FormField | null;
   isNumeric: boolean;
-  isBoolean: boolean;
   value: FieldCondition["value"];
   onChange: (v: FieldCondition["value"]) => void;
 }
 
 function ValueInput({ field, isNumeric, value, onChange }: ValueInputProps) {
-  // Option-type field → pick from its dataNames.
-  if (field && (field.type === "radio" || field.type === "checkbox" || field.type === "select")) {
+  if (
+    field &&
+    (field.type === "radio" || field.type === "checkbox" || field.type === "select")
+  ) {
     const opts = (field as OptionField).options ?? [];
     return (
-      <Select
-        value={String(value ?? "")}
-        onValueChange={(v) => onChange(v)}
-      >
+      <Select value={String(value ?? "")} onValueChange={(v) => onChange(v)}>
         <SelectTrigger className="h-9">
           <SelectValue placeholder="Válassz értéket" />
         </SelectTrigger>
@@ -515,6 +523,11 @@ function ValueInput({ field, isNumeric, value, onChange }: ValueInputProps) {
 }
 
 // ---------- Text editor with autocomplete ----------
+//
+// Suggestions:
+//  - Field internal names while typing an identifier.
+//  - Option dataNames after `<fieldname> <op> "` (the user is filling
+//    in a value for an option-type field).
 
 interface TextEditorProps {
   group: ConditionGroup;
@@ -522,47 +535,120 @@ interface TextEditorProps {
   onCommit: (g: ConditionGroup) => void;
 }
 
+type Suggestion =
+  | { kind: "field"; field: FormField }
+  | { kind: "option"; dataName: string; displayName: string };
+
 function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
   const initial = useMemo(() => serializeCondition(group, allFields), []);
   const [text, setText] = useState(initial);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<FormField[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Recompute suggestions while typing the current word.
   useEffect(() => {
     setError(null);
   }, [text]);
 
+  // Detect whether the cursor is inside an open quoted value following
+  // `<fieldname> <op> "<partial>` and return the field + partial token.
+  const detectOptionContext = (
+    val: string,
+    cursor: number
+  ): { field: OptionField; partial: string; quoteStart: number } | null => {
+    // Walk backward from cursor to find an unmatched opening quote.
+    let i = cursor - 1;
+    while (i >= 0) {
+      const c = val[i];
+      if (c === '"' || c === "'") {
+        // Check it's an opening quote (i.e., not preceded by a closing pair).
+        const before = val.slice(0, i);
+        const quoteCount = (before.match(/(?<!\\)["']/g) ?? []).length;
+        if (quoteCount % 2 === 0) {
+          // This is an opening quote.
+          const partial = val.slice(i + 1, cursor);
+          if (/[\n\r]/.test(partial)) return null;
+          // Look back further for `<fieldname> <op>`.
+          const head = val.slice(0, i).trimEnd();
+          const m = head.match(
+            /([A-Za-z_][A-Za-z0-9_]*)\s*(==|=|!=|is_not|isnot|is|contains)\s*$/
+          );
+          if (!m) return null;
+          const fname = m[1];
+          const field = allFields.find(
+            (f) => f.internalName === fname &&
+              (f.type === "radio" || f.type === "checkbox" || f.type === "select")
+          ) as OptionField | undefined;
+          if (!field) return null;
+          return { field, partial, quoteStart: i };
+        }
+        return null;
+      }
+      i--;
+    }
+    return null;
+  };
+
   const updateSuggestions = (val: string, cursor: number) => {
-    // Find the current word boundaries (identifier chars).
+    // 1) Option-value autocomplete inside an open quote.
+    const opt = detectOptionContext(val, cursor);
+    if (opt) {
+      const matches = (opt.field.options ?? [])
+        .filter((o) =>
+          o.dataName.toLowerCase().startsWith(opt.partial.toLowerCase())
+        )
+        .slice(0, 8)
+        .map<Suggestion>((o) => ({
+          kind: "option",
+          dataName: o.dataName,
+          displayName: o.displayName,
+        }));
+      setSuggestions(matches);
+      setHighlight(0);
+      return;
+    }
+    // 2) Field-name autocomplete on identifier word.
     let start = cursor;
     while (start > 0 && /[A-Za-z0-9_]/.test(val[start - 1])) start--;
     const word = val.slice(start, cursor);
-    if (!word || word.length < 1) {
+    if (!word) {
       setSuggestions([]);
-      return { start, word };
+      return;
     }
     const matches = allFields
       .filter((f) => f.internalName?.toLowerCase().startsWith(word.toLowerCase()))
-      .slice(0, 8);
+      .slice(0, 8)
+      .map<Suggestion>((f) => ({ kind: "field", field: f }));
     setSuggestions(matches);
     setHighlight(0);
-    return { start, word };
   };
 
-  const acceptSuggestion = (suggestion: FormField) => {
+  const acceptSuggestion = (s: Suggestion) => {
     const input = inputRef.current;
     if (!input) return;
     const cursor = input.selectionStart ?? text.length;
+    if (s.kind === "option") {
+      // Replace the partial inside the quotes with the dataName, keep quotes open.
+      let i = cursor;
+      while (i > 0 && text[i - 1] !== '"' && text[i - 1] !== "'") i--;
+      const next = text.slice(0, i) + s.dataName + text.slice(cursor);
+      setText(next);
+      setSuggestions([]);
+      requestAnimationFrame(() => {
+        const pos = i + s.dataName.length;
+        input.setSelectionRange(pos, pos);
+        input.focus();
+      });
+      return;
+    }
     let start = cursor;
     while (start > 0 && /[A-Za-z0-9_]/.test(text[start - 1])) start--;
-    const next = text.slice(0, start) + suggestion.internalName + text.slice(cursor);
+    const next = text.slice(0, start) + s.field.internalName + text.slice(cursor);
     setText(next);
     setSuggestions([]);
     requestAnimationFrame(() => {
-      const pos = start + suggestion.internalName.length;
+      const pos = start + s.field.internalName.length;
       input.setSelectionRange(pos, pos);
       input.focus();
     });
@@ -590,11 +676,25 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
           value={text}
           onChange={(e) => {
             setText(e.target.value);
-            updateSuggestions(e.target.value, e.target.selectionStart ?? e.target.value.length);
+            updateSuggestions(
+              e.target.value,
+              e.target.selectionStart ?? e.target.value.length
+            );
+          }}
+          onKeyUp={(e) => {
+            const t = e.currentTarget;
+            if (
+              e.key === "ArrowLeft" ||
+              e.key === "ArrowRight" ||
+              e.key === "Home" ||
+              e.key === "End"
+            ) {
+              updateSuggestions(t.value, t.selectionStart ?? t.value.length);
+            }
           }}
           onKeyDown={(e) => {
             if (suggestions.length > 0) {
-              if (e.key === "Tab" || (e.key === "Enter" && suggestions.length > 0)) {
+              if (e.key === "Tab" || e.key === "Enter") {
                 e.preventDefault();
                 acceptSuggestion(suggestions[highlight]);
                 return;
@@ -606,7 +706,9 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
               }
               if (e.key === "ArrowUp") {
                 e.preventDefault();
-                setHighlight((h) => (h - 1 + suggestions.length) % suggestions.length);
+                setHighlight(
+                  (h) => (h - 1 + suggestions.length) % suggestions.length
+                );
                 return;
               }
               if (e.key === "Escape") {
@@ -627,7 +729,7 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
           <div className="absolute z-20 left-0 right-0 top-full mt-1 rounded-md border border-border bg-popover shadow-md overflow-hidden">
             {suggestions.map((s, i) => (
               <button
-                key={s.id}
+                key={i}
                 type="button"
                 onMouseDown={(e) => {
                   e.preventDefault();
@@ -638,10 +740,21 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
                   i === highlight ? "bg-accent" : "hover:bg-accent/50"
                 )}
               >
-                <span className="font-mono">{s.internalName}</span>
-                <span className="text-muted-foreground ml-2 text-xs">
-                  {s.label}
-                </span>
+                {s.kind === "field" ? (
+                  <>
+                    <span className="font-mono">{s.field.internalName}</span>
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      {s.field.label}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-mono">{s.dataName}</span>
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      {s.displayName}
+                    </span>
+                  </>
+                )}
               </button>
             ))}
           </div>
@@ -650,7 +763,8 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
           Operátorok: <code>= != &gt; &lt; contains</code> · logika:{" "}
-          <code>&amp;&amp; ||</code> · csoportosítás: <code>( )</code>. Tab a javaslat elfogadásához.
+          <code>&amp;&amp; ||</code> · csoportosítás: <code>( )</code>. Tab a
+          javaslat elfogadásához.
         </p>
         <Button type="button" size="sm" onClick={handleCommit} className="h-8">
           <Pencil className="h-3.5 w-3.5 mr-1" /> Alkalmaz
