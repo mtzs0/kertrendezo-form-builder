@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadEditorBundle, bundleToSchema, type EditorForm } from "./editorApi";
-import type { FormSchema } from "./types";
+import { loadConditions } from "./conditionApi";
+import type { FormField, FormSchema } from "./types";
 
 export interface UseFormResult {
   loading: boolean;
