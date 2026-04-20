@@ -124,7 +124,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               key={opt.dataName}
               htmlFor={`${field.id}_${opt.dataName}`}
               className={cn(
-                "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors",
+                "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col",
                 "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
               )}
             >
