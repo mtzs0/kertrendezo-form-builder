@@ -16,6 +16,7 @@ export interface RenderSubGroup {
   id: string;
   label: string;
   location: number;
+  width?: WidthPercent;
   fields: FormField[];
 }
 
@@ -29,6 +30,7 @@ export interface RenderGroup {
   id: string;
   label: string;
   location: number;
+  width?: WidthPercent;
   /** Sub-groups (each containing their fields) plus group-level fields, in order. */
   children: Array<RenderSubGroup | RenderGroupChild>;
 }
