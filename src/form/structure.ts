@@ -160,7 +160,10 @@ export function evalConditionGroup(
 
 export function isFieldVisible(field: FormField, values: FormValues): boolean {
   if (!field.condition) return true;
-  return evalConditionGroup(field.condition, values);
+  const result = evalConditionGroup(field.condition, values);
+  // eslint-disable-next-line no-console
+  console.debug("[cond]", field.internalName, { condition: field.condition, values, result });
+  return result;
 }
 
 // ---------- Width-based row packing ----------
