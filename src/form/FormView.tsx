@@ -59,15 +59,14 @@ export function FormView({ schema, layout }: Props) {
               <div className="flex-1 h-px bg-border" />
             </header>
 
-            <div className="flex flex-col gap-6">
+            <div className={fieldGridClass}>
               {item.children.map((child) => {
                 if (child.kind === "field") return renderField(child.field);
-
-                // sub-group
+                // sub-group spans the full row
                 return (
                   <div
                     key={child.id}
-                    className="rounded-xl border border-border/70 bg-secondary/40 p-4 md:p-5 space-y-4"
+                    className="md:col-span-2 rounded-xl border border-border/70 bg-secondary/40 p-4 md:p-5 space-y-4"
                   >
                     <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       {child.label}
@@ -78,13 +77,6 @@ export function FormView({ schema, layout }: Props) {
                   </div>
                 );
               })}
-            </div>
-
-            {/* Render group-level (non-subgroup) fields in a grid */}
-            <div className={fieldGridClass}>
-              {item.children
-                .filter((c): c is { kind: "field"; field: FormField } => c.kind === "field")
-                .map(() => null)}
             </div>
           </section>
         );
