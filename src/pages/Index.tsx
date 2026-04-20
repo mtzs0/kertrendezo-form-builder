@@ -20,13 +20,14 @@ const Index = () => {
   const isMobile = useIsMobile();
   const [confirmEditor, setConfirmEditor] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const { schema, title, description, formId, loading } = usePublishedForm("default");
 
   useDoubleHotkey(() => {
     if (!editorOpen) setConfirmEditor(true);
   });
 
   if (editorOpen) {
-    return <EditorPlaceholder schema={sampleSchema} onExit={() => setEditorOpen(false)} />;
+    return <EditorPlaceholder schema={schema} onExit={() => setEditorOpen(false)} />;
   }
 
   return (
@@ -50,20 +51,23 @@ const Index = () => {
               id="kr-form-title"
               className="text-3xl md:text-4xl font-semibold text-foreground"
             >
-              {sampleSchema.title}
+              {title}
             </h1>
-            {sampleSchema.description && (
-              <p className="text-muted-foreground max-w-2xl">
-                {sampleSchema.description}
-              </p>
+            {description && (
+              <p className="text-muted-foreground max-w-2xl">{description}</p>
             )}
           </header>
 
           <div className="rounded-2xl bg-card border border-border kr-shadow-soft p-5 md:p-8">
-            <FormView
-              schema={sampleSchema}
-              layout={isMobile ? "vertical" : "horizontal"}
-            />
+            {loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <FormView
+                schema={schema}
+                layout={isMobile ? "vertical" : "horizontal"}
+                formId={formId}
+              />
+            )}
           </div>
 
           <p className="mt-4 text-xs text-muted-foreground text-center">
