@@ -616,13 +616,14 @@ export function StructureEditor(props: Props) {
                           </p>
                           <DropZone
                             target={{ kind: "fields-of", groupId: g.id, subGroupId: sg.id }}
+                            stack
                             empty={
                               fieldsIn(g.id, sg.id).length ? undefined : "Húzz ide mezőt."
                             }
                           >
                             <SortableContext
                               items={fieldsIn(g.id, sg.id).map((f) => f.id)}
-                              strategy={horizontalListSortingStrategy}
+                              strategy={verticalListSortingStrategy}
                             >
                               {fieldsIn(g.id, sg.id).map((f) => (
                                 <DraggableChip
