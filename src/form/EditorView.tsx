@@ -77,6 +77,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
             <TabsTrigger value="form">Űrlap</TabsTrigger>
             <TabsTrigger value="field">Mező</TabsTrigger>
             <TabsTrigger value="preview">Előnézet</TabsTrigger>
+            <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
 
           <TabsContent value="form" className="mt-4">
@@ -156,9 +157,42 @@ export function EditorView({ slug = "default", onExit }: Props) {
               {editor.loading ? (
                 <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
               ) : (
-                <FormView schema={editor.schema} layout="horizontal" formId={editor.form?.id ?? null} />
+                <div className="space-y-6">
+                  {(editor.form?.title || editor.form?.description) && (
+                    <header className="space-y-2">
+                      {editor.form?.title && (
+                        <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
+                          {editor.form.title}
+                        </h2>
+                      )}
+                      {editor.form?.description && (
+                        <p className="text-muted-foreground max-w-2xl">
+                          {editor.form.description}
+                        </p>
+                      )}
+                    </header>
+                  )}
+                  <FormView
+                    schema={editor.schema}
+                    layout="horizontal"
+                    formId={editor.form?.id ?? null}
+                  />
+                </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="settings" className="mt-4">
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <SettingsPanel
+                title={editor.form?.title ?? ""}
+                description={editor.form?.description ?? ""}
+                onChangeTitle={(v) => editor.patchForm({ title: v })}
+                onChangeDescription={(v) => editor.patchForm({ description: v || null })}
+              />
+            )}
           </TabsContent>
         </Tabs>
       </div>
