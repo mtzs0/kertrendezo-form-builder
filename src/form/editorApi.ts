@@ -18,9 +18,17 @@ import type {
 // optional column so the rest of the file stays type-safe without requiring a
 // types regeneration.
 type WidthCol = { width_percent?: number | null };
+type FieldExtraCols = {
+  width_percent?: number | null;
+  placeholder_image_url?: string | null;
+  placeholder_note_value?: string | null;
+  placeholder_note_position?: NotePosition | null;
+  option_label_position?: OptionLabelPosition | null;
+  field_image_position?: FieldImagePosition | null;
+};
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
 type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
-type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & WidthCol;
+type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & FieldExtraCols;
 type OptionRow = Database["public"]["Tables"]["form_field_options"]["Row"];
 
 function asWidth(v: number | null | undefined): WidthPercent | undefined {
