@@ -90,23 +90,18 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   fields={editor.fields}
                   selectedFieldId={selectedFieldId}
                   onSelectField={setSelectedFieldId}
-                  onAddGroup={editor.addGroup}
-                  onPatchGroup={editor.patchGroup}
-                  onRemoveGroup={editor.removeGroup}
                   onReorderGroups={editor.reorderGroups}
-                  onAddSubGroup={editor.addSubGroup}
-                  onPatchSubGroup={editor.patchSubGroup}
-                  onRemoveSubGroup={editor.removeSubGroup}
                   onReorderSubGroups={editor.reorderSubGroups}
-                  onAddField={async (type, opts) => {
-                    const id = await editor.addField(type, opts);
-                    setSelectedFieldId(id);
-                  }}
-                  onRemoveField={async (id) => {
-                    await editor.removeField(id);
-                    if (selectedFieldId === id) setSelectedFieldId(null);
-                  }}
                   onReorderFields={editor.reorderFields}
+                  onPlaceGroup={(id, location) => editor.patchGroup(id, { location })}
+                  onPlaceSubGroup={(id, location) => editor.patchSubGroup(id, { location })}
+                  onPlaceField={(id, target) =>
+                    editor.patchField(id, {
+                      groupId: target.groupId ?? undefined,
+                      subGroupId: target.subGroupId ?? undefined,
+                      location: target.location,
+                    })
+                  }
                 />
                 <aside className="lg:sticky lg:top-4 self-start">
                   <FieldConfigPanel
