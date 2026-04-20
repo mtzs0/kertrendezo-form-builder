@@ -85,6 +85,7 @@ export function buildRenderTree(schema: FormSchema): RenderItem[] {
         id: sg.id,
         label: sg.label,
         location: sg.location,
+        width: sg.width,
         fields: schema.fields
           .filter((f) => f.groupId === group.id && f.subGroupId === sg.id)
           .sort(byLocation),
@@ -108,6 +109,7 @@ export function buildRenderTree(schema: FormSchema): RenderItem[] {
         id: group.id,
         label: group.label,
         location: group.location,
+        width: group.width,
         children,
       };
     });

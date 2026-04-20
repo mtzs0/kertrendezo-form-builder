@@ -45,7 +45,7 @@ export function FormView({ schema, layout, formId }: Props) {
   };
 
   /** Render an array of items (fields/subgroups/groups) as width-packed rows. */
-  function renderPacked<T extends { width?: number }>(
+  function renderPacked<T>(
     items: T[],
     getWidth: (it: T) => number | undefined,
     renderOne: (it: T) => React.ReactNode,
