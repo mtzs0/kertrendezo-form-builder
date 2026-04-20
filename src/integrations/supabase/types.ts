@@ -14,6 +14,274 @@ export type Database = {
   }
   public: {
     Tables: {
+      form_field_conditions: {
+        Row: {
+          combinator: string
+          created_at: string
+          field_id: string
+          id: string
+          rules: Json
+          updated_at: string
+        }
+        Insert: {
+          combinator?: string
+          created_at?: string
+          field_id: string
+          id?: string
+          rules?: Json
+          updated_at?: string
+        }
+        Update: {
+          combinator?: string
+          created_at?: string
+          field_id?: string
+          id?: string
+          rules?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_field_conditions_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: true
+            referencedRelation: "form_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_field_options: {
+        Row: {
+          created_at: string
+          data_name: string
+          display_name: string
+          field_id: string
+          id: string
+          image_url: string | null
+          note_position: Database["public"]["Enums"]["note_position"] | null
+          note_value: string | null
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_name: string
+          display_name: string
+          field_id: string
+          id?: string
+          image_url?: string | null
+          note_position?: Database["public"]["Enums"]["note_position"] | null
+          note_value?: string | null
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_name?: string
+          display_name?: string
+          field_id?: string
+          id?: string
+          image_url?: string | null
+          note_position?: Database["public"]["Enums"]["note_position"] | null
+          note_value?: string | null
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_field_options_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "form_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_fields: {
+        Row: {
+          columns: number
+          created_at: string
+          form_id: string
+          group_id: string | null
+          id: string
+          internal_name: string
+          label: string
+          multiple_images: boolean
+          note_position: Database["public"]["Enums"]["note_position"] | null
+          note_value: string | null
+          placeholder: string | null
+          position: number
+          required: boolean
+          slider_max: number | null
+          slider_min: number | null
+          slider_step: number | null
+          slider_unit: string | null
+          sub_group_id: string | null
+          type: Database["public"]["Enums"]["field_type"]
+          unique_note_per_option: boolean
+          updated_at: string
+          use_images: boolean
+          with_time: boolean
+        }
+        Insert: {
+          columns?: number
+          created_at?: string
+          form_id: string
+          group_id?: string | null
+          id?: string
+          internal_name: string
+          label: string
+          multiple_images?: boolean
+          note_position?: Database["public"]["Enums"]["note_position"] | null
+          note_value?: string | null
+          placeholder?: string | null
+          position?: number
+          required?: boolean
+          slider_max?: number | null
+          slider_min?: number | null
+          slider_step?: number | null
+          slider_unit?: string | null
+          sub_group_id?: string | null
+          type: Database["public"]["Enums"]["field_type"]
+          unique_note_per_option?: boolean
+          updated_at?: string
+          use_images?: boolean
+          with_time?: boolean
+        }
+        Update: {
+          columns?: number
+          created_at?: string
+          form_id?: string
+          group_id?: string | null
+          id?: string
+          internal_name?: string
+          label?: string
+          multiple_images?: boolean
+          note_position?: Database["public"]["Enums"]["note_position"] | null
+          note_value?: string | null
+          placeholder?: string | null
+          position?: number
+          required?: boolean
+          slider_max?: number | null
+          slider_min?: number | null
+          slider_step?: number | null
+          slider_unit?: string | null
+          sub_group_id?: string | null
+          type?: Database["public"]["Enums"]["field_type"]
+          unique_note_per_option?: boolean
+          updated_at?: string
+          use_images?: boolean
+          with_time?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_fields_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_fields_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "form_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_fields_sub_group_id_fkey"
+            columns: ["sub_group_id"]
+            isOneToOne: false
+            referencedRelation: "form_sub_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_groups: {
+        Row: {
+          created_at: string
+          form_id: string
+          id: string
+          internal_name: string
+          label: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_id: string
+          id?: string
+          internal_name: string
+          label: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_id?: string
+          id?: string
+          internal_name?: string
+          label?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_groups_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      form_sub_groups: {
+        Row: {
+          created_at: string
+          form_id: string
+          group_id: string
+          id: string
+          internal_name: string
+          label: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_id: string
+          group_id: string
+          id?: string
+          internal_name: string
+          label: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_id?: string
+          group_id?: string
+          id?: string
+          internal_name?: string
+          label?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_sub_groups_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_sub_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "form_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_submissions: {
         Row: {
           created_at: string
@@ -99,7 +367,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      field_type:
+        | "text"
+        | "textarea"
+        | "slider"
+        | "radio"
+        | "checkbox"
+        | "select"
+        | "phone"
+        | "date"
+        | "image"
+      note_position: "above" | "below" | "side"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -226,6 +504,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      field_type: [
+        "text",
+        "textarea",
+        "slider",
+        "radio",
+        "checkbox",
+        "select",
+        "phone",
+        "date",
+        "image",
+      ],
+      note_position: ["above", "below", "side"],
+    },
   },
 } as const
