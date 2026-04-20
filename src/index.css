@@ -2,41 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Kertrendezo design system — garden/landscaping form embed.
+   All colors HSL. Earthy greens + warm neutrals.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 60 33% 98%;
+    --foreground: 120 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 120 15% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 120 15% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 38% 28%;
+    --primary-foreground: 60 33% 98%;
+    --primary-glow: 142 45% 42%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 90 25% 92%;
+    --secondary-foreground: 120 25% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 80 20% 94%;
+    --muted-foreground: 120 8% 42%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 35 60% 55%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 90 15% 86%;
+    --input: 90 15% 88%;
+    --ring: 142 38% 28%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    --gradient-surface: linear-gradient(135deg, hsl(60 33% 98%), hsl(90 25% 94%));
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --shadow-soft: 0 4px 16px -4px hsl(142 38% 28% / 0.12);
+    --shadow-elevated: 0 12px 32px -12px hsl(142 38% 28% / 0.22);
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +107,24 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Fraunces', Georgia, serif;
+    @apply tracking-tight;
+  }
+}
+
+@layer components {
+  .kr-surface {
+    background: var(--gradient-surface);
+  }
+  .kr-shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .kr-shadow-elevated {
+    box-shadow: var(--shadow-elevated);
   }
 }
