@@ -118,7 +118,7 @@ function evalCondition(c: FieldCondition, values: FormValues): boolean {
     case "less_than":
       return typeof v === "number" && typeof c.value === "number" && v < c.value;
     case "contains":
-      if (Array.isArray(v)) return v.includes(String(c.value));
+      if (Array.isArray(v)) return (v as unknown[]).map(String).includes(String(c.value));
       if (typeof v === "string") return v.includes(String(c.value));
       return false;
     default:
