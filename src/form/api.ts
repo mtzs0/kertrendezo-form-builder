@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import type { FormSchema, FormValues } from "./types";
 
 export interface FormRecord {
@@ -49,8 +50,8 @@ export async function submitForm(formId: string, values: FormValues) {
     .from("form_submissions")
     .insert({
       form_id: formId,
-      values: serializable,
-      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      values: serializable as Json,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
     })
     .select("id")
     .single();
