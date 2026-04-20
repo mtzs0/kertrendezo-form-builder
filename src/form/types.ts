@@ -77,6 +77,12 @@ export interface PhoneField extends BaseField { type: "phone" }
 export interface DateField extends BaseField { type: "date"; withTime?: boolean }
 export interface ImageField extends BaseField { type: "image"; multiple?: boolean }
 
+/** Where the option's text label is rendered relative to its image. */
+export type OptionLabelPosition = "above" | "below";
+
+/** Where the select-field's preview image is rendered relative to the dropdown. */
+export type FieldImagePosition = "above" | "below" | "left" | "right";
+
 export interface OptionField extends BaseField {
   type: "radio" | "checkbox" | "select";
   options: FieldOption[];
@@ -86,6 +92,14 @@ export interface OptionField extends BaseField {
   useImages?: boolean;
   /** "oszlopok száma" */
   columns?: number;
+  /** Position of each option's text label relative to its image (radio/checkbox). */
+  optionLabelPosition?: OptionLabelPosition;
+  /** Position of the preview image relative to the dropdown (select). */
+  fieldImagePosition?: FieldImagePosition;
+  /** Placeholder image shown until an option with an image is picked (select). */
+  placeholderImageUrl?: string;
+  /** Optional placeholder note shown alongside the placeholder image (select). */
+  placeholderNote?: { value: string; position: NotePosition };
 }
 
 export type FormField =
