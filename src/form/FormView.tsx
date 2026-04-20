@@ -2,7 +2,16 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { FieldRenderer } from "./FieldRenderer";
-import { buildRenderTree, filterPlacedSchema, isFieldVisible } from "./structure";
+import {
+  buildRenderTree,
+  filterPlacedSchema,
+  isFieldVisible,
+  packByWidth,
+  type RenderGroup,
+  type RenderGroupChild,
+  type RenderItem,
+  type RenderSubGroup,
+} from "./structure";
 import { submitForm } from "./api";
 import type { FormSchema, FormValues, FormField } from "./types";
 
@@ -35,11 +44,46 @@ export function FormView({ schema, layout, formId }: Props) {
     );
   };
 
-  // Horizontal: 2-column grid inside groups. Vertical: single column.
-  const fieldGridClass =
-    layout === "horizontal"
-      ? "grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5"
-      : "flex flex-col gap-4";
+  /** Render an array of items (fields/subgroups/groups) as width-packed rows. */
+  function renderPacked<T extends { width?: number }>(
+    items: T[],
+    getWidth: (it: T) => number | undefined,
+    renderOne: (it: T) => React.ReactNode,
+    keyOf: (it: T) => string,
+  ) {
+    // On vertical (mobile) layout, ignore widths and stack everything full-width.
+    if (layout === "vertical") {
+      return (
+        <div className="flex flex-col gap-4">
+          {items.map((it) => (
+            <div key={keyOf(it)}>{renderOne(it)}</div>
+          ))}
+        </div>
+      );
+    }
+    const rows = packByWidth(items, (it) => {
+      const w = getWidth(it);
+      if (w === 25 || w === 33 || w === 40 || w === 50 || w === 60 || w === 100) return w;
+      return undefined;
+    });
+    return (
+      <div className="flex flex-col gap-5">
+        {rows.map((row, idx) => (
+          <div key={idx} className="flex flex-wrap gap-x-6 gap-y-5">
+            {row.map(({ item, width }) => (
+              <div
+                key={keyOf(item)}
+                style={{ flexBasis: `calc(${width}% - 1.5rem)` }}
+                className="min-w-0 flex-grow"
+              >
+                {renderOne(item)}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,43 +113,64 @@ export function FormView({ schema, layout, formId }: Props) {
     );
   }
 
+  // Top-level rendering: groups (with their own widths) + global fields, packed by width.
+  const renderTopItem = (item: RenderItem) => {
+    if (item.kind === "field") return renderField(item.field);
+    return renderGroup(item);
+  };
+
+  const topWidth = (item: RenderItem) =>
+    item.kind === "field" ? item.field.width : (item as RenderGroup).width;
+
+  function renderGroup(group: RenderGroup) {
+    const children = group.children;
+    const renderChild = (child: RenderSubGroup | RenderGroupChild) => {
+      if (child.kind === "field") return renderField(child.field);
+      return renderSubGroup(child);
+    };
+    const childWidth = (child: RenderSubGroup | RenderGroupChild) =>
+      child.kind === "field" ? child.field.width : child.width;
+
+    return (
+      <section key={group.id} className="space-y-4">
+        <header className="flex items-baseline gap-3">
+          <h3 className="text-lg md:text-xl font-semibold text-foreground">{group.label}</h3>
+          <div className="flex-1 h-px bg-border" />
+        </header>
+        {renderPacked(
+          children,
+          childWidth,
+          renderChild,
+          (c) => (c.kind === "field" ? c.field.id : c.id),
+        )}
+      </section>
+    );
+  }
+
+  function renderSubGroup(sg: RenderSubGroup) {
+    return (
+      <div className="rounded-xl border border-border/70 bg-secondary/40 p-4 md:p-5 space-y-4 h-full">
+        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {sg.label}
+        </h4>
+        {renderPacked(
+          sg.fields,
+          (f) => f.width,
+          (f) => renderField(f),
+          (f) => f.id,
+        )}
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-      {tree.map((item) => {
-        if (item.kind === "field") return renderField(item.field);
-
-        // group
-        return (
-          <section key={item.id} className="space-y-4">
-            <header className="flex items-baseline gap-3">
-              <h3 className="text-lg md:text-xl font-semibold text-foreground">
-                {item.label}
-              </h3>
-              <div className="flex-1 h-px bg-border" />
-            </header>
-
-            <div className={fieldGridClass}>
-              {item.children.map((child) => {
-                if (child.kind === "field") return renderField(child.field);
-                // sub-group spans the full row
-                return (
-                  <div
-                    key={child.id}
-                    className="md:col-span-2 rounded-xl border border-border/70 bg-secondary/40 p-4 md:p-5 space-y-4"
-                  >
-                    <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      {child.label}
-                    </h4>
-                    <div className={fieldGridClass}>
-                      {child.fields.map(renderField)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        );
-      })}
+      {renderPacked(
+        tree,
+        topWidth,
+        renderTopItem,
+        (it) => (it.kind === "field" ? it.field.id : it.id),
+      )}
 
       <div className="flex justify-end pt-2">
         <Button
