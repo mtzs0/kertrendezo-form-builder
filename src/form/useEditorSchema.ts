@@ -9,6 +9,7 @@ import {
   deleteSubGroup,
   ensureForm,
   loadEditorBundle,
+  replaceFieldOptions,
   setFieldPositions,
   setGroupPositions,
   setSubGroupPositions,
@@ -20,7 +21,14 @@ import {
   type EditorForm,
   type FieldPatch,
 } from "./editorApi";
-import type { FieldType, FormField, FormGroup, FormSchema, FormSubGroup } from "./types";
+import type {
+  FieldOption,
+  FieldType,
+  FormField,
+  FormGroup,
+  FormSchema,
+  FormSubGroup,
+} from "./types";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
