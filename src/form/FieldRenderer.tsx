@@ -2,19 +2,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FormField, FormValues, NotePosition } from "@/form/types";
+import type { FormField, FormValues, NotePosition, OptionField } from "@/form/types";
+import { OptionFieldRenderer } from "./OptionFieldRenderer";
 
 interface Props {
   field: FormField;
