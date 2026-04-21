@@ -1,0 +1,1 @@
+ALTER TABLE public.form_fields ADD COLUMN IF NOT EXISTS slider_custom_stops jsonb;

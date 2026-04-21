@@ -386,6 +386,10 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       if ("min" in patch) fp.sliderMin = (patch as { min?: number | null }).min ?? null;
       if ("max" in patch) fp.sliderMax = (patch as { max?: number | null }).max ?? null;
       if ("unit" in patch) fp.sliderUnit = (patch as { unit?: string | null }).unit ?? null;
+      if ("customStops" in patch) {
+        const cs = (patch as { customStops?: number[] | null }).customStops;
+        fp.sliderCustomStops = cs && cs.length ? cs : null;
+      }
       // Date / image extras
       if ("withTime" in patch) fp.withTime = (patch as { withTime?: boolean }).withTime;
       if ("multiple" in patch) fp.multipleImages = (patch as { multiple?: boolean }).multiple;

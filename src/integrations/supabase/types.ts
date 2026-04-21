@@ -118,6 +118,7 @@ export type Database = {
           placeholder_note_value: string | null
           position: number
           required: boolean
+          slider_custom_stops: Json | null
           slider_max: number | null
           slider_min: number | null
           slider_step: number | null
@@ -151,6 +152,7 @@ export type Database = {
           placeholder_note_value?: string | null
           position?: number
           required?: boolean
+          slider_custom_stops?: Json | null
           slider_max?: number | null
           slider_min?: number | null
           slider_step?: number | null
@@ -184,6 +186,7 @@ export type Database = {
           placeholder_note_value?: string | null
           position?: number
           required?: boolean
+          slider_custom_stops?: Json | null
           slider_max?: number | null
           slider_min?: number | null
           slider_step?: number | null

@@ -25,6 +25,7 @@ type FieldExtraCols = {
   placeholder_note_position?: NotePosition | null;
   option_label_position?: OptionLabelPosition | null;
   field_image_position?: FieldImagePosition | null;
+  slider_custom_stops?: number[] | null;
 };
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
 type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
@@ -165,7 +166,13 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "date", withTime: f.with_time };
     case "image":
       return { ...base, type: "image", multiple: f.multiple_images };
-    case "slider":
+    case "slider": {
+      const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
+      const customStops = Array.isArray(stopsRaw)
+        ? (stopsRaw as unknown[])
+            .map((n) => Number(n))
+            .filter((n) => Number.isFinite(n))
+        : undefined;
       return {
         ...base,
         type: "slider",
@@ -173,7 +180,9 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
         max: Number(f.slider_max ?? 100),
         step: f.slider_step != null ? Number(f.slider_step) : undefined,
         unit: f.slider_unit ?? undefined,
+        customStops: customStops && customStops.length ? customStops : undefined,
       };
+    }
     case "radio":
     case "checkbox":
     case "select":
@@ -313,6 +322,8 @@ export interface FieldPatch {
   sliderMax?: number | null;
   sliderStep?: number | null;
   sliderUnit?: string | null;
+  /** Manual stops between min/max. null = clear, undefined = no change. */
+  sliderCustomStops?: number[] | null;
   withTime?: boolean;
   multipleImages?: boolean;
   useImages?: boolean;
@@ -354,6 +365,7 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
   if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
+  if (patch.sliderCustomStops !== undefined) u.slider_custom_stops = patch.sliderCustomStops;
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];

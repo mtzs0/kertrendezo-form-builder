@@ -72,6 +72,14 @@ export interface SliderField extends BaseField {
   max: number;
   step?: number;
   unit?: string;
+  /**
+   * Optional manual break-points between min and max. When set (non-empty),
+   * the slider snaps to these stops instead of using `step`. The end-user
+   * picks ranges defined by consecutive stops, plus a final "max+" range.
+   * Example: min=0, max=100, customStops=[10,40,80] → ranges
+   *   0–10, 10–40, 40–80, 80–100, 100+
+   */
+  customStops?: number[];
 }
 export interface PhoneField extends BaseField { type: "phone" }
 export interface DateField extends BaseField { type: "date"; withTime?: boolean }

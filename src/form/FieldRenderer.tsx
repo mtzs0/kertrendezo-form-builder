@@ -91,26 +91,66 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
       );
       break;
     case "slider": {
-      const current = (value as number) ?? field.min;
-      control = (
-        <div className="space-y-3 pt-1">
-          <Slider
-            id={field.id}
-            min={field.min}
-            max={field.max}
-            step={field.step ?? 1}
-            value={[current]}
-            onValueChange={(v) => onChange(field.id, v[0])}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{field.min} {field.unit}</span>
-            <span className="text-foreground font-medium">
-              {current} {field.unit}
-            </span>
-            <span>{field.max} {field.unit}</span>
+      const hasCustom = !!(field.customStops && field.customStops.length > 0);
+      if (hasCustom) {
+        // Build the stop list: [min, ...sorted unique customStops in (min,max), max].
+        const middle = Array.from(new Set(field.customStops!))
+          .filter((n) => n > field.min && n < field.max)
+          .sort((a, b) => a - b);
+        // Selectable values are the inner stops + max (each represents the END of a range).
+        // The last one is rendered with a "+" suffix.
+        const selectable = [...middle, field.max];
+        const current = (value as number) ?? selectable[0];
+        const idx = Math.max(0, selectable.indexOf(current));
+        const selectedIdx = idx === -1 ? 0 : idx;
+        const fmt = (n: number, isLast: boolean) =>
+          `${n}${isLast ? "+" : ""}${field.unit ? " " + field.unit : ""}`;
+        const rangeStart = selectedIdx === 0 ? field.min : selectable[selectedIdx - 1];
+        const rangeEnd = selectable[selectedIdx];
+        const isLast = selectedIdx === selectable.length - 1;
+        control = (
+          <div className="space-y-3 pt-1">
+            <Slider
+              id={field.id}
+              min={0}
+              max={selectable.length - 1}
+              step={1}
+              value={[selectedIdx]}
+              onValueChange={(v) => onChange(field.id, selectable[v[0]])}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{field.min}{field.unit ? ` ${field.unit}` : ""}</span>
+              <span className="text-foreground font-medium">
+                {isLast
+                  ? fmt(rangeEnd, true)
+                  : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+              </span>
+              <span>{fmt(field.max, true)}</span>
+            </div>
           </div>
-        </div>
-      );
+        );
+      } else {
+        const current = (value as number) ?? field.min;
+        control = (
+          <div className="space-y-3 pt-1">
+            <Slider
+              id={field.id}
+              min={field.min}
+              max={field.max}
+              step={field.step ?? 1}
+              value={[current]}
+              onValueChange={(v) => onChange(field.id, v[0])}
+            />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{field.min} {field.unit}</span>
+              <span className="text-foreground font-medium">
+                {current} {field.unit}
+              </span>
+              <span>{field.max} {field.unit}</span>
+            </div>
+          </div>
+        );
+      }
       break;
     }
     case "radio":
