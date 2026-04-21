@@ -63,6 +63,8 @@ export interface BaseField {
   condition?: ConditionGroup;
   /** Optional horizontal width as percent of the row. Undefined = 100%. */
   width?: WidthPercent;
+  /** When true, hides the field's label entirely (useful for compact rows). */
+  hideLabel?: boolean;
 }
 
 export interface TextField extends BaseField { type: "text" }
