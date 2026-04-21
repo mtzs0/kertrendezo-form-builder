@@ -80,6 +80,12 @@ export interface SliderField extends BaseField {
    *   0–10, 10–40, 40–80, 80–100, 100+
    */
   customStops?: number[];
+  /**
+   * How custom stops are spaced visually on the slider track.
+   * "equal" (default): each stop occupies an equal segment regardless of value.
+   * "proportional": stops sit at their numeric position between min and max.
+   */
+  customStopsSpacing?: "equal" | "proportional";
 }
 export interface PhoneField extends BaseField { type: "phone" }
 export interface DateField extends BaseField { type: "date"; withTime?: boolean }
