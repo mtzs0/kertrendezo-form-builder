@@ -417,6 +417,7 @@ export type Database = {
         | "post_code"
         | "city"
         | "street"
+        | "email"
       note_position: "above" | "below" | "side"
     }
     CompositeTypes: {
@@ -559,6 +560,7 @@ export const Constants = {
         "post_code",
         "city",
         "street",
+        "email",
       ],
       note_position: ["above", "below", "side"],
     },

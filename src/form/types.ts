@@ -14,7 +14,8 @@ export type FieldType =
   | "label"
   | "post_code"
   | "city"
-  | "street";
+  | "street"
+  | "email";
 
 export type NotePosition = "above" | "below" | "side";
 
@@ -99,6 +100,7 @@ export interface ImageField extends BaseField { type: "image"; multiple?: boolea
 export interface PostCodeField extends BaseField { type: "post_code" }
 export interface CityField extends BaseField { type: "city" }
 export interface StreetField extends BaseField { type: "street" }
+export interface EmailField extends BaseField { type: "email" }
 /**
  * Display-only "Cím" element. Renders the field's label as a heading and
  * collects no value. Useful for grouping a row of compact unlabeled fields
@@ -142,7 +144,8 @@ export type FormField =
   | LabelField
   | PostCodeField
   | CityField
-  | StreetField;
+  | StreetField
+  | EmailField;
 
 export interface FormGroup {
   id: string;

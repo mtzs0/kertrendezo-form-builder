@@ -176,6 +176,8 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "city" };
     case "street":
       return { ...base, type: "street" };
+    case "email":
+      return { ...base, type: "email" };
     case "slider": {
       const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
       // Backwards-compat: legacy rows store a plain number[]; new rows may store

@@ -46,6 +46,7 @@ const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "post_code", label: "Irányítószám" },
   { value: "city", label: "Város" },
   { value: "street", label: "Utca, házszám" },
+  { value: "email", label: "Email" },
 ];
 
 const TYPE_LABEL: Record<FieldType, string> = FIELD_TYPES.reduce(
