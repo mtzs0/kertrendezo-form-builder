@@ -49,6 +49,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   post_code: "Irányítószám",
   city: "Város",
   street: "Utca, házszám",
+  email: "Email",
 };
 
 const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
