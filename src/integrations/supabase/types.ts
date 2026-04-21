@@ -103,6 +103,7 @@ export type Database = {
           field_image_position: string | null
           form_id: string
           group_id: string | null
+          hide_label: boolean
           id: string
           internal_name: string
           label: string
@@ -137,6 +138,7 @@ export type Database = {
           field_image_position?: string | null
           form_id: string
           group_id?: string | null
+          hide_label?: boolean
           id?: string
           internal_name: string
           label: string
@@ -171,6 +173,7 @@ export type Database = {
           field_image_position?: string | null
           form_id?: string
           group_id?: string | null
+          hide_label?: boolean
           id?: string
           internal_name?: string
           label?: string
@@ -410,6 +413,7 @@ export type Database = {
         | "phone"
         | "date"
         | "image"
+        | "label"
       note_position: "above" | "below" | "side"
     }
     CompositeTypes: {
@@ -548,6 +552,7 @@ export const Constants = {
         "phone",
         "date",
         "image",
+        "label",
       ],
       note_position: ["above", "below", "side"],
     },

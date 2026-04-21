@@ -45,6 +45,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   phone: "Telefonszám",
   date: "Dátum",
   image: "Kép feltöltés",
+  label: "Cím",
 };
 
 const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
@@ -151,7 +152,7 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
             placeholder="Pl. Neved"
           />
         </div>
-        {!isOptionType && (
+        {!isOptionType && field.type !== "label" && (
           <div className="space-y-1.5">
             <Label htmlFor="cfg_placeholder">Helykitöltő</Label>
             <Input
@@ -182,19 +183,39 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
         </div>
       </div>
 
-      <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
-        <div>
-          <Label htmlFor="cfg_required" className="cursor-pointer">
-            Kötelező
-          </Label>
-          <p className="text-xs text-muted-foreground">A felhasználónak ki kell tölteni.</p>
+      {field.type !== "label" && (
+        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
+          <div>
+            <Label htmlFor="cfg_required" className="cursor-pointer">
+              Kötelező
+            </Label>
+            <p className="text-xs text-muted-foreground">A felhasználónak ki kell tölteni.</p>
+          </div>
+          <Switch
+            id="cfg_required"
+            checked={!!field.required}
+            onCheckedChange={(v) => onChange({ required: v })}
+          />
         </div>
-        <Switch
-          id="cfg_required"
-          checked={!!field.required}
-          onCheckedChange={(v) => onChange({ required: v })}
-        />
-      </div>
+      )}
+
+      {field.type !== "label" && (
+        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
+          <div>
+            <Label htmlFor="cfg_hide_label" className="cursor-pointer">
+              Címke elrejtése
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              A „Külső név" nem jelenik meg a mező felett. Hasznos közös „Cím" alá rendezett kompakt mezőknél.
+            </p>
+          </div>
+          <Switch
+            id="cfg_hide_label"
+            checked={!!field.hideLabel}
+            onCheckedChange={(v) => onChange({ hideLabel: v })}
+          />
+        </div>
+      )}
 
       <div className="space-y-3 rounded-lg border border-border p-3">
         <div className="flex items-center justify-between">

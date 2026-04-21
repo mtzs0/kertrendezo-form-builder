@@ -31,10 +31,26 @@ function FieldNote({ children, position }: { children: React.ReactNode; position
 }
 
 export function FieldRenderer({ field, value, onChange, layout = "horizontal" }: Props) {
+  // Display-only "Cím" element: render as a heading and stop.
+  if (field.type === "label") {
+    return (
+      <div className={cn("space-y-1", layout === "vertical" && "space-y-1.5")}>
+        <h4 className="text-sm md:text-base font-semibold text-foreground leading-tight">
+          {field.label}
+          {field.required && <span className="text-destructive ml-0.5">*</span>}
+        </h4>
+        {field.note && (
+          <FieldNote position={field.note.position}>{field.note.value}</FieldNote>
+        )}
+      </div>
+    );
+  }
+
   const note = field.note;
   const showSideNote = note?.position === "side";
+  const hideLabel = !!field.hideLabel;
 
-  const labelEl = (
+  const labelEl = hideLabel ? null : (
     <Label htmlFor={field.id} className="text-sm font-medium text-foreground">
       {field.label}
       {field.required && <span className="text-destructive ml-0.5">*</span>}

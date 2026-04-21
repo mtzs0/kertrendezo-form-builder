@@ -10,7 +10,8 @@ export type FieldType =
   | "select"
   | "phone"
   | "date"
-  | "image";
+  | "image"
+  | "label";
 
 export type NotePosition = "above" | "below" | "side";
 
@@ -62,6 +63,8 @@ export interface BaseField {
   condition?: ConditionGroup;
   /** Optional horizontal width as percent of the row. Undefined = 100%. */
   width?: WidthPercent;
+  /** When true, hides the field's label entirely (useful for compact rows). */
+  hideLabel?: boolean;
 }
 
 export interface TextField extends BaseField { type: "text" }
@@ -90,6 +93,12 @@ export interface SliderField extends BaseField {
 export interface PhoneField extends BaseField { type: "phone" }
 export interface DateField extends BaseField { type: "date"; withTime?: boolean }
 export interface ImageField extends BaseField { type: "image"; multiple?: boolean }
+/**
+ * Display-only "Cím" element. Renders the field's label as a heading and
+ * collects no value. Useful for grouping a row of compact unlabeled fields
+ * under a single shared title.
+ */
+export interface LabelField extends BaseField { type: "label" }
 
 /** Where the option's text label is rendered relative to its image. */
 export type OptionLabelPosition = "above" | "below";
@@ -123,7 +132,8 @@ export type FormField =
   | PhoneField
   | DateField
   | ImageField
-  | OptionField;
+  | OptionField
+  | LabelField;
 
 export interface FormGroup {
   id: string;

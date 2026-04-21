@@ -381,6 +381,9 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       if ("width" in patch) {
         fp.width = patch.width ?? null;
       }
+      if ("hideLabel" in patch) {
+        fp.hideLabel = !!(patch as { hideLabel?: boolean }).hideLabel;
+      }
       // Slider-only attributes
       if ("step" in patch) fp.sliderStep = (patch as { step?: number | null }).step ?? null;
       if ("min" in patch) fp.sliderMin = (patch as { min?: number | null }).min ?? null;

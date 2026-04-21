@@ -26,6 +26,7 @@ type FieldExtraCols = {
   option_label_position?: OptionLabelPosition | null;
   field_image_position?: FieldImagePosition | null;
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
+  hide_label?: boolean | null;
 };
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
 type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
@@ -153,6 +154,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
     groupId: f.group_id ?? undefined,
     subGroupId: f.sub_group_id ?? undefined,
     width: asWidth(f.width_percent),
+    hideLabel: !!(f as FieldRow & { hide_label?: boolean }).hide_label,
   };
 
   switch (f.type) {
@@ -166,6 +168,8 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "date", withTime: f.with_time };
     case "image":
       return { ...base, type: "image", multiple: f.multiple_images };
+    case "label":
+      return { ...base, type: "label" };
     case "slider": {
       const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
       // Backwards-compat: legacy rows store a plain number[]; new rows may store
@@ -348,6 +352,7 @@ export interface FieldPatch {
   placeholderImageUrl?: string | null;
   placeholderNoteValue?: string | null;
   placeholderNotePosition?: NotePosition | null;
+  hideLabel?: boolean;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
@@ -378,6 +383,7 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
   if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
+  if (patch.hideLabel !== undefined) u.hide_label = patch.hideLabel;
   if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
     // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
     if (patch.sliderCustomStops === null) {
