@@ -139,7 +139,10 @@ export type FormField =
   | DateField
   | ImageField
   | OptionField
-  | LabelField;
+  | LabelField
+  | PostCodeField
+  | CityField
+  | StreetField;
 
 export interface FormGroup {
   id: string;
