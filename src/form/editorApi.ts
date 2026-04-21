@@ -405,11 +405,11 @@ export async function updateField(id: string, patch: FieldPatch) {
         const finalStops = stops === undefined ? curStops : stops;
         const finalSpacing = spacing === undefined ? curSpacing : spacing ?? undefined;
         u.slider_custom_stops = finalStops.length
-          ? ({ stops: finalStops, spacing: finalSpacing ?? "equal" } as unknown as Database["public"]["Tables"]["form_fields"]["Update"]["slider_custom_stops"])
+          ? { stops: finalStops, spacing: finalSpacing ?? "equal" }
           : null;
       } else {
         u.slider_custom_stops = stops.length
-          ? ({ stops, spacing: spacing ?? "equal" } as unknown as Database["public"]["Tables"]["form_fields"]["Update"]["slider_custom_stops"])
+          ? { stops, spacing: spacing ?? "equal" }
           : null;
       }
     }
