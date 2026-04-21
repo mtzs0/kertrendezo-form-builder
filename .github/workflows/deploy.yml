@@ -25,7 +25,7 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
 
       # Build with the GitHub Pages subpath as the Vite base so asset URLs
       # resolve when served from https://<user>.github.io/<repo>/
