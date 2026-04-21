@@ -45,6 +45,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   phone: "Telefonszám",
   date: "Dátum",
   image: "Kép feltöltés",
+  label: "Cím",
 };
 
 const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
