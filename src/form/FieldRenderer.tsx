@@ -99,70 +99,143 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
           .sort((a, b) => a - b);
         // End-of-range values; last one renders with "+".
         const selectable = [...middle, field.max];
-        const snap = (n: number) =>
-          selectable.reduce(
-            (best, s) => (Math.abs(s - n) < Math.abs(best - n) ? s : best),
-            selectable[0]
-          );
-
-        const current = (value as number) ?? selectable[0];
-        const selectedIdx = Math.max(0, selectable.indexOf(snap(current)));
-        const isLast = selectedIdx === selectable.length - 1;
-        const rangeStart = selectedIdx === 0 ? field.min : selectable[selectedIdx - 1];
-        const rangeEnd = selectable[selectedIdx];
+        const spacing = field.customStopsSpacing ?? "equal";
         const fmt = (n: number, last: boolean) =>
           `${n}${last ? "+" : ""}${field.unit ? " " + field.unit : ""}`;
 
-        // Tick percentages for each visible inner stop.
-        const span = field.max - field.min || 1;
-        const ticks = middle.map((n) => ((n - field.min) / span) * 100);
+        // Stored value: the chosen end-of-range number, or undefined when untouched.
+        const stored = value as number | undefined;
+        const hasSelection = typeof stored === "number";
+        const selectedIdx = hasSelection
+          ? Math.max(0, selectable.findIndex((s) => s === stored))
+          : -1;
+        const isLast = hasSelection && selectedIdx === selectable.length - 1;
+        const rangeStart =
+          !hasSelection ? field.min : selectedIdx === 0 ? field.min : selectable[selectedIdx - 1];
+        const rangeEnd = hasSelection ? selectable[selectedIdx] : field.min;
 
-        control = (
-          <div className="space-y-3 pt-1">
-            <div className="relative">
-              <Slider
-                id={field.id}
-                min={field.min}
-                max={field.max}
-                step={1}
-                value={[current]}
-                onValueChange={(v) => onChange(field.id, v[0])}
-                onValueCommit={(v) => onChange(field.id, snap(v[0]))}
-              />
-              {/* Tick marks at each manually defined stop */}
-              <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
-                {ticks.map((pct, i) => (
+        if (spacing === "proportional") {
+          // Proportional mode: knob moves smoothly across the numeric range,
+          // snaps to nearest stop on release. Untouched → knob at field.min.
+          const snap = (n: number) =>
+            selectable.reduce(
+              (best, s) => (Math.abs(s - n) < Math.abs(best - n) ? s : best),
+              selectable[0]
+            );
+          const knob = hasSelection ? stored! : field.min;
+          const span = field.max - field.min || 1;
+          const ticks = middle.map((n) => ((n - field.min) / span) * 100);
+
+          control = (
+            <div className="space-y-3 pt-1">
+              <div className="relative">
+                <Slider
+                  id={field.id}
+                  min={field.min}
+                  max={field.max}
+                  step={1}
+                  value={[knob]}
+                  onValueChange={(v) => onChange(field.id, v[0])}
+                  onValueCommit={(v) => onChange(field.id, snap(v[0]))}
+                />
+                <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
+                  {ticks.map((pct, i) => (
+                    <span
+                      key={i}
+                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
+                      style={{ left: `${pct}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="relative h-4 text-[10px] text-muted-foreground">
+                <span className="absolute left-0">
+                  {field.min}{field.unit ? ` ${field.unit}` : ""}
+                </span>
+                {middle.map((n, i) => (
                   <span
                     key={i}
-                    className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
-                    style={{ left: `${pct}%` }}
-                  />
+                    className="absolute -translate-x-1/2"
+                    style={{ left: `${ticks[i]}%` }}
+                  >
+                    {n}
+                  </span>
                 ))}
+                <span className="absolute right-0">{fmt(field.max, true)}</span>
+              </div>
+              <div className="text-xs text-center text-foreground font-medium">
+                {!hasSelection
+                  ? <span className="text-muted-foreground">Húzd a csúszkát a választáshoz</span>
+                  : isLast
+                    ? fmt(rangeEnd, true)
+                    : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
               </div>
             </div>
-            <div className="relative h-4 text-[10px] text-muted-foreground">
-              <span className="absolute left-0">
-                {field.min}{field.unit ? ` ${field.unit}` : ""}
-              </span>
-              {middle.map((n, i) => (
-                <span
-                  key={i}
-                  className="absolute -translate-x-1/2"
-                  style={{ left: `${ticks[i]}%` }}
-                >
-                  {n}
+          );
+        } else {
+          // Equal-spacing mode (default): use index-based slider where
+          // index 0 = "no selection yet" (knob at far left), 1..N = each stop.
+          // This ensures untouched required sliders read as empty.
+          const total = selectable.length; // max index = total
+          const knobIdx = hasSelection ? selectedIdx + 1 : 0;
+          // Tick percentages: each stop sits at i/total of the track (i = 1..total).
+          const ticks = selectable.map((_, i) => ((i + 1) / total) * 100);
+
+          control = (
+            <div className="space-y-3 pt-1">
+              <div className="relative">
+                <Slider
+                  id={field.id}
+                  min={0}
+                  max={total}
+                  step={1}
+                  value={[knobIdx]}
+                  onValueChange={(v) => {
+                    const i = v[0];
+                    if (i === 0) onChange(field.id, undefined);
+                    else onChange(field.id, selectable[i - 1]);
+                  }}
+                />
+                <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
+                  {ticks.map((pct, i) => (
+                    <span
+                      key={i}
+                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
+                      style={{ left: `${pct}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="relative h-4 text-[10px] text-muted-foreground">
+                <span className="absolute left-0">
+                  {field.min}{field.unit ? ` ${field.unit}` : ""}
                 </span>
-              ))}
-              <span className="absolute right-0">{fmt(field.max, true)}</span>
+                {selectable.map((n, i) => {
+                  const last = i === selectable.length - 1;
+                  // Skip the very last label here — we render max+ as the right edge.
+                  if (last) return null;
+                  return (
+                    <span
+                      key={i}
+                      className="absolute -translate-x-1/2"
+                      style={{ left: `${ticks[i]}%` }}
+                    >
+                      {n}
+                    </span>
+                  );
+                })}
+                <span className="absolute right-0">{fmt(field.max, true)}</span>
+              </div>
+              <div className="text-xs text-center text-foreground font-medium">
+                {!hasSelection
+                  ? <span className="text-muted-foreground">Húzd a csúszkát a választáshoz</span>
+                  : isLast
+                    ? fmt(rangeEnd, true)
+                    : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+              </div>
             </div>
-            <div className="text-xs text-center text-foreground font-medium">
-              {isLast
-                ? fmt(rangeEnd, true)
-                : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
-            </div>
-          </div>
-        );
-      } else {
+          );
+        }
         const current = (value as number) ?? field.min;
         control = (
           <div className="space-y-3 pt-1">
