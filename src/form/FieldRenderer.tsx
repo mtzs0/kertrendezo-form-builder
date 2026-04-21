@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -7,6 +8,71 @@ import { Calendar as CalendarIcon, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormField, FormValues, NotePosition, OptionField } from "@/form/types";
 import { OptionFieldRenderer } from "./OptionFieldRenderer";
+
+/**
+ * Validate an email address. Checks:
+ *  - exactly one "@"
+ *  - no spaces or invalid characters
+ *  - local part is non-empty
+ *  - domain has a dot and a TLD of 2+ letters (e.g. .com, .hu, .co.uk)
+ */
+function validateEmail(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  if (/\s/.test(v)) return "Az e-mail nem tartalmazhat szóközt.";
+  const atCount = (v.match(/@/g) ?? []).length;
+  if (atCount === 0) return "Hiányzik a „@\" karakter.";
+  if (atCount > 1) return "Csak egy „@\" karakter lehet.";
+  // Standard-ish RFC-lite check + TLD must be alphabetic, length >= 2.
+  const re = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
+  if (!re.test(v)) {
+    if (!/\.[A-Za-z]{2,}$/.test(v)) {
+      return "Érvényes domain végződés szükséges (pl. .hu, .com).";
+    }
+    return "Érvénytelen e-mail cím formátum.";
+  }
+  return null;
+}
+
+function EmailInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  required,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  const [touched, setTouched] = useState(false);
+  const error = touched
+    ? required && !value.trim()
+      ? "Kötelező mező."
+      : validateEmail(value)
+    : null;
+  return (
+    <div className="space-y-1">
+      <Input
+        id={id}
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        placeholder={placeholder ?? "pelda@domain.hu"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => setTouched(true)}
+        aria-invalid={!!error}
+        className={cn(error && "border-destructive focus-visible:ring-destructive")}
+      />
+      {error && (
+        <p className="text-xs text-destructive leading-tight">{error}</p>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   field: FormField;
