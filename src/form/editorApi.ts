@@ -378,7 +378,42 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
   if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
-  if (patch.sliderCustomStops !== undefined) u.slider_custom_stops = patch.sliderCustomStops;
+  if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
+    // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
+    if (patch.sliderCustomStops === null) {
+      u.slider_custom_stops = null;
+    } else {
+      // Need both pieces — fetch existing if only one provided.
+      const stops = patch.sliderCustomStops;
+      const spacing = patch.sliderCustomStopsSpacing;
+      // Read current row to merge missing piece, but only when one of them is undefined.
+      if (stops === undefined || spacing === undefined) {
+        const { data: cur } = await supabase
+          .from("form_fields")
+          .select("slider_custom_stops")
+          .eq("id", id)
+          .maybeSingle();
+        const raw = cur?.slider_custom_stops as unknown;
+        let curStops: number[] = [];
+        let curSpacing: "equal" | "proportional" | undefined;
+        if (Array.isArray(raw)) curStops = (raw as unknown[]).map(Number).filter(Number.isFinite);
+        else if (raw && typeof raw === "object") {
+          const o = raw as { stops?: unknown; spacing?: unknown };
+          if (Array.isArray(o.stops)) curStops = (o.stops as unknown[]).map(Number).filter(Number.isFinite);
+          if (o.spacing === "equal" || o.spacing === "proportional") curSpacing = o.spacing;
+        }
+        const finalStops = stops === undefined ? curStops : stops;
+        const finalSpacing = spacing === undefined ? curSpacing : spacing ?? undefined;
+        u.slider_custom_stops = finalStops.length
+          ? ({ stops: finalStops, spacing: finalSpacing ?? "equal" } as unknown as Database["public"]["Tables"]["form_fields"]["Update"]["slider_custom_stops"])
+          : null;
+      } else {
+        u.slider_custom_stops = stops.length
+          ? ({ stops, spacing: spacing ?? "equal" } as unknown as Database["public"]["Tables"]["form_fields"]["Update"]["slider_custom_stops"])
+          : null;
+      }
+    }
+  }
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];
