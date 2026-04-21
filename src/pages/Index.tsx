@@ -18,7 +18,7 @@ import { EditorView } from "@/form/EditorView";
  * What the user sees when they land on `/`.
  * Flip this back to "form" to make the public end-user form the default again.
  */
-const DEFAULT_VIEW: "editor" | "form" = "editor";
+const DEFAULT_VIEW: "editor" | "form" = "form";
 
 const Index = () => {
   const isMobile = useIsMobile();
