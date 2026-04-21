@@ -23,7 +23,7 @@ const DEFAULT_VIEW: "editor" | "form" = "form";
 const Index = () => {
   const isMobile = useIsMobile();
   const [confirmEditor, setConfirmEditor] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(DEFAULT_VIEW === "editor");
+  const [editorOpen, setEditorOpen] = useState<boolean>(DEFAULT_VIEW === "editor");
   const { schema, title, description, formId, loading } = usePublishedForm("default");
 
   useDoubleHotkey(() => {
