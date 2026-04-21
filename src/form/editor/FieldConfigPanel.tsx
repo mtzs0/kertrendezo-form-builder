@@ -46,6 +46,9 @@ const TYPE_LABELS: Record<FieldType, string> = {
   date: "Dátum",
   image: "Kép feltöltés",
   label: "Cím",
+  post_code: "Irányítószám",
+  city: "Város",
+  street: "Utca, házszám",
 };
 
 const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
