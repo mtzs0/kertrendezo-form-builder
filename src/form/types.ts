@@ -179,6 +179,7 @@ export type FieldValue =
   | string[]
   | Date
   | File[]
+  | Array<{ name: string; url: string }>
   | undefined;
 
 export type FormValues = Record<string, FieldValue>;

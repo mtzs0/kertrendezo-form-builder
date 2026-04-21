@@ -1,13 +1,108 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, Upload } from "lucide-react";
+import { Calendar as CalendarIcon, Loader2, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FormField, FormValues, NotePosition, OptionField } from "@/form/types";
+import type { FormField, FormValues, ImageField, NotePosition, OptionField } from "@/form/types";
 import { OptionFieldRenderer } from "./OptionFieldRenderer";
+import { uploadOptionImage } from "@/form/editorApi";
+import { toast } from "sonner";
+
+/**
+ * End-user image upload control. Uploads files to the public
+ * `form-option-images` bucket and stores `{name, url}` entries as the value.
+ */
+type UploadedImage = { name: string; url: string };
+
+function ImageFieldControl({
+  field,
+  value,
+  onChange,
+}: {
+  field: ImageField;
+  value: UploadedImage[] | File[] | undefined;
+  onChange: (v: UploadedImage[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const items = (value as UploadedImage[] | undefined) ?? [];
+  const multiple = !!field.multiple;
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setBusy(true);
+    try {
+      const uploaded: UploadedImage[] = [];
+      for (const f of Array.from(files)) {
+        const url = await uploadOptionImage(f, { fieldId: field.id, key: "submission" });
+        uploaded.push({ name: f.name, url });
+      }
+      onChange(multiple ? [...items, ...uploaded] : uploaded.slice(0, 1));
+    } catch (e) {
+      console.error(e);
+      toast.error("Kép feltöltése sikertelen.");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const removeAt = (idx: number) => {
+    const next = items.slice();
+    next.splice(idx, 1);
+    onChange(next);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full justify-start"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+      >
+        {busy ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Upload className="h-4 w-4 mr-2" />
+        )}
+        {field.placeholder ?? (multiple ? "Képek feltöltése" : "Kép feltöltése")}
+      </Button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple={multiple}
+        className="hidden"
+        onChange={(e) => handleFiles(e.target.files)}
+      />
+      {items.length > 0 && (
+        <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {items.map((it, i) => (
+            <li
+              key={`${it.url}-${i}`}
+              className="relative group aspect-square rounded-md overflow-hidden border border-border bg-secondary/40"
+            >
+              <img src={it.url} alt={it.name} className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeAt(i)}
+                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-background/80 hover:bg-background text-foreground flex items-center justify-center shadow-sm"
+                aria-label="Eltávolítás"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /**
  * Validate an email address. Checks:
@@ -393,10 +488,11 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
       break;
     case "image":
       control = (
-        <Button type="button" variant="outline" className="w-full justify-start">
-          <Upload className="h-4 w-4 mr-2" />
-          {field.placeholder ?? "Kép feltöltése"}
-        </Button>
+        <ImageFieldControl
+          field={field}
+          value={value as File[] | undefined}
+          onChange={(files) => onChange(field.id, files)}
+        />
       );
       break;
   }
