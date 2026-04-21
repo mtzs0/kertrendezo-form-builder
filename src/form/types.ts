@@ -10,7 +10,8 @@ export type FieldType =
   | "select"
   | "phone"
   | "date"
-  | "image";
+  | "image"
+  | "label";
 
 export type NotePosition = "above" | "below" | "side";
 
