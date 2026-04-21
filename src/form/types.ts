@@ -11,7 +11,10 @@ export type FieldType =
   | "phone"
   | "date"
   | "image"
-  | "label";
+  | "label"
+  | "post_code"
+  | "city"
+  | "street";
 
 export type NotePosition = "above" | "below" | "side";
 
