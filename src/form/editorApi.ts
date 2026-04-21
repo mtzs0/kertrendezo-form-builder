@@ -153,6 +153,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
     groupId: f.group_id ?? undefined,
     subGroupId: f.sub_group_id ?? undefined,
     width: asWidth(f.width_percent),
+    hideLabel: !!(f as FieldRow & { hide_label?: boolean }).hide_label,
   };
 
   switch (f.type) {
@@ -166,6 +167,8 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "date", withTime: f.with_time };
     case "image":
       return { ...base, type: "image", multiple: f.multiple_images };
+    case "label":
+      return { ...base, type: "label" };
     case "slider": {
       const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
       // Backwards-compat: legacy rows store a plain number[]; new rows may store
