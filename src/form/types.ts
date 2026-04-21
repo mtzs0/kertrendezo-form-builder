@@ -132,7 +132,8 @@ export type FormField =
   | PhoneField
   | DateField
   | ImageField
-  | OptionField;
+  | OptionField
+  | LabelField;
 
 export interface FormGroup {
   id: string;
