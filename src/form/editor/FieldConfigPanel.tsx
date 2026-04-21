@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -276,8 +277,146 @@ interface SliderConfigProps {
 }
 
 function SliderConfig({ field, onChange }: SliderConfigProps) {
-  const customEnabled = !!(field.customStops && field.customStops.length > 0);
-  const stopsText = (field.customStops ?? []).join("\n");
+  // Local toggle so the panel stays open even when the user hasn't entered any
+  // valid stops yet (otherwise an empty customStops array would flip it back off).
+  const hasStops = !!(field.customStops && field.customStops.length > 0);
+  const [customEnabled, setCustomEnabled] = useState<boolean>(hasStops);
+  // Local text buffer so the user can freely type "1," or partial values.
+  const [stopsText, setStopsText] = useState<string>((field.customStops ?? []).join("\n"));
+  const lastFieldId = useRef<string>(field.id);
+
+  // Resync when switching to a different field.
+  useEffect(() => {
+    if (lastFieldId.current !== field.id) {
+      lastFieldId.current = field.id;
+      setCustomEnabled(!!(field.customStops && field.customStops.length > 0));
+      setStopsText((field.customStops ?? []).join("\n"));
+    }
+  }, [field.id, field.customStops]);
+
+  const parseAndCommit = (text: string) => {
+    const stops = text
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n));
+    const uniq = Array.from(new Set(stops))
+      .filter((n) => n > field.min && n < field.max)
+      .sort((a, b) => a - b);
+    onChange({ customStops: uniq } as Partial<SliderField>);
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <Label className="text-sm font-medium">Csúszka beállítások</Label>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_min" className="text-xs text-muted-foreground">
+            Minimum
+          </Label>
+          <Input
+            id="cfg_slider_min"
+            type="number"
+            value={field.min ?? 0}
+            onChange={(e) => onChange({ min: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_max" className="text-xs text-muted-foreground">
+            Maximum
+          </Label>
+          <Input
+            id="cfg_slider_max"
+            type="number"
+            value={field.max ?? 100}
+            onChange={(e) => onChange({ max: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_step" className="text-xs text-muted-foreground">
+            Lépések
+          </Label>
+          <Input
+            id="cfg_slider_step"
+            type="number"
+            min={0}
+            value={field.step ?? ""}
+            placeholder="pl. 10"
+            disabled={customEnabled}
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ step: v === "" ? undefined : Number(v) });
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_slider_unit" className="text-xs text-muted-foreground">
+            Mértékegység
+          </Label>
+          <Input
+            id="cfg_slider_unit"
+            value={field.unit ?? ""}
+            placeholder="pl. m²"
+            onChange={(e) => onChange({ unit: e.target.value || undefined })}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border p-3 space-y-2">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label className="cursor-pointer">Egyedi lépcsők</Label>
+            <p className="text-xs text-muted-foreground">
+              Csak az itt megadott értékek között lehet választani. Az utolsó tartomány „+" jellel jelenik meg.
+            </p>
+          </div>
+          <Switch
+            checked={customEnabled}
+            onCheckedChange={(v) => {
+              setCustomEnabled(v);
+              if (!v) {
+                // Disabling clears any saved stops.
+                setStopsText("");
+                onChange({ customStops: null } as unknown as Partial<SliderField>);
+              }
+            }}
+          />
+        </div>
+        {customEnabled && (
+          <>
+            <Textarea
+              rows={4}
+              value={stopsText}
+              placeholder={"10\n40\n80"}
+              onChange={(e) => {
+                setStopsText(e.target.value);
+                parseAndCommit(e.target.value);
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Egy érték soronként (vagy vesszővel elválasztva). Csak a min ({field.min}) és max ({field.max}) közötti értékek érvényesek.
+              {field.customStops && field.customStops.length > 0 && (
+                <>
+                  {" "}Tartományok:{" "}
+                  {[field.min, ...field.customStops, field.max]
+                    .map((n, i, arr) => (i < arr.length - 1 ? `${n}–${arr[i + 1]}` : null))
+                    .filter(Boolean)
+                    .join(", ")}
+                  , {field.max}+
+                </>
+              )}
+            </p>
+          </>
+        )}
+      </div>
+
+      <p className="text-[11px] text-muted-foreground">
+        Pl. min=10, max=100, lépések=10 → csak 10, 20, …, 100 választható.
+      </p>
+    </div>
+  );
+}
 
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
