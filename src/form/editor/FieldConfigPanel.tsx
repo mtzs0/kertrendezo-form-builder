@@ -404,6 +404,23 @@ function SliderConfig({ field, onChange }: SliderConfigProps) {
                 parseAndCommit(e.target.value);
               }}
             />
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Lépcsők elhelyezése a csúszkán</Label>
+              <Select
+                value={field.customStopsSpacing ?? "equal"}
+                onValueChange={(v) =>
+                  onChange({ customStopsSpacing: v as "equal" | "proportional" })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equal">Egyenlő távolságra</SelectItem>
+                  <SelectItem value="proportional">Arányosan (érték szerint)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <p className="text-[11px] text-muted-foreground">
               Egy érték soronként (vagy vesszővel elválasztva). Csak a min ({field.min}) és max ({field.max}) közötti értékek érvényesek.
               {field.customStops && field.customStops.length > 0 && (
