@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -276,8 +277,35 @@ interface SliderConfigProps {
 }
 
 function SliderConfig({ field, onChange }: SliderConfigProps) {
-  const customEnabled = !!(field.customStops && field.customStops.length > 0);
-  const stopsText = (field.customStops ?? []).join("\n");
+  // Local toggle so the panel stays open even when the user hasn't entered any
+  // valid stops yet (otherwise an empty customStops array would flip it back off).
+  const hasStops = !!(field.customStops && field.customStops.length > 0);
+  const [customEnabled, setCustomEnabled] = useState<boolean>(hasStops);
+  // Local text buffer so the user can freely type "1," or partial values.
+  const [stopsText, setStopsText] = useState<string>((field.customStops ?? []).join("\n"));
+  const lastFieldId = useRef<string>(field.id);
+
+  // Resync when switching to a different field.
+  useEffect(() => {
+    if (lastFieldId.current !== field.id) {
+      lastFieldId.current = field.id;
+      setCustomEnabled(!!(field.customStops && field.customStops.length > 0));
+      setStopsText((field.customStops ?? []).join("\n"));
+    }
+  }, [field.id, field.customStops]);
+
+  const parseAndCommit = (text: string) => {
+    const stops = text
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => Number(s))
+      .filter((n) => Number.isFinite(n));
+    const uniq = Array.from(new Set(stops))
+      .filter((n) => n > field.min && n < field.max)
+      .sort((a, b) => a - b);
+    onChange({ customStops: uniq } as Partial<SliderField>);
+  };
 
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
@@ -345,9 +373,14 @@ function SliderConfig({ field, onChange }: SliderConfigProps) {
           </div>
           <Switch
             checked={customEnabled}
-            onCheckedChange={(v) =>
-              onChange({ customStops: v ? (field.customStops?.length ? field.customStops : []) : null } as Partial<SliderField>)
-            }
+            onCheckedChange={(v) => {
+              setCustomEnabled(v);
+              if (!v) {
+                // Disabling clears any saved stops.
+                setStopsText("");
+                onChange({ customStops: null } as unknown as Partial<SliderField>);
+              }
+            }}
           />
         </div>
         {customEnabled && (
@@ -357,17 +390,8 @@ function SliderConfig({ field, onChange }: SliderConfigProps) {
               value={stopsText}
               placeholder={"10\n40\n80"}
               onChange={(e) => {
-                const stops = e.target.value
-                  .split(/[\n,]+/)
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-                  .map((s) => Number(s))
-                  .filter((n) => Number.isFinite(n));
-                // De-dupe + sort ascending; keep only stops strictly between min and max.
-                const uniq = Array.from(new Set(stops))
-                  .filter((n) => n > field.min && n < field.max)
-                  .sort((a, b) => a - b);
-                onChange({ customStops: uniq } as Partial<SliderField>);
+                setStopsText(e.target.value);
+                parseAndCommit(e.target.value);
               }}
             />
             <p className="text-[11px] text-muted-foreground">
