@@ -168,11 +168,21 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "image", multiple: f.multiple_images };
     case "slider": {
       const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
-      const customStops = Array.isArray(stopsRaw)
-        ? (stopsRaw as unknown[])
-            .map((n) => Number(n))
-            .filter((n) => Number.isFinite(n))
-        : undefined;
+      // Backwards-compat: legacy rows store a plain number[]; new rows may store
+      // { stops: number[], spacing: "equal" | "proportional" }.
+      let customStops: number[] | undefined;
+      let customStopsSpacing: "equal" | "proportional" | undefined;
+      if (Array.isArray(stopsRaw)) {
+        customStops = (stopsRaw as unknown[]).map((n) => Number(n)).filter((n) => Number.isFinite(n));
+      } else if (stopsRaw && typeof stopsRaw === "object") {
+        const obj = stopsRaw as { stops?: unknown; spacing?: unknown };
+        if (Array.isArray(obj.stops)) {
+          customStops = (obj.stops as unknown[]).map((n) => Number(n)).filter((n) => Number.isFinite(n));
+        }
+        if (obj.spacing === "equal" || obj.spacing === "proportional") {
+          customStopsSpacing = obj.spacing;
+        }
+      }
       return {
         ...base,
         type: "slider",
@@ -181,6 +191,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
         step: f.slider_step != null ? Number(f.slider_step) : undefined,
         unit: f.slider_unit ?? undefined,
         customStops: customStops && customStops.length ? customStops : undefined,
+        customStopsSpacing,
       };
     }
     case "radio":
