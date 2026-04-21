@@ -414,6 +414,9 @@ export type Database = {
         | "date"
         | "image"
         | "label"
+        | "post_code"
+        | "city"
+        | "street"
       note_position: "above" | "below" | "side"
     }
     CompositeTypes: {
@@ -553,6 +556,9 @@ export const Constants = {
         "date",
         "image",
         "label",
+        "post_code",
+        "city",
+        "street",
       ],
       note_position: ["above", "below", "side"],
     },
