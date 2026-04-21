@@ -25,7 +25,7 @@ type FieldExtraCols = {
   placeholder_note_position?: NotePosition | null;
   option_label_position?: OptionLabelPosition | null;
   field_image_position?: FieldImagePosition | null;
-  slider_custom_stops?: number[] | null;
+  slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
 };
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
 type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
@@ -168,11 +168,21 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "image", multiple: f.multiple_images };
     case "slider": {
       const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
-      const customStops = Array.isArray(stopsRaw)
-        ? (stopsRaw as unknown[])
-            .map((n) => Number(n))
-            .filter((n) => Number.isFinite(n))
-        : undefined;
+      // Backwards-compat: legacy rows store a plain number[]; new rows may store
+      // { stops: number[], spacing: "equal" | "proportional" }.
+      let customStops: number[] | undefined;
+      let customStopsSpacing: "equal" | "proportional" | undefined;
+      if (Array.isArray(stopsRaw)) {
+        customStops = (stopsRaw as unknown[]).map((n) => Number(n)).filter((n) => Number.isFinite(n));
+      } else if (stopsRaw && typeof stopsRaw === "object") {
+        const obj = stopsRaw as { stops?: unknown; spacing?: unknown };
+        if (Array.isArray(obj.stops)) {
+          customStops = (obj.stops as unknown[]).map((n) => Number(n)).filter((n) => Number.isFinite(n));
+        }
+        if (obj.spacing === "equal" || obj.spacing === "proportional") {
+          customStopsSpacing = obj.spacing;
+        }
+      }
       return {
         ...base,
         type: "slider",
@@ -181,6 +191,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
         step: f.slider_step != null ? Number(f.slider_step) : undefined,
         unit: f.slider_unit ?? undefined,
         customStops: customStops && customStops.length ? customStops : undefined,
+        customStopsSpacing,
       };
     }
     case "radio":
@@ -324,6 +335,8 @@ export interface FieldPatch {
   sliderUnit?: string | null;
   /** Manual stops between min/max. null = clear, undefined = no change. */
   sliderCustomStops?: number[] | null;
+  /** Visual spacing of custom stops. undefined = no change. */
+  sliderCustomStopsSpacing?: "equal" | "proportional" | null;
   withTime?: boolean;
   multipleImages?: boolean;
   useImages?: boolean;
@@ -365,7 +378,42 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
   if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
-  if (patch.sliderCustomStops !== undefined) u.slider_custom_stops = patch.sliderCustomStops;
+  if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
+    // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
+    if (patch.sliderCustomStops === null) {
+      u.slider_custom_stops = null;
+    } else {
+      // Need both pieces — fetch existing if only one provided.
+      const stops = patch.sliderCustomStops;
+      const spacing = patch.sliderCustomStopsSpacing;
+      // Read current row to merge missing piece, but only when one of them is undefined.
+      if (stops === undefined || spacing === undefined) {
+        const { data: cur } = await supabase
+          .from("form_fields")
+          .select("slider_custom_stops")
+          .eq("id", id)
+          .maybeSingle();
+        const raw = cur?.slider_custom_stops as unknown;
+        let curStops: number[] = [];
+        let curSpacing: "equal" | "proportional" | undefined;
+        if (Array.isArray(raw)) curStops = (raw as unknown[]).map(Number).filter(Number.isFinite);
+        else if (raw && typeof raw === "object") {
+          const o = raw as { stops?: unknown; spacing?: unknown };
+          if (Array.isArray(o.stops)) curStops = (o.stops as unknown[]).map(Number).filter(Number.isFinite);
+          if (o.spacing === "equal" || o.spacing === "proportional") curSpacing = o.spacing;
+        }
+        const finalStops = stops === undefined ? curStops : stops;
+        const finalSpacing = spacing === undefined ? curSpacing : spacing ?? undefined;
+        u.slider_custom_stops = finalStops.length
+          ? { stops: finalStops, spacing: finalSpacing ?? "equal" }
+          : null;
+      } else {
+        u.slider_custom_stops = stops.length
+          ? { stops, spacing: spacing ?? "equal" }
+          : null;
+      }
+    }
+  }
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];

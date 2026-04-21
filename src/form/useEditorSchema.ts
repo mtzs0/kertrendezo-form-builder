@@ -390,6 +390,10 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
         const cs = (patch as { customStops?: number[] | null }).customStops;
         fp.sliderCustomStops = cs && cs.length ? cs : null;
       }
+      if ("customStopsSpacing" in patch) {
+        const sp = (patch as { customStopsSpacing?: "equal" | "proportional" | null }).customStopsSpacing;
+        fp.sliderCustomStopsSpacing = sp ?? null;
+      }
       // Date / image extras
       if ("withTime" in patch) fp.withTime = (patch as { withTime?: boolean }).withTime;
       if ("multiple" in patch) fp.multipleImages = (patch as { multiple?: boolean }).multiple;
