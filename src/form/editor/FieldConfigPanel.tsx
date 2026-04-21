@@ -99,7 +99,7 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
           <Input
             id="cfg_internal"
             value={field.internalName}
-            onChange={(e) => onChange({ internalName: e.target.value })}
+            onChange={(e) => onChange({ internalName: slugifyName(e.target.value) })}
             placeholder="pl. nev"
           />
         </div>
@@ -108,7 +108,16 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
           <Input
             id="cfg_label"
             value={field.label}
-            onChange={(e) => onChange({ label: e.target.value })}
+            onChange={(e) => {
+              const label = e.target.value;
+              // Auto-sync internal name when it looks auto-derived from the previous label.
+              const auto =
+                !field.internalName || field.internalName === slugifyName(field.label);
+              onChange({
+                label,
+                ...(auto ? { internalName: slugifyName(label) || field.internalName } : {}),
+              });
+            }}
             placeholder="Pl. Neved"
           />
         </div>
