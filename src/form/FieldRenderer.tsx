@@ -236,6 +236,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
             </div>
           );
         }
+      } else {
         const current = (value as number) ?? field.min;
         control = (
           <div className="space-y-3 pt-1">
