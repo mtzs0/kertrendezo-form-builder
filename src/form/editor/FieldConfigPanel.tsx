@@ -125,9 +125,13 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
             value={field.label}
             onChange={(e) => {
               const label = e.target.value;
-              // Auto-sync internal name when it looks auto-derived from the previous label.
+              // Auto-sync internal name when it's empty, matches the previous
+              // auto-derived value, or is still the default placeholder ("uj_mezo", "uj_mezo1"…).
+              const isDefault = /^uj_mezo\d*$/.test(field.internalName);
               const auto =
-                !field.internalName || field.internalName === slugifyName(field.label);
+                !field.internalName ||
+                field.internalName === slugifyName(field.label) ||
+                isDefault;
               onChange({
                 label,
                 ...(auto ? { internalName: slugifyName(label) || field.internalName } : {}),
