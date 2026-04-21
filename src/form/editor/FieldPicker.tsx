@@ -42,6 +42,7 @@ const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "phone", label: "Telefonszám" },
   { value: "date", label: "Dátum" },
   { value: "image", label: "Kép feltöltés" },
+  { value: "label", label: "Cím" },
 ];
 
 const TYPE_LABEL: Record<FieldType, string> = FIELD_TYPES.reduce(
