@@ -335,6 +335,8 @@ export interface FieldPatch {
   sliderUnit?: string | null;
   /** Manual stops between min/max. null = clear, undefined = no change. */
   sliderCustomStops?: number[] | null;
+  /** Visual spacing of custom stops. undefined = no change. */
+  sliderCustomStopsSpacing?: "equal" | "proportional" | null;
   withTime?: boolean;
   multipleImages?: boolean;
   useImages?: boolean;
