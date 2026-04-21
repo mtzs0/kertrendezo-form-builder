@@ -170,6 +170,12 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
       return { ...base, type: "image", multiple: f.multiple_images };
     case "label":
       return { ...base, type: "label" };
+    case "post_code":
+      return { ...base, type: "post_code" };
+    case "city":
+      return { ...base, type: "city" };
+    case "street":
+      return { ...base, type: "street" };
     case "slider": {
       const stopsRaw = (f as FieldRow & { slider_custom_stops?: unknown }).slider_custom_stops;
       // Backwards-compat: legacy rows store a plain number[]; new rows may store
