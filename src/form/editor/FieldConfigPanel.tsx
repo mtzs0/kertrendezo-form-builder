@@ -152,7 +152,7 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
             placeholder="Pl. Neved"
           />
         </div>
-        {!isOptionType && (
+        {!isOptionType && field.type !== "label" && (
           <div className="space-y-1.5">
             <Label htmlFor="cfg_placeholder">Helykitöltő</Label>
             <Input
