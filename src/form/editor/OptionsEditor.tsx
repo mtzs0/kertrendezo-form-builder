@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, ListPlus, Plus, Trash2, X } from "lucide-react";
 import type { FieldOption, NotePosition, OptionField } from "@/form/types";
 import { ImageUploader } from "./ImageUploader";
 
@@ -37,6 +37,8 @@ function slugify(s: string) {
  */
 export function OptionsEditor({ field, onChange }: Props) {
   const [draft, setDraft] = useState<FieldOption[]>(field.options ?? []);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkText, setBulkText] = useState("");
   const debounce = useRef<number | null>(null);
 
   // When the field id changes (different field selected), resync the draft.
@@ -86,15 +88,85 @@ export function OptionsEditor({ field, onChange }: Props) {
     commit(next, immediate);
   };
 
+  /** Convert pasted lines into options. Replaces existing list. */
+  const confirmBulk = () => {
+    const existing = new Set<string>();
+    const lines = bulkText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    const next: FieldOption[] = lines.map((line) => {
+      let dataName = line.replace(/\s+/g, "_");
+      let unique = dataName;
+      let n = 2;
+      while (existing.has(unique)) unique = `${dataName}_${n++}`;
+      existing.add(unique);
+      return { displayName: line, dataName: unique };
+    });
+    commit([...draft, ...next], true);
+    setBulkText("");
+    setBulkOpen(false);
+  };
+
   return (
     <div className="space-y-3 rounded-lg border border-border p-3">
       <div className="flex items-center justify-between">
         <Label className="text-sm font-medium">Opciók</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addOption}>
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Új opció
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={addOption}>
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Új opció
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setBulkOpen((v) => !v)}
+            aria-label="Több opció beillesztése"
+            title="Több opció beillesztése"
+          >
+            <ListPlus className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
+
+      {bulkOpen && (
+        <div className="space-y-2 rounded-md border border-border bg-secondary/30 p-2">
+          <Label className="text-xs text-muted-foreground">
+            Illeszd be az opciókat — egy sor egy opció
+          </Label>
+          <Textarea
+            rows={5}
+            value={bulkText}
+            onChange={(e) => setBulkText(e.target.value)}
+            placeholder={"Opció 1\nOpció 2\nOpció 3"}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setBulkText("");
+                setBulkOpen(false);
+              }}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Mégse
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={confirmBulk}
+              disabled={!bulkText.trim()}
+            >
+              <Check className="h-3.5 w-3.5 mr-1" />
+              Hozzáadás
+            </Button>
+          </div>
+        </div>
+      )}
 
       {draft.length === 0 && (
         <p className="text-xs text-muted-foreground">
