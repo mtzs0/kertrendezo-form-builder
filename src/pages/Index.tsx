@@ -18,12 +18,12 @@ import { EditorView } from "@/form/EditorView";
  * What the user sees when they land on `/`.
  * Flip this back to "form" to make the public end-user form the default again.
  */
-const DEFAULT_VIEW: "editor" | "form" = "editor";
+const DEFAULT_VIEW = "form" as "editor" | "form";
 
 const Index = () => {
   const isMobile = useIsMobile();
   const [confirmEditor, setConfirmEditor] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(DEFAULT_VIEW === "editor");
+  const [editorOpen, setEditorOpen] = useState<boolean>(DEFAULT_VIEW === "editor");
   const { schema, title, description, formId, loading } = usePublishedForm("default");
 
   useDoubleHotkey(() => {
