@@ -61,6 +61,21 @@ const WIDTH_LABELS: Record<WidthPercent | 100, string> = {
   100: "100% (teljes sor)",
 };
 
+/**
+ * Convert a human label into a safe internal name:
+ * lowercase, accents stripped, spaces → "_", non [a-z0-9_] removed.
+ */
+function slugifyName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_]+/g, "")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60);
+}
+
 export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }: Props) {
   const isOptionType =
     field?.type === "radio" || field?.type === "checkbox" || field?.type === "select";
@@ -99,7 +114,7 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
           <Input
             id="cfg_internal"
             value={field.internalName}
-            onChange={(e) => onChange({ internalName: e.target.value })}
+            onChange={(e) => onChange({ internalName: slugifyName(e.target.value) })}
             placeholder="pl. nev"
           />
         </div>
@@ -108,7 +123,16 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
           <Input
             id="cfg_label"
             value={field.label}
-            onChange={(e) => onChange({ label: e.target.value })}
+            onChange={(e) => {
+              const label = e.target.value;
+              // Auto-sync internal name when it looks auto-derived from the previous label.
+              const auto =
+                !field.internalName || field.internalName === slugifyName(field.label);
+              onChange({
+                label,
+                ...(auto ? { internalName: slugifyName(label) || field.internalName } : {}),
+              });
+            }}
             placeholder="Pl. Neved"
           />
         </div>
