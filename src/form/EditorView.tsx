@@ -202,6 +202,24 @@ export function EditorView({ slug = "default", onExit }: Props) {
             )}
           </TabsContent>
 
+          <TabsContent value="group" className="mt-4">
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <GroupsManager
+                groups={editor.groups}
+                subGroups={editor.subGroups}
+                fields={editor.fields}
+                onAddGroup={editor.addGroup}
+                onAddSubGroup={editor.addSubGroup}
+                onPatchGroup={editor.patchGroup}
+                onPatchSubGroup={editor.patchSubGroup}
+                onRemoveGroup={editor.removeGroup}
+                onRemoveSubGroup={editor.removeSubGroup}
+              />
+            )}
+          </TabsContent>
+
           <TabsContent value="preview" className="mt-4">
             <div className="rounded-2xl bg-card border border-border kr-shadow-soft p-5 md:p-8">
               {editor.loading ? (
