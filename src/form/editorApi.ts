@@ -25,7 +25,7 @@ type FieldExtraCols = {
   placeholder_note_position?: NotePosition | null;
   option_label_position?: OptionLabelPosition | null;
   field_image_position?: FieldImagePosition | null;
-  slider_custom_stops?: number[] | null;
+  slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
 };
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
 type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
