@@ -68,12 +68,6 @@ const Index = () => {
             )}
           </div>
 
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            Tipp: nyomd meg kétszer a{" "}
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[11px]">Ctrl</kbd>+
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[11px]">K</kbd>{" "}
-            billentyűkombinációt a szerkesztő nézet megnyitásához.
-          </p>
         </div>
       </section>
 
