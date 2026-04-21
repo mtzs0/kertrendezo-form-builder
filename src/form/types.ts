@@ -14,7 +14,8 @@ export type FieldType =
   | "label"
   | "post_code"
   | "city"
-  | "street";
+  | "street"
+  | "email";
 
 export type NotePosition = "above" | "below" | "side";
 
