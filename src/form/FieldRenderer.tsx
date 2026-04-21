@@ -93,6 +93,33 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
         />
       );
       break;
+    case "post_code":
+      control = (
+        <Input
+          id={field.id}
+          type="text"
+          inputMode="numeric"
+          pattern="\d{4}"
+          maxLength={4}
+          placeholder={field.placeholder}
+          value={(value as string) ?? ""}
+          onChange={(e) =>
+            onChange(field.id, e.target.value.replace(/\D/g, "").slice(0, 4))
+          }
+        />
+      );
+      break;
+    case "city":
+    case "street":
+      control = (
+        <Input
+          id={field.id}
+          placeholder={field.placeholder}
+          value={(value as string) ?? ""}
+          onChange={(e) => onChange(field.id, e.target.value)}
+        />
+      );
+      break;
     case "date":
       control = (
         <div className="relative">
