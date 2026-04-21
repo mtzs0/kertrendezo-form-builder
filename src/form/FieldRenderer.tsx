@@ -120,6 +120,17 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
         />
       );
       break;
+    case "email":
+      control = (
+        <EmailInput
+          id={field.id}
+          placeholder={field.placeholder}
+          required={field.required}
+          value={(value as string) ?? ""}
+          onChange={(v) => onChange(field.id, v)}
+        />
+      );
+      break;
     case "date":
       control = (
         <div className="relative">
