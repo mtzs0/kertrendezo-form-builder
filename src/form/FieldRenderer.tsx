@@ -93,39 +93,72 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
     case "slider": {
       const hasCustom = !!(field.customStops && field.customStops.length > 0);
       if (hasCustom) {
-        // Build the stop list: [min, ...sorted unique customStops in (min,max), max].
+        // Sorted unique stops strictly between min and max.
         const middle = Array.from(new Set(field.customStops!))
           .filter((n) => n > field.min && n < field.max)
           .sort((a, b) => a - b);
-        // Selectable values are the inner stops + max (each represents the END of a range).
-        // The last one is rendered with a "+" suffix.
+        // End-of-range values; last one renders with "+".
         const selectable = [...middle, field.max];
+        const snap = (n: number) =>
+          selectable.reduce(
+            (best, s) => (Math.abs(s - n) < Math.abs(best - n) ? s : best),
+            selectable[0]
+          );
+
         const current = (value as number) ?? selectable[0];
-        const idx = Math.max(0, selectable.indexOf(current));
-        const selectedIdx = idx === -1 ? 0 : idx;
-        const fmt = (n: number, isLast: boolean) =>
-          `${n}${isLast ? "+" : ""}${field.unit ? " " + field.unit : ""}`;
+        const selectedIdx = Math.max(0, selectable.indexOf(snap(current)));
+        const isLast = selectedIdx === selectable.length - 1;
         const rangeStart = selectedIdx === 0 ? field.min : selectable[selectedIdx - 1];
         const rangeEnd = selectable[selectedIdx];
-        const isLast = selectedIdx === selectable.length - 1;
+        const fmt = (n: number, last: boolean) =>
+          `${n}${last ? "+" : ""}${field.unit ? " " + field.unit : ""}`;
+
+        // Tick percentages for each visible inner stop.
+        const span = field.max - field.min || 1;
+        const ticks = middle.map((n) => ((n - field.min) / span) * 100);
+
         control = (
           <div className="space-y-3 pt-1">
-            <Slider
-              id={field.id}
-              min={0}
-              max={selectable.length - 1}
-              step={1}
-              value={[selectedIdx]}
-              onValueChange={(v) => onChange(field.id, selectable[v[0]])}
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{field.min}{field.unit ? ` ${field.unit}` : ""}</span>
-              <span className="text-foreground font-medium">
-                {isLast
-                  ? fmt(rangeEnd, true)
-                  : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+            <div className="relative">
+              <Slider
+                id={field.id}
+                min={field.min}
+                max={field.max}
+                step={1}
+                value={[current]}
+                onValueChange={(v) => onChange(field.id, v[0])}
+                onValueCommit={(v) => onChange(field.id, snap(v[0]))}
+              />
+              {/* Tick marks at each manually defined stop */}
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
+                {ticks.map((pct, i) => (
+                  <span
+                    key={i}
+                    className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
+                    style={{ left: `${pct}%` }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="relative h-4 text-[10px] text-muted-foreground">
+              <span className="absolute left-0">
+                {field.min}{field.unit ? ` ${field.unit}` : ""}
               </span>
-              <span>{fmt(field.max, true)}</span>
+              {middle.map((n, i) => (
+                <span
+                  key={i}
+                  className="absolute -translate-x-1/2"
+                  style={{ left: `${ticks[i]}%` }}
+                >
+                  {n}
+                </span>
+              ))}
+              <span className="absolute right-0">{fmt(field.max, true)}</span>
+            </div>
+            <div className="text-xs text-center text-foreground font-medium">
+              {isLast
+                ? fmt(rangeEnd, true)
+                : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
             </div>
           </div>
         );
