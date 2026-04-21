@@ -12,6 +12,7 @@ import { StructureEditor } from "./editor/StructureEditor";
 import { FieldConfigPanel } from "./editor/FieldConfigPanel";
 import { FieldPicker } from "./editor/FieldPicker";
 import { ConditionEditor } from "./editor/ConditionEditor";
+import { GroupsManager } from "./editor/GroupsManager";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
@@ -87,6 +88,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
           <TabsList>
             <TabsTrigger value="form">Űrlap</TabsTrigger>
             <TabsTrigger value="field">Mező</TabsTrigger>
+            <TabsTrigger value="group">Csoport</TabsTrigger>
             <TabsTrigger value="preview">Előnézet</TabsTrigger>
             <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
@@ -197,6 +199,24 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   />
                 </div>
               </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="group" className="mt-4">
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <GroupsManager
+                groups={editor.groups}
+                subGroups={editor.subGroups}
+                fields={editor.fields}
+                onAddGroup={editor.addGroup}
+                onAddSubGroup={editor.addSubGroup}
+                onPatchGroup={editor.patchGroup}
+                onPatchSubGroup={editor.patchSubGroup}
+                onRemoveGroup={editor.removeGroup}
+                onRemoveSubGroup={editor.removeSubGroup}
+              />
             )}
           </TabsContent>
 
