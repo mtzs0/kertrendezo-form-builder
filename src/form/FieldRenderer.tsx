@@ -393,10 +393,11 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
       break;
     case "image":
       control = (
-        <Button type="button" variant="outline" className="w-full justify-start">
-          <Upload className="h-4 w-4 mr-2" />
-          {field.placeholder ?? "Kép feltöltése"}
-        </Button>
+        <ImageFieldControl
+          field={field}
+          value={value as File[] | undefined}
+          onChange={(files) => onChange(field.id, files)}
+        />
       );
       break;
   }
