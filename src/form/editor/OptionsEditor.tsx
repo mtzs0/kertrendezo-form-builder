@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Check, ListPlus, Plus, Trash2, X } from "lucide-react";
 import type { FieldOption, NotePosition, OptionField } from "@/form/types";
 import { ImageUploader } from "./ImageUploader";
 
