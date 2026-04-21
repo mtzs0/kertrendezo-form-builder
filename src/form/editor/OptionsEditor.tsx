@@ -96,7 +96,14 @@ export function OptionsEditor({ field, onChange }: Props) {
       .map((l) => l.trim())
       .filter(Boolean);
     const next: FieldOption[] = lines.map((line) => {
-      let dataName = line.replace(/\s+/g, "_");
+      // Normalize: lowercase, remove accents, replace non-alphanumeric with underscore
+      let dataName = line
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 40);
       let unique = dataName;
       let n = 2;
       while (existing.has(unique)) unique = `${dataName}_${n++}`;
