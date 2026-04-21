@@ -352,6 +352,7 @@ export interface FieldPatch {
   placeholderImageUrl?: string | null;
   placeholderNoteValue?: string | null;
   placeholderNotePosition?: NotePosition | null;
+  hideLabel?: boolean;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
