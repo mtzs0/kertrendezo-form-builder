@@ -144,7 +144,8 @@ export type FormField =
   | LabelField
   | PostCodeField
   | CityField
-  | StreetField;
+  | StreetField
+  | EmailField;
 
 export interface FormGroup {
   id: string;
