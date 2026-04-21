@@ -96,6 +96,9 @@ export interface SliderField extends BaseField {
 export interface PhoneField extends BaseField { type: "phone" }
 export interface DateField extends BaseField { type: "date"; withTime?: boolean }
 export interface ImageField extends BaseField { type: "image"; multiple?: boolean }
+export interface PostCodeField extends BaseField { type: "post_code" }
+export interface CityField extends BaseField { type: "city" }
+export interface StreetField extends BaseField { type: "street" }
 /**
  * Display-only "Cím" element. Renders the field's label as a heading and
  * collects no value. Useful for grouping a row of compact unlabeled fields
