@@ -322,6 +322,8 @@ export interface FieldPatch {
   sliderMax?: number | null;
   sliderStep?: number | null;
   sliderUnit?: string | null;
+  /** Manual stops between min/max. null = clear, undefined = no change. */
+  sliderCustomStops?: number[] | null;
   withTime?: boolean;
   multipleImages?: boolean;
   useImages?: boolean;
@@ -363,6 +365,7 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderImageUrl !== undefined) u.placeholder_image_url = patch.placeholderImageUrl;
   if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
+  if (patch.sliderCustomStops !== undefined) u.slider_custom_stops = patch.sliderCustomStops;
   // Strip undefined keys so we don't blow away unrelated columns.
   Object.keys(u).forEach((k) => {
     if ((u as Record<string, unknown>)[k] === undefined) delete (u as Record<string, unknown>)[k];
