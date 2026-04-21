@@ -115,7 +115,17 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
           <Input
             id="cfg_internal"
             value={field.internalName}
-            onChange={(e) => onChange({ internalName: slugifyName(e.target.value) })}
+            onChange={(e) =>
+              onChange({
+                internalName: e.target.value
+                  .toLowerCase()
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .replace(/\s+/g, "_")
+                  .replace(/[^a-z0-9_]+/g, "")
+                  .slice(0, 60),
+              })
+            }
             placeholder="pl. nev"
           />
         </div>
