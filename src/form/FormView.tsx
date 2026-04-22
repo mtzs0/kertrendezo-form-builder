@@ -21,9 +21,84 @@ interface Props {
   layout: "horizontal" | "vertical";
   /** When provided, submissions are persisted to Supabase under this form id. */
   formId?: string | null;
+  /** When true, shows a "Demo" button that auto-fills all fields with sample data. */
+  showDemoButton?: boolean;
 }
 
-export function FormView({ schema, layout, formId }: Props) {
+function randomString(len = 10) {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function buildDemoValues(schema: FormSchema): FormValues {
+  const values: FormValues = {};
+  for (const field of schema.fields) {
+    switch (field.type) {
+      case "text":
+      case "textarea":
+        values[field.id] = randomString(10);
+        break;
+      case "email":
+        values[field.id] = "test@test.com";
+        break;
+      case "phone":
+        values[field.id] = "06701234567";
+        break;
+      case "post_code":
+        values[field.id] = "1027";
+        break;
+      case "city":
+        values[field.id] = "Budapest";
+        break;
+      case "street":
+        values[field.id] = "Margit krt. 64/b";
+        break;
+      case "date":
+        values[field.id] = new Date();
+        break;
+      case "slider": {
+        const stops = field.customStops && field.customStops.length > 0
+          ? [field.min, ...field.customStops, field.max]
+          : null;
+        if (stops) {
+          values[field.id] = pickRandom(stops);
+        } else {
+          const step = field.step ?? 1;
+          const range = field.max - field.min;
+          const steps = Math.floor(range / step);
+          values[field.id] = field.min + Math.floor(Math.random() * (steps + 1)) * step;
+        }
+        break;
+      }
+      case "radio":
+      case "select": {
+        if (field.options.length > 0) values[field.id] = pickRandom(field.options).dataName;
+        break;
+      }
+      case "checkbox": {
+        if (field.options.length > 0) {
+          const count = 1 + Math.floor(Math.random() * field.options.length);
+          const shuffled = [...field.options].sort(() => Math.random() - 0.5);
+          values[field.id] = shuffled.slice(0, count).map((o) => o.dataName);
+        }
+        break;
+      }
+      case "image":
+      case "label":
+        // Skip: image upload requires real files; label collects no value.
+        break;
+    }
+  }
+  return values;
+}
+
+export function FormView({ schema, layout, formId, showDemoButton }: Props) {
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
