@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
 import type { FormSchema, FormValues } from "./types";
 
 export interface FormRecord {
