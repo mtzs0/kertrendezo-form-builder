@@ -110,8 +110,13 @@ Deno.serve(async (req) => {
 
     let status = "error";
     let responseText = "";
+    // Normalize the URL: prefix https:// if no protocol was provided.
+    let targetUrl = form.webhook_url.trim();
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = `https://${targetUrl}`;
+    }
     try {
-      const resp = await fetch(form.webhook_url, {
+      const resp = await fetch(targetUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -120,6 +125,7 @@ Deno.serve(async (req) => {
       status = `${resp.status}`;
     } catch (e) {
       responseText = e instanceof Error ? e.message : String(e);
+      console.error("Webhook relay failed", { targetUrl, error: responseText });
     }
 
     await admin
