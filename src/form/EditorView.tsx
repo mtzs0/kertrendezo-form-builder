@@ -245,6 +245,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     layout="horizontal"
                     formId={editor.form?.id ?? null}
                     showDemoButton
+                    thankYouText={editor.form?.thank_you_text ?? null}
                   />
                 </div>
               )}
@@ -259,9 +260,11 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 title={editor.form?.title ?? ""}
                 description={editor.form?.description ?? ""}
                 webhookUrl={editor.form?.webhook_url ?? ""}
+                thankYouText={editor.form?.thank_you_text ?? ""}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
+                onChangeThankYouText={(v) => editor.patchForm({ thank_you_text: v.trim() ? v : null })}
               />
             )}
           </TabsContent>
@@ -275,79 +278,124 @@ interface SettingsPanelProps {
   title: string;
   description: string;
   webhookUrl: string;
+  thankYouText: string;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
+  onChangeThankYouText: (value: string) => void;
 }
 
 function SettingsPanel({
   title,
   description,
   webhookUrl,
+  thankYouText,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
+  onChangeThankYouText,
 }: SettingsPanelProps) {
   return (
-    <div className="max-w-2xl space-y-5">
-      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
-        <div>
-          <h3 className="text-lg font-semibold">Általános beállítások</h3>
-          <p className="text-sm text-muted-foreground">
-            Az élő nézet és az előnézet tetején megjelenő szövegek.
-          </p>
-        </div>
+    <Tabs defaultValue="general" className="w-full">
+      <TabsList>
+        <TabsTrigger value="general">Általános</TabsTrigger>
+        <TabsTrigger value="webhook">Webhook</TabsTrigger>
+        <TabsTrigger value="thankyou">Köszönő oldal</TabsTrigger>
+      </TabsList>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="settings_title">Cím</Label>
-          <Input
-            id="settings_title"
-            value={title}
-            onChange={(e) => onChangeTitle(e.target.value)}
-            placeholder="Pl. Kerttervezés foglalás"
-          />
-          <p className="text-xs text-muted-foreground">
-            A űrlap főcíme, ami az oldal tetején nagyban jelenik meg.
-          </p>
-        </div>
+      <TabsContent value="general" className="mt-4">
+        <div className="max-w-2xl">
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Általános beállítások</h3>
+              <p className="text-sm text-muted-foreground">
+                Az élő nézet és az előnézet tetején megjelenő szövegek.
+              </p>
+            </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="settings_subtitle">Alcím</Label>
-          <Textarea
-            id="settings_subtitle"
-            rows={3}
-            value={description}
-            onChange={(e) => onChangeDescription(e.target.value)}
-            placeholder="Pl. Töltsd ki az alábbi űrlapot, és hamarosan visszajelzünk az időpontról."
-          />
-          <p className="text-xs text-muted-foreground">
-            Rövid leírás a cím alatt. Üresen hagyva nem jelenik meg.
-          </p>
-        </div>
-      </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_title">Cím</Label>
+              <Input
+                id="settings_title"
+                value={title}
+                onChange={(e) => onChangeTitle(e.target.value)}
+                placeholder="Pl. Kerttervezés foglalás"
+              />
+              <p className="text-xs text-muted-foreground">
+                A űrlap főcíme, ami az oldal tetején nagyban jelenik meg.
+              </p>
+            </div>
 
-      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
-        <div>
-          <h3 className="text-lg font-semibold">Webhook</h3>
-          <p className="text-sm text-muted-foreground">
-            Ha megadsz egy URL-t, minden beküldött űrlap adata POST kéréssel ide továbbításra kerül (JSON formátumban).
-          </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_subtitle">Alcím</Label>
+              <Textarea
+                id="settings_subtitle"
+                rows={3}
+                value={description}
+                onChange={(e) => onChangeDescription(e.target.value)}
+                placeholder="Pl. Töltsd ki az alábbi űrlapot, és hamarosan visszajelzünk az időpontról."
+              />
+              <p className="text-xs text-muted-foreground">
+                Rövid leírás a cím alatt. Üresen hagyva nem jelenik meg.
+              </p>
+            </div>
+          </div>
         </div>
+      </TabsContent>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="settings_webhook">Webhook URL</Label>
-          <Input
-            id="settings_webhook"
-            type="url"
-            value={webhookUrl}
-            onChange={(e) => onChangeWebhookUrl(e.target.value)}
-            placeholder="https://example.com/webhook"
-          />
-          <p className="text-xs text-muted-foreground">
-            Üresen hagyva nem történik továbbítás. A változás automatikusan mentésre kerül.
-          </p>
+      <TabsContent value="webhook" className="mt-4">
+        <div className="max-w-2xl">
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Webhook</h3>
+              <p className="text-sm text-muted-foreground">
+                Ha megadsz egy URL-t, minden beküldött űrlap adata POST kéréssel ide továbbításra kerül (JSON formátumban).
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_webhook">Webhook URL</Label>
+              <Input
+                id="settings_webhook"
+                type="url"
+                value={webhookUrl}
+                onChange={(e) => onChangeWebhookUrl(e.target.value)}
+                placeholder="https://example.com/webhook"
+              />
+              <p className="text-xs text-muted-foreground">
+                Üresen hagyva nem történik továbbítás. A változás automatikusan mentésre kerül.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </TabsContent>
+
+      <TabsContent value="thankyou" className="mt-4">
+        <div className="max-w-2xl">
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Köszönő oldal</h3>
+              <p className="text-sm text-muted-foreground">
+                Sikeres beküldés után az űrlap helyén megjelenő üzenet.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_thankyou">Köszönő szöveg</Label>
+              <Textarea
+                id="settings_thankyou"
+                rows={4}
+                value={thankYouText}
+                onChange={(e) => onChangeThankYouText(e.target.value)}
+                placeholder="Pl. Köszönjük! Hamarosan jelentkezünk."
+              />
+              <p className="text-xs text-muted-foreground">
+                Üresen hagyva az alapértelmezett „Köszönjük! A foglalást rögzítettük." szöveg jelenik meg.
+              </p>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 }
