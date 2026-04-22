@@ -46,6 +46,7 @@ export interface EditorForm {
   description: string | null;
   published: boolean;
   webhook_url: string | null;
+  thank_you_text: string | null;
 }
 
 export interface EditorBundle {
@@ -62,7 +63,7 @@ export interface EditorBundle {
 export async function ensureForm(slug: string, defaults: { title: string; description?: string }): Promise<EditorForm> {
   const { data: existing, error: selErr } = await supabase
     .from("forms")
-    .select("id, slug, title, description, published, webhook_url")
+    .select("id, slug, title, description, published, webhook_url, thank_you_text")
     .eq("slug", slug)
     .maybeSingle();
   if (selErr) throw selErr;
@@ -77,7 +78,7 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
       schema: { fields: [], groups: [], subGroups: [] },
       published: true,
     })
-    .select("id, slug, title, description, published, webhook_url")
+    .select("id, slug, title, description, published, webhook_url, thank_you_text")
     .single();
   if (insErr) throw insErr;
   return created as EditorForm;
@@ -86,12 +87,13 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
 /** Update form-level metadata (title, description, webhook_url). */
 export async function updateFormMeta(
   id: string,
-  patch: Partial<{ title: string; description: string | null; webhook_url: string | null }>
+  patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null }>
 ) {
-  const u: Database["public"]["Tables"]["forms"]["Update"] = {};
+  const u: Database["public"]["Tables"]["forms"]["Update"] & { thank_you_text?: string | null } = {};
   if (patch.title !== undefined) u.title = patch.title;
   if (patch.description !== undefined) u.description = patch.description;
   if (patch.webhook_url !== undefined) u.webhook_url = patch.webhook_url;
+  if (patch.thank_you_text !== undefined) u.thank_you_text = patch.thank_you_text;
   if (Object.keys(u).length === 0) return;
   const { error } = await supabase.from("forms").update(u).eq("id", id);
   if (error) throw error;

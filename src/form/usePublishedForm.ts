@@ -42,7 +42,7 @@ export function usePublishedForm(slug = "default"): UseFormResult {
       try {
         const { data: row, error: selErr } = await supabase
           .from("forms")
-          .select("id, slug, title, description, published")
+          .select("id, slug, title, description, published, webhook_url, thank_you_text")
           .eq("slug", slug)
           .eq("published", true)
           .maybeSingle();
