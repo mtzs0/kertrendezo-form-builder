@@ -247,7 +247,17 @@ export function FormView({ schema, layout, formId, showDemoButton }: Props) {
         (it) => (it.kind === "field" ? it.field.id : it.id),
       )}
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end pt-2 gap-2">
+        {showDemoButton && (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            onClick={() => setValues(buildDemoValues(schema))}
+          >
+            Demo
+          </Button>
+        )}
         <Button
           type="submit"
           size="lg"
