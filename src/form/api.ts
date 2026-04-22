@@ -46,24 +46,22 @@ export async function submitForm(formId: string, values: FormValues) {
   // Serialize Date / File values into JSON-friendly shapes.
   const serializable = serializeValues(values);
 
-  const { data, error } = await supabase
-    .from("form_submissions")
-    .insert({
-      form_id: formId,
-      values: serializable as Json,
-      user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-    })
-    .select("id")
-    .single();
+  // Route everything through the edge function: it inserts the submission
+  // (using the service role, bypassing RLS read-back limits for anon) and
+  // then relays the payload to the form's webhook URL if configured.
+  const { data, error } = await supabase.functions.invoke("submission-webhook", {
+    body: {
+      formId,
+      values: serializable,
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+    },
+  });
 
   if (error) throw error;
-
-  // Fire-and-forget webhook relay. Do not block UI on it.
-  void supabase.functions
-    .invoke("submission-webhook", { body: { submissionId: data.id } })
-    .catch((e) => console.warn("Webhook relay failed (non-blocking):", e));
-
-  return data.id as string;
+  if (!data?.ok) {
+    throw new Error(data?.error ?? "Submission failed");
+  }
+  return data.submissionId as string;
 }
 
 function serializeValues(values: FormValues): Record<string, unknown> {
