@@ -37,8 +37,19 @@ function pickRandom<T>(arr: T[]): T {
 }
 
 function buildDemoValues(schema: FormSchema): FormValues {
+  // Only fill fields actually placed in the form structure (location > 0)
+  // and whose group/sub-group (if any) is also placed.
+  const placed = filterPlacedSchema(schema);
+  const groupIds = new Set(placed.groups.map((g) => g.id));
+  const subGroupIds = new Set(placed.subGroups.map((s) => s.id));
+  const fields = placed.fields.filter((f) => {
+    if (f.groupId && !groupIds.has(f.groupId)) return false;
+    if (f.subGroupId && !subGroupIds.has(f.subGroupId)) return false;
+    return true;
+  });
+
   const values: FormValues = {};
-  for (const field of schema.fields) {
+  for (const field of fields) {
     switch (field.type) {
       case "text":
       case "textarea":
