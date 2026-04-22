@@ -45,6 +45,7 @@ export interface EditorForm {
   title: string;
   description: string | null;
   published: boolean;
+  webhook_url: string | null;
 }
 
 export interface EditorBundle {
@@ -61,7 +62,7 @@ export interface EditorBundle {
 export async function ensureForm(slug: string, defaults: { title: string; description?: string }): Promise<EditorForm> {
   const { data: existing, error: selErr } = await supabase
     .from("forms")
-    .select("id, slug, title, description, published")
+    .select("id, slug, title, description, published, webhook_url")
     .eq("slug", slug)
     .maybeSingle();
   if (selErr) throw selErr;
@@ -76,20 +77,21 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
       schema: { fields: [], groups: [], subGroups: [] },
       published: true,
     })
-    .select("id, slug, title, description, published")
+    .select("id, slug, title, description, published, webhook_url")
     .single();
   if (insErr) throw insErr;
   return created as EditorForm;
 }
 
-/** Update form-level metadata (title, description). */
+/** Update form-level metadata (title, description, webhook_url). */
 export async function updateFormMeta(
   id: string,
-  patch: Partial<{ title: string; description: string | null }>
+  patch: Partial<{ title: string; description: string | null; webhook_url: string | null }>
 ) {
   const u: Database["public"]["Tables"]["forms"]["Update"] = {};
   if (patch.title !== undefined) u.title = patch.title;
   if (patch.description !== undefined) u.description = patch.description;
+  if (patch.webhook_url !== undefined) u.webhook_url = patch.webhook_url;
   if (Object.keys(u).length === 0) return;
   const { error } = await supabase.from("forms").update(u).eq("id", id);
   if (error) throw error;
