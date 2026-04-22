@@ -23,6 +23,8 @@ interface Props {
   formId?: string | null;
   /** When true, shows a "Demo" button that auto-fills all fields with sample data. */
   showDemoButton?: boolean;
+  /** Optional thank-you message shown after a successful submission. */
+  thankYouText?: string | null;
 }
 
 function randomString(len = 10) {
