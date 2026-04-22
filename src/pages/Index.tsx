@@ -24,7 +24,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const [confirmEditor, setConfirmEditor] = useState(false);
   const [editorOpen, setEditorOpen] = useState<boolean>(DEFAULT_VIEW === "editor");
-  const { schema, title, description, formId, loading } = usePublishedForm("default");
+  const { schema, title, description, formId, form, loading } = usePublishedForm("default");
 
   useDoubleHotkey(() => {
     if (!editorOpen) setConfirmEditor(true);
@@ -64,6 +64,7 @@ const Index = () => {
                 schema={schema}
                 layout={isMobile ? "vertical" : "horizontal"}
                 formId={formId}
+                thankYouText={form?.thank_you_text ?? null}
               />
             )}
           </div>

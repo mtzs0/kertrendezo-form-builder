@@ -23,6 +23,8 @@ interface Props {
   formId?: string | null;
   /** When true, shows a "Demo" button that auto-fills all fields with sample data. */
   showDemoButton?: boolean;
+  /** Optional thank-you message shown after a successful submission. */
+  thankYouText?: string | null;
 }
 
 function randomString(len = 10) {
@@ -109,9 +111,10 @@ function buildDemoValues(schema: FormSchema): FormValues {
   return values;
 }
 
-export function FormView({ schema, layout, formId, showDemoButton }: Props) {
+export function FormView({ schema, layout, formId, showDemoButton, thankYouText }: Props) {
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
   const handleChange = (id: string, v: FormValues[string]) =>
@@ -174,15 +177,16 @@ export function FormView({ schema, layout, formId, showDemoButton }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formId) {
-      toast.success("Köszönjük! (Próba mód – nincs cloud forma kötve.)");
       console.log("Form submitted (local only)", values);
+      setValues({});
+      setSubmitted(true);
       return;
     }
     setSubmitting(true);
     try {
       await submitForm(formId, values);
-      toast.success("Köszönjük! A foglalást rögzítettük.");
       setValues({});
+      setSubmitted(true);
     } catch (err) {
       console.error(err);
       toast.error("Hiba történt a beküldés során. Próbáld újra.");
@@ -190,6 +194,17 @@ export function FormView({ schema, layout, formId, showDemoButton }: Props) {
       setSubmitting(false);
     }
   };
+
+  if (submitted) {
+    const text = thankYouText?.trim() || "Köszönjük! A foglalást rögzítettük.";
+    return (
+      <div className="py-20 md:py-28 text-center">
+        <h2 className="text-2xl md:text-4xl font-semibold text-foreground whitespace-pre-line">
+          {text}
+        </h2>
+      </div>
+    );
+  }
 
   if (tree.length === 0) {
     return (

@@ -1,0 +1,1 @@
+ALTER TABLE public.forms ADD COLUMN thank_you_text text;
