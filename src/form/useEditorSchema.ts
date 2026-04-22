@@ -46,7 +46,7 @@ export interface UseEditorSchemaResult {
   saveStatus: SaveStatus;
 
   // Form meta ops
-  patchForm: (patch: Partial<{ title: string; description: string | null }>) => void;
+  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null }>) => void;
 
   // Group ops
   addGroup: () => Promise<void>;
@@ -90,7 +90,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
   const groupPatchBuf = useRef<Map<string, Partial<FormGroup>>>(new Map());
   const subGroupPatchBuf = useRef<Map<string, Partial<FormSubGroup>>>(new Map());
-  const formPatchBuf = useRef<Partial<{ title: string; description: string | null }>>({});
+  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null }>>({});
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
@@ -189,7 +189,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   // ---------- Mutations ----------
 
   const patchForm = useCallback(
-    (patch: Partial<{ title: string; description: string | null }>) => {
+    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null }>) => {
       setForm((f) =>
         f
           ? {
@@ -197,6 +197,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
               title: patch.title !== undefined ? patch.title : f.title,
               description:
                 patch.description !== undefined ? patch.description : f.description,
+              webhook_url:
+                patch.webhook_url !== undefined ? patch.webhook_url : f.webhook_url,
             }
           : f
       );
