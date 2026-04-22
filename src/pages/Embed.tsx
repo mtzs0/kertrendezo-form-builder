@@ -12,7 +12,7 @@ import { usePublishedForm } from "@/form/usePublishedForm";
  */
 const Embed = () => {
   const isMobile = useIsMobile();
-  const { schema, formId, loading } = usePublishedForm("default");
+  const { schema, formId, form, loading } = usePublishedForm("default");
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   // Make the page background transparent while mounted.
@@ -65,6 +65,7 @@ const Embed = () => {
             schema={schema}
             layout={isMobile ? "vertical" : "horizontal"}
             formId={formId}
+            thankYouText={form?.thank_you_text ?? null}
           />
         )}
       </div>
