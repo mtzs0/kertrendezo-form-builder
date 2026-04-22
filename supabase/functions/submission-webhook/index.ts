@@ -99,13 +99,31 @@ Deno.serve(async (req) => {
       return json({ ok: true, submissionId, relayed: false, reason: "no webhook configured" });
     }
 
+    // Map field IDs in the submission values to their internal_name for
+    // readability in the webhook payload.
+    const { data: fields } = await admin
+      .from("form_fields")
+      .select("id, internal_name")
+      .eq("form_id", form.id);
+
+    const idToName = new Map<string, string>(
+      (fields ?? []).map((f) => [f.id, f.internal_name]),
+    );
+
+    const rawValues = (submission.values ?? {}) as Record<string, unknown>;
+    const namedValues: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(rawValues)) {
+      const name = idToName.get(key) ?? key;
+      namedValues[name] = value;
+    }
+
     const payload = {
       submissionId: submission.id,
       formId: form.id,
       formSlug: form.slug,
       formTitle: form.title,
       submittedAt: submission.created_at,
-      values: submission.values,
+      values: namedValues,
     };
 
     let status = "error";
