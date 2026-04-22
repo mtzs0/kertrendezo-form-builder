@@ -99,22 +99,58 @@ Deno.serve(async (req) => {
       return json({ ok: true, submissionId, relayed: false, reason: "no webhook configured" });
     }
 
-    // Map field IDs in the submission values to their internal_name for
-    // readability in the webhook payload.
-    const { data: fields } = await admin
-      .from("form_fields")
-      .select("id, internal_name")
-      .eq("form_id", form.id);
+    // Load all placed fields for this form along with their group/sub-group
+    // so we can order the webhook payload to match the visual form structure
+    // and exclude unplaced fields (position <= 0).
+    const [{ data: fields }, { data: groups }, { data: subGroups }] = await Promise.all([
+      admin
+        .from("form_fields")
+        .select("id, internal_name, position, group_id, sub_group_id")
+        .eq("form_id", form.id),
+      admin
+        .from("form_groups")
+        .select("id, position")
+        .eq("form_id", form.id),
+      admin
+        .from("form_sub_groups")
+        .select("id, position, group_id")
+        .eq("form_id", form.id),
+    ]);
 
-    const idToName = new Map<string, string>(
-      (fields ?? []).map((f) => [f.id, f.internal_name]),
+    const groupPos = new Map<string, number>(
+      (groups ?? []).map((g) => [g.id, g.position ?? 0]),
     );
+    const subGroupPos = new Map<string, number>(
+      (subGroups ?? []).map((s) => [s.id, s.position ?? 0]),
+    );
+
+    // Only include fields that are actually placed (position > 0) and whose
+    // containing group/sub-group (if any) is also placed.
+    const placedFields = (fields ?? []).filter((f) => {
+      if ((f.position ?? 0) <= 0) return false;
+      if (f.group_id && (groupPos.get(f.group_id) ?? 0) <= 0) return false;
+      if (f.sub_group_id && (subGroupPos.get(f.sub_group_id) ?? 0) <= 0) return false;
+      return true;
+    });
+
+    // Sort fields by [group position, sub-group position, field position],
+    // matching the top-level → group → sub-group rendering order.
+    placedFields.sort((a, b) => {
+      const ag = a.group_id ? (groupPos.get(a.group_id) ?? 0) : (a.position ?? 0);
+      const bg = b.group_id ? (groupPos.get(b.group_id) ?? 0) : (b.position ?? 0);
+      if (ag !== bg) return ag - bg;
+      const asg = a.sub_group_id ? (subGroupPos.get(a.sub_group_id) ?? 0) : 0;
+      const bsg = b.sub_group_id ? (subGroupPos.get(b.sub_group_id) ?? 0) : 0;
+      if (asg !== bsg) return asg - bsg;
+      return (a.position ?? 0) - (b.position ?? 0);
+    });
 
     const rawValues = (submission.values ?? {}) as Record<string, unknown>;
     const namedValues: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(rawValues)) {
-      const name = idToName.get(key) ?? key;
-      namedValues[name] = value;
+    for (const f of placedFields) {
+      if (Object.prototype.hasOwnProperty.call(rawValues, f.id)) {
+        namedValues[f.internal_name] = rawValues[f.id];
+      }
     }
 
     const payload = {
