@@ -336,20 +336,24 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     );
   }, []);
 
-  const reorderSubGroups = useCallback(async (_groupId: string, orderedIds: string[]) => {
+  const reorderSubGroups = useCallback(async (groupId: string, orderedIds: string[]) => {
     setBundle((b) =>
       b
         ? {
             ...b,
             subGroups: b.subGroups.map((s) =>
-              orderedIds.includes(s.id) ? { ...s, location: orderedIds.indexOf(s.id) + 1 } : s
+              orderedIds.includes(s.id)
+                ? { ...s, location: orderedIds.indexOf(s.id) + 1, groupId }
+                : s
             ),
           }
         : b
     );
     setSaveStatus("saving");
     try {
-      await setSubGroupPositions(orderedIds.map((id, i) => ({ id, position: i + 1 })));
+      await setSubGroupPositions(
+        orderedIds.map((id, i) => ({ id, position: i + 1, groupId }))
+      );
       setSaveStatus("saved");
       window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
     } catch {
