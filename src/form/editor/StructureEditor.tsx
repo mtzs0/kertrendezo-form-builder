@@ -691,26 +691,49 @@ function inferContainerFor(
   draggedKind: DragKind,
   data: { groups: FormGroup[]; subGroups: FormSubGroup[]; fields: FormField[] }
 ): DropTarget | null {
-  // Same-kind targeting: figure out which container the over-item lives in.
+  // Resolve which thing the pointer is over, then map to a container that makes
+  // sense for the dragged kind.
+  const overGroup = data.groups.find((x) => x.id === itemId);
+  const overSubGroup = data.subGroups.find((x) => x.id === itemId);
+  const overField = data.fields.find((x) => x.id === itemId);
+
   if (draggedKind === "group") {
-    const g = data.groups.find((x) => x.id === itemId);
-    if (!g) return null;
-    if (g.location <= 0) return { kind: "palette", itemKind: "group" };
-    return { kind: "groups-canvas" };
+    if (overGroup) {
+      return overGroup.location <= 0
+        ? { kind: "palette", itemKind: "group" }
+        : { kind: "groups-canvas" };
+    }
+    // Hovering a sub-group or field that lives inside a placed group → groups canvas.
+    if (overSubGroup && overSubGroup.location > 0) return { kind: "groups-canvas" };
+    if (overField && overField.location > 0 && overField.groupId) return { kind: "groups-canvas" };
+    return null;
   }
+
   if (draggedKind === "subgroup") {
-    const sg = data.subGroups.find((x) => x.id === itemId);
-    if (!sg) return null;
-    if (sg.location <= 0) return { kind: "palette", itemKind: "subgroup" };
-    return { kind: "subgroups-of", groupId: sg.groupId };
+    if (overSubGroup) {
+      return overSubGroup.location <= 0
+        ? { kind: "palette", itemKind: "subgroup" }
+        : { kind: "subgroups-of", groupId: overSubGroup.groupId };
+    }
+    // Hovering a placed group → drop into that group's sub-groups.
+    if (overGroup && overGroup.location > 0) {
+      return { kind: "subgroups-of", groupId: overGroup.id };
+    }
+    // Hovering a field that lives in a group → use that group.
+    if (overField && overField.location > 0 && overField.groupId) {
+      return { kind: "subgroups-of", groupId: overField.groupId };
+    }
+    return null;
   }
+
   // field
-  const f = data.fields.find((x) => x.id === itemId);
-  if (!f) return null;
-  if (f.location <= 0) return { kind: "palette", itemKind: "field" };
-  return {
-    kind: "fields-of",
-    groupId: f.groupId ?? null,
-    subGroupId: f.subGroupId ?? null,
-  };
+  if (overField) {
+    if (overField.location <= 0) return { kind: "palette", itemKind: "field" };
+    return {
+      kind: "fields-of",
+      groupId: overField.groupId ?? null,
+      subGroupId: overField.subGroupId ?? null,
+    };
+  }
+  return null;
 }
