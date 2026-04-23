@@ -13,6 +13,7 @@ import { FieldConfigPanel } from "./editor/FieldConfigPanel";
 import { FieldPicker } from "./editor/FieldPicker";
 import { ConditionEditor } from "./editor/ConditionEditor";
 import { GroupsManager } from "./editor/GroupsManager";
+import { LayoutsManager } from "./editor/LayoutsManager";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
@@ -97,40 +98,51 @@ export function EditorView({ slug = "default", onExit }: Props) {
             {editor.loading ? (
               <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
-                <StructureEditor
-                  groups={editor.groups}
-                  subGroups={editor.subGroups}
-                  fields={editor.fields}
-                  selectedFieldId={selectedFieldId}
-                  onSelectField={setSelectedFieldId}
-                  onReorderGroups={editor.reorderGroups}
-                  onReorderSubGroups={editor.reorderSubGroups}
-                  onReorderFields={editor.reorderFields}
-                  onPlaceGroup={(id, location) => editor.patchGroup(id, { location })}
-                  onPlaceSubGroup={(id, location) => editor.patchSubGroup(id, { location })}
-                  onPlaceField={(id, target) =>
-                    editor.patchField(id, {
-                      groupId: target.groupId ?? undefined,
-                      subGroupId: target.subGroupId ?? undefined,
-                      location: target.location,
-                    })
-                  }
-                  onChangeGroupWidth={(id, width) => editor.patchGroup(id, { width })}
-                  onChangeSubGroupWidth={(id, width) => editor.patchSubGroup(id, { width })}
-                />
-                <aside className="lg:sticky lg:top-4 self-start">
-                  <FieldConfigPanel
-                    field={selectedField}
-                    onChange={(patch) => selectedField && editor.patchField(selectedField.id, patch)}
-                    onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
-                    onDelete={async () => {
-                      if (!selectedField) return;
-                      await editor.removeField(selectedField.id);
-                      setSelectedFieldId(null);
-                    }}
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-5">
+                  <StructureEditor
+                    groups={editor.groups}
+                    subGroups={editor.subGroups}
+                    fields={editor.fields}
+                    selectedFieldId={selectedFieldId}
+                    onSelectField={setSelectedFieldId}
+                    onReorderGroups={editor.reorderGroups}
+                    onReorderSubGroups={editor.reorderSubGroups}
+                    onReorderFields={editor.reorderFields}
+                    onPlaceGroup={(id, location) => editor.patchGroup(id, { location })}
+                    onPlaceSubGroup={(id, location) => editor.patchSubGroup(id, { location })}
+                    onPlaceField={(id, target) =>
+                      editor.patchField(id, {
+                        groupId: target.groupId ?? undefined,
+                        subGroupId: target.subGroupId ?? undefined,
+                        location: target.location,
+                      })
+                    }
+                    onChangeGroupWidth={(id, width) => editor.patchGroup(id, { width })}
+                    onChangeSubGroupWidth={(id, width) => editor.patchSubGroup(id, { width })}
                   />
-                </aside>
+                  <aside className="lg:sticky lg:top-4 self-start">
+                    <FieldConfigPanel
+                      field={selectedField}
+                      onChange={(patch) => selectedField && editor.patchField(selectedField.id, patch)}
+                      onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
+                      onDelete={async () => {
+                        if (!selectedField) return;
+                        await editor.removeField(selectedField.id);
+                        setSelectedFieldId(null);
+                      }}
+                    />
+                  </aside>
+                </div>
+                {editor.form && (
+                  <LayoutsManager
+                    formId={editor.form.id}
+                    groups={editor.groups}
+                    subGroups={editor.subGroups}
+                    fields={editor.fields}
+                    onApplied={editor.reload}
+                  />
+                )}
               </div>
             )}
           </TabsContent>

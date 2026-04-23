@@ -45,6 +45,9 @@ export interface UseEditorSchemaResult {
   schema: FormSchema;
   saveStatus: SaveStatus;
 
+  /** Re-fetch all editor data from the DB (e.g. after applying a saved layout). */
+  reload: () => Promise<void>;
+
   // Form meta ops
   patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null }>) => void;
 
@@ -94,18 +97,16 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
+  const loadAll = useCallback(
+    async (signal?: { cancelled: boolean }) => {
+      setLoading(true);
       try {
         const f = await ensureForm(slug, defaults);
         const [b, conditions] = await Promise.all([
           loadEditorBundle(f.id),
           loadConditions(f.id),
         ]);
-        if (cancelled) return;
-        // Merge loaded conditions into fields.
+        if (signal?.cancelled) return;
         const fieldsWithCond: FormField[] = b.fields.map((field) =>
           conditions.has(field.id)
             ? ({ ...field, condition: conditions.get(field.id) } as FormField)
@@ -115,16 +116,24 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
         setBundle({ ...b, fields: fieldsWithCond });
         setError(null);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
+        if (!signal?.cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!signal?.cancelled) setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]);
+    [slug]
+  );
+
+  useEffect(() => {
+    const signal = { cancelled: false };
+    loadAll(signal);
+    return () => {
+      signal.cancelled = true;
+    };
+  }, [loadAll]);
+
+  const reload = useCallback(() => loadAll(), [loadAll]);
 
   // ---------- Debounced flush ----------
   const flush = useCallback(async () => {
@@ -544,6 +553,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     fields: bundle?.fields ?? [],
     schema,
     saveStatus,
+    reload,
     patchForm,
     addGroup,
     patchGroup,

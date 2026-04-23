@@ -267,6 +267,33 @@ export type Database = {
           },
         ]
       }
+      form_layouts: {
+        Row: {
+          created_at: string
+          form_id: string
+          id: string
+          name: string
+          snapshot: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          form_id: string
+          id?: string
+          name: string
+          snapshot?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          form_id?: string
+          id?: string
+          name?: string
+          snapshot?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       form_sub_groups: {
         Row: {
           created_at: string
