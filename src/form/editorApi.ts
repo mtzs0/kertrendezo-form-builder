@@ -471,11 +471,17 @@ export async function setGroupPositions(updates: Array<{ id: string; position: n
   );
 }
 
-export async function setSubGroupPositions(updates: Array<{ id: string; position: number }>) {
+export async function setSubGroupPositions(
+  updates: Array<{ id: string; position: number; groupId?: string }>
+) {
   await Promise.all(
-    updates.map((u) =>
-      supabase.from("form_sub_groups").update({ position: u.position }).eq("id", u.id)
-    )
+    updates.map((u) => {
+      const patch: Database["public"]["Tables"]["form_sub_groups"]["Update"] = {
+        position: u.position,
+      };
+      if (u.groupId !== undefined) patch.group_id = u.groupId;
+      return supabase.from("form_sub_groups").update(patch).eq("id", u.id);
+    })
   );
 }
 
