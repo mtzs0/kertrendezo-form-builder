@@ -291,7 +291,7 @@ export async function createSubGroup(formId: string, groupId: string, position: 
 
 export async function updateSubGroup(
   id: string,
-  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
+  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null; groupId: string }>
 ) {
   const u: Database["public"]["Tables"]["form_sub_groups"]["Update"] & WidthCol = {
     internal_name: patch.internalName,
@@ -299,6 +299,7 @@ export async function updateSubGroup(
     position: patch.position,
   };
   if (patch.width !== undefined) u.width_percent = patch.width;
+  if (patch.groupId !== undefined) u.group_id = patch.groupId;
   const { error } = await supabase.from("form_sub_groups").update(u).eq("id", id);
   if (error) throw error;
 }
