@@ -1,6 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { FormField, FormGroup, FormSubGroup } from "./types";
 
+// `form_layouts` was added after the last Supabase types regeneration, so we
+// access it via an untyped client view to keep TS happy.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sb = supabase as unknown as { from: (table: string) => any };
+
 /**
  * A layout snapshot captures STRUCTURE only:
  * - Group order (group_id -> position)
