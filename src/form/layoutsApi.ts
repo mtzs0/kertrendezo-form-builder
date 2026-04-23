@@ -62,7 +62,7 @@ function rowToLayout(r: LayoutRow): FormLayout {
 }
 
 export async function listLayouts(formId: string): Promise<FormLayout[]> {
-  const { data, error } = await (supabase.from("form_layouts" as never) as never)
+  const { data, error } = await sb.from("form_layouts")
     .select("*")
     .eq("form_id", formId)
     .order("created_at", { ascending: true });
@@ -98,7 +98,7 @@ export async function createLayout(
   name: string,
   snapshot: LayoutSnapshot
 ): Promise<FormLayout> {
-  const { data, error } = await (supabase.from("form_layouts" as never) as never)
+  const { data, error } = await sb.from("form_layouts")
     .insert({ form_id: formId, name, snapshot })
     .select("*")
     .single();
@@ -110,21 +110,21 @@ export async function updateLayoutSnapshot(
   layoutId: string,
   snapshot: LayoutSnapshot
 ): Promise<void> {
-  const { error } = await (supabase.from("form_layouts" as never) as never)
+  const { error } = await sb.from("form_layouts")
     .update({ snapshot })
     .eq("id", layoutId);
   if (error) throw error;
 }
 
 export async function renameLayout(layoutId: string, name: string): Promise<void> {
-  const { error } = await (supabase.from("form_layouts" as never) as never)
+  const { error } = await sb.from("form_layouts")
     .update({ name })
     .eq("id", layoutId);
   if (error) throw error;
 }
 
 export async function deleteLayout(layoutId: string): Promise<void> {
-  const { error } = await (supabase.from("form_layouts" as never) as never)
+  const { error } = await sb.from("form_layouts")
     .delete()
     .eq("id", layoutId);
   if (error) throw error;
