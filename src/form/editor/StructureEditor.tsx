@@ -312,11 +312,17 @@ export function StructureEditor(props: Props) {
         onPlaceGroup(activeStr, 0);
         return;
       }
-      if (target.kind === "groups-canvas") {
-        // Reorder/append in placed groups list.
+      // Any drop inside the canvas area (groups-canvas, or inside a placed group's
+      // sub-zones) is treated as "place into the groups canvas".
+      if (
+        target.kind === "groups-canvas" ||
+        target.kind === "subgroups-of" ||
+        target.kind === "fields-of"
+      ) {
         const ids = placedGroups.map((g) => g.id).filter((id) => id !== activeStr);
-        const overIdx = overItemId ? ids.indexOf(overItemId) : ids.length;
-        ids.splice(overIdx === -1 ? ids.length : overIdx, 0, activeStr);
+        const overIdx = overItemId ? ids.indexOf(overItemId) : -1;
+        const insertAt = overIdx === -1 ? ids.length : overIdx;
+        ids.splice(insertAt, 0, activeStr);
         onReorderGroups(ids);
       }
       return;
@@ -329,16 +335,20 @@ export function StructureEditor(props: Props) {
         onPlaceSubGroup(activeStr, 0);
         return;
       }
-      if (target.kind === "subgroups-of") {
-        // Sub-groups stay within their own parent group.
-        if (target.groupId !== sg.groupId) return;
-        const ids = (placedSubGroupsByGroup.get(sg.groupId) ?? [])
-          .map((s) => s.id)
-          .filter((id) => id !== activeStr);
-        const overIdx = overItemId ? ids.indexOf(overItemId) : ids.length;
-        ids.splice(overIdx === -1 ? ids.length : overIdx, 0, activeStr);
-        onReorderSubGroups(sg.groupId, ids);
-      }
+      // Allow dropping on a sub-group dropzone OR onto a group's field-zone
+      // (treated as appending to that group's sub-groups).
+      let targetGroupId: string | null = null;
+      if (target.kind === "subgroups-of") targetGroupId = target.groupId;
+      else if (target.kind === "fields-of" && target.groupId) targetGroupId = target.groupId;
+      if (!targetGroupId) return;
+
+      const currentInGroup = (placedSubGroupsByGroup.get(targetGroupId) ?? [])
+        .map((s) => s.id)
+        .filter((id) => id !== activeStr);
+      const overIdx = overItemId ? currentInGroup.indexOf(overItemId) : -1;
+      const insertAt = overIdx === -1 ? currentInGroup.length : overIdx;
+      currentInGroup.splice(insertAt, 0, activeStr);
+      onReorderSubGroups(targetGroupId, currentInGroup);
       return;
     }
 
