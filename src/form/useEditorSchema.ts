@@ -50,6 +50,12 @@ export interface UseEditorSchemaResult {
   fields: FormField[];
   /** Schema view of the in-memory state — for preview rendering. */
   schema: FormSchema;
+  /** Schema view with the active saved layout applied (or === schema when none). */
+  previewSchema: FormSchema;
+  /** Currently-active saved layout id, or null = "Jelenlegi nézet". */
+  activeLayoutId: string | null;
+  /** Set the active layout (null = use current editor state). */
+  setActiveLayout: (layoutId: string | null) => Promise<void>;
   saveStatus: SaveStatus;
 
   /** Re-fetch all editor data from the DB (e.g. after applying a saved layout). */
