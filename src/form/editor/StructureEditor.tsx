@@ -17,8 +17,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Eraser } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type { FormField, FormGroup, FormSubGroup, WidthPercent } from "@/form/types";
 import { WIDTH_OPTIONS } from "@/form/types";
 
