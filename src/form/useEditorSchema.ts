@@ -117,9 +117,10 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       setLoading(true);
       try {
         const f = await ensureForm(slug, defaults);
-        const [b, conditions] = await Promise.all([
+        const [b, conditions, activeId] = await Promise.all([
           loadEditorBundle(f.id),
           loadConditions(f.id),
+          getActiveLayoutId(f.id),
         ]);
         if (signal?.cancelled) return;
         const fieldsWithCond: FormField[] = b.fields.map((field) =>
@@ -127,8 +128,22 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             ? ({ ...field, condition: conditions.get(field.id) } as FormField)
             : field
         );
+        // Load the active layout snapshot if there is one.
+        let snap: LayoutSnapshot | null = null;
+        if (activeId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sb = supabase as unknown as { from: (t: string) => any };
+          const { data: layoutRow } = await sb
+            .from("form_layouts")
+            .select("snapshot")
+            .eq("id", activeId)
+            .maybeSingle();
+          snap = ((layoutRow?.snapshot as LayoutSnapshot | undefined) ?? null);
+        }
         setForm(f);
         setBundle({ ...b, fields: fieldsWithCond });
+        setActiveLayoutIdState(activeId);
+        setActiveSnapshot(snap);
         setError(null);
       } catch (e) {
         if (!signal?.cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
