@@ -33,6 +33,8 @@ interface Props {
   onDelete: () => void;
   /** Replace the full options array of this field (immediate save). */
   onChangeOptions?: (fieldId: string, options: FieldOption[]) => void;
+  /** Override the delete-button label (defaults to "Törlés"). */
+  deleteLabel?: string;
 }
 
 const TYPE_LABELS: Record<FieldType, string> = {
