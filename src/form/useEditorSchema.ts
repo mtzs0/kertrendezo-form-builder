@@ -578,6 +578,46 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     ? bundleToSchema(form, bundle)
     : { title: defaults.title, description: defaults.description, groups: [], subGroups: [], fields: [] };
 
+  // Schema as it will appear in the live form: applies the active saved layout
+  // (if any) over the in-memory bundle without writing to the DB.
+  const previewSchema: FormSchema = (() => {
+    if (!bundle || !form) return schema;
+    if (!activeSnapshot) return schema;
+    const applied = applySnapshotToBundle(
+      activeSnapshot,
+      bundle.groups,
+      bundle.subGroups,
+      bundle.fields
+    );
+    return bundleToSchema(form, applied);
+  })();
+
+  const setActiveLayout = useCallback(
+    async (layoutId: string | null) => {
+      if (!form) return;
+      // Optimistic local update.
+      setActiveLayoutIdState(layoutId);
+      if (!layoutId) {
+        setActiveSnapshot(null);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sb = supabase as unknown as { from: (t: string) => any };
+        const { data: layoutRow } = await sb
+          .from("form_layouts")
+          .select("snapshot")
+          .eq("id", layoutId)
+          .maybeSingle();
+        setActiveSnapshot(((layoutRow?.snapshot as LayoutSnapshot | undefined) ?? null));
+      }
+      try {
+        await apiSetActiveLayoutId(form.id, layoutId);
+      } catch (e) {
+        console.error("Failed to set active layout", e);
+      }
+    },
+    [form]
+  );
+
   return {
     loading,
     error,
@@ -586,6 +626,9 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     subGroups: bundle?.subGroups ?? [],
     fields: bundle?.fields ?? [],
     schema,
+    previewSchema,
+    activeLayoutId,
+    setActiveLayout,
     saveStatus,
     reload,
     patchForm,
