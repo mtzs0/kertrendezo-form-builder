@@ -101,6 +101,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [activeLayoutId, setActiveLayoutIdState] = useState<string | null>(null);
+  const [activeSnapshot, setActiveSnapshot] = useState<LayoutSnapshot | null>(null);
 
   // Debounced patch buffers, keyed by row id.
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
