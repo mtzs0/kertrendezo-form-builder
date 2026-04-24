@@ -130,6 +130,73 @@ export async function deleteLayout(layoutId: string): Promise<void> {
   if (error) throw error;
 }
 
+// ---------- Active layout pointer (forms.active_layout_id) ----------
+
+/** Returns the currently-active layout id for a form, or null = "Jelenlegi nézet". */
+export async function getActiveLayoutId(formId: string): Promise<string | null> {
+  const { data, error } = await sb.from("forms")
+    .select("active_layout_id")
+    .eq("id", formId)
+    .maybeSingle();
+  if (error) throw error;
+  return ((data?.active_layout_id as string | null) ?? null);
+}
+
+/** Sets (or clears) the active layout pointer. null = "Jelenlegi nézet". */
+export async function setActiveLayoutId(formId: string, layoutId: string | null): Promise<void> {
+  const { error } = await sb.from("forms")
+    .update({ active_layout_id: layoutId })
+    .eq("id", formId);
+  if (error) throw error;
+}
+
+/**
+ * Pure, in-memory transformation: returns new arrays of groups/sub-groups/fields
+ * with positions and parent assignments overridden by the snapshot.
+ *
+ * Items missing from the snapshot are sent to position 0 (unplaced) so they
+ * disappear from the rendered structure — same semantics as `applyLayout` but
+ * without writing to the DB.
+ */
+export function applySnapshotToBundle(
+  snapshot: LayoutSnapshot,
+  groups: FormGroup[],
+  subGroups: FormSubGroup[],
+  fields: FormField[]
+): { groups: FormGroup[]; subGroups: FormSubGroup[]; fields: FormField[] } {
+  const snapGroup = new Map(snapshot.groups.map((g) => [g.id, g.position]));
+  const snapSub = new Map(
+    snapshot.subGroups.map((s) => [s.id, { position: s.position, groupId: s.groupId }])
+  );
+  const snapField = new Map(
+    snapshot.fields.map((f) => [
+      f.id,
+      { position: f.position, groupId: f.groupId, subGroupId: f.subGroupId },
+    ])
+  );
+
+  return {
+    groups: groups.map((g) => ({ ...g, location: snapGroup.get(g.id) ?? 0 })),
+    subGroups: subGroups.map((s) => {
+      const snap = snapSub.get(s.id);
+      return {
+        ...s,
+        groupId: snap?.groupId ?? s.groupId,
+        location: snap?.position ?? 0,
+      };
+    }),
+    fields: fields.map((f) => {
+      const snap = snapField.get(f.id);
+      return {
+        ...f,
+        location: snap?.position ?? 0,
+        groupId: snap ? (snap.groupId ?? undefined) : undefined,
+        subGroupId: snap ? (snap.subGroupId ?? undefined) : undefined,
+      };
+    }),
+  };
+}
+
 /**
  * Apply a snapshot to the current form by writing positions/placements for
  * groups, sub-groups, and fields. Anything not referenced in the snapshot is
