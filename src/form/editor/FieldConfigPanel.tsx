@@ -84,7 +84,7 @@ function slugifyName(s: string): string {
     .slice(0, 60);
 }
 
-export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }: Props) {
+export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, deleteLabel }: Props) {
   const isOptionType =
     field?.type === "radio" || field?.type === "checkbox" || field?.type === "select";
   if (!field) {
@@ -112,7 +112,7 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions }:
           className="text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           <Trash2 className="h-4 w-4 mr-1" />
-          Törlés
+          {deleteLabel ?? "Törlés"}
         </Button>
       </div>
 
