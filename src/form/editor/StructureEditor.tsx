@@ -17,8 +17,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Eraser } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import type { FormField, FormGroup, FormSubGroup, WidthPercent } from "@/form/types";
 import { WIDTH_OPTIONS } from "@/form/types";
 
@@ -50,6 +51,9 @@ interface Props {
   /** Width updates for groups and sub-groups (fields use the config panel). */
   onChangeGroupWidth: (id: string, width: WidthPercent | undefined) => void;
   onChangeSubGroupWidth: (id: string, width: WidthPercent | undefined) => void;
+
+  /** Move every currently placed field back to the unplaced palette. */
+  onClearAllFields?: () => void;
 }
 
 function WidthInlineSelect({
@@ -223,6 +227,7 @@ export function StructureEditor(props: Props) {
     onPlaceField,
     onChangeGroupWidth,
     onChangeSubGroupWidth,
+    onClearAllFields,
   } = props;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -483,9 +488,24 @@ export function StructureEditor(props: Props) {
 
         {/* ---------- Canvas ---------- */}
         <section className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold">Űrlap struktúra</h3>
-            <p className="text-xs text-muted-foreground">A megjelenő űrlap sorrendje és csoportosítása.</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Űrlap struktúra</h3>
+              <p className="text-xs text-muted-foreground">A megjelenő űrlap sorrendje és csoportosítása.</p>
+            </div>
+            {onClearAllFields && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onClearAllFields}
+                disabled={fields.every((f) => f.location <= 0)}
+                title="Az összes elhelyezett mező visszahelyezése a nem elhelyezett elemek közé."
+              >
+                <Eraser className="h-4 w-4 mr-1" />
+                Ürítés
+              </Button>
+            )}
           </div>
 
           {/* Global placed fields (no group) */}

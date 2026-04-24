@@ -120,17 +120,35 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     }
                     onChangeGroupWidth={(id, width) => editor.patchGroup(id, { width })}
                     onChangeSubGroupWidth={(id, width) => editor.patchSubGroup(id, { width })}
+                    onClearAllFields={() => {
+                      editor.fields
+                        .filter((f) => f.location > 0)
+                        .forEach((f) =>
+                          editor.patchField(f.id, {
+                            location: 0,
+                            groupId: undefined,
+                            subGroupId: undefined,
+                          })
+                        );
+                    }}
                   />
                   <aside className="lg:sticky lg:top-4 self-start">
                     <FieldConfigPanel
                       field={selectedField}
                       onChange={(patch) => selectedField && editor.patchField(selectedField.id, patch)}
                       onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
-                      onDelete={async () => {
+                      onDelete={() => {
                         if (!selectedField) return;
-                        await editor.removeField(selectedField.id);
+                        // On the Űrlap tab the "Törlés" button only unplaces the
+                        // field — it stays available in the unplaced palette.
+                        editor.patchField(selectedField.id, {
+                          location: 0,
+                          groupId: undefined,
+                          subGroupId: undefined,
+                        });
                         setSelectedFieldId(null);
                       }}
+                      deleteLabel="Eltávolítás"
                     />
                   </aside>
                 </div>
