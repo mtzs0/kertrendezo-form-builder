@@ -22,6 +22,13 @@ import {
   type FieldPatch,
 } from "./editorApi";
 import { loadConditions, saveFieldCondition } from "./conditionApi";
+import {
+  applySnapshotToBundle,
+  getActiveLayoutId,
+  setActiveLayoutId as apiSetActiveLayoutId,
+  type LayoutSnapshot,
+} from "./layoutsApi";
+import { supabase } from "@/integrations/supabase/client";
 import type {
   ConditionGroup,
   FieldOption,
