@@ -488,9 +488,24 @@ export function StructureEditor(props: Props) {
 
         {/* ---------- Canvas ---------- */}
         <section className="space-y-4">
-          <div>
-            <h3 className="text-sm font-semibold">Űrlap struktúra</h3>
-            <p className="text-xs text-muted-foreground">A megjelenő űrlap sorrendje és csoportosítása.</p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Űrlap struktúra</h3>
+              <p className="text-xs text-muted-foreground">A megjelenő űrlap sorrendje és csoportosítása.</p>
+            </div>
+            {onClearAllFields && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onClearAllFields}
+                disabled={fields.every((f) => f.location <= 0)}
+                title="Az összes elhelyezett mező visszahelyezése a nem elhelyezett elemek közé."
+              >
+                <Eraser className="h-4 w-4 mr-1" />
+                Ürítés
+              </Button>
+            )}
           </div>
 
           {/* Global placed fields (no group) */}
