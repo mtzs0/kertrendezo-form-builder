@@ -50,6 +50,9 @@ interface Props {
   /** Width updates for groups and sub-groups (fields use the config panel). */
   onChangeGroupWidth: (id: string, width: WidthPercent | undefined) => void;
   onChangeSubGroupWidth: (id: string, width: WidthPercent | undefined) => void;
+
+  /** Move every currently placed field back to the unplaced palette. */
+  onClearAllFields?: () => void;
 }
 
 function WidthInlineSelect({
