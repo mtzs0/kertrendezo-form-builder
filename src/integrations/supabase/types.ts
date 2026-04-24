@@ -388,6 +388,7 @@ export type Database = {
       }
       forms: {
         Row: {
+          active_layout_id: string | null
           created_at: string
           description: string | null
           id: string
@@ -400,6 +401,7 @@ export type Database = {
           webhook_url: string | null
         }
         Insert: {
+          active_layout_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -412,6 +414,7 @@ export type Database = {
           webhook_url?: string | null
         }
         Update: {
+          active_layout_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -423,7 +426,15 @@ export type Database = {
           updated_at?: string
           webhook_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "forms_active_layout_id_fkey"
+            columns: ["active_layout_id"]
+            isOneToOne: false
+            referencedRelation: "form_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

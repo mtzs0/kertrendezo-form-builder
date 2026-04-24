@@ -140,7 +140,8 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     groups={editor.groups}
                     subGroups={editor.subGroups}
                     fields={editor.fields}
-                    onApplied={editor.reload}
+                    activeLayoutId={editor.activeLayoutId}
+                    onSetActiveLayout={editor.setActiveLayout}
                   />
                 )}
               </div>
@@ -253,7 +254,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     </header>
                   )}
                   <FormView
-                    schema={editor.schema}
+                    schema={editor.previewSchema}
                     layout="horizontal"
                     formId={editor.form?.id ?? null}
                     showDemoButton

@@ -22,6 +22,13 @@ import {
   type FieldPatch,
 } from "./editorApi";
 import { loadConditions, saveFieldCondition } from "./conditionApi";
+import {
+  applySnapshotToBundle,
+  getActiveLayoutId,
+  setActiveLayoutId as apiSetActiveLayoutId,
+  type LayoutSnapshot,
+} from "./layoutsApi";
+import { supabase } from "@/integrations/supabase/client";
 import type {
   ConditionGroup,
   FieldOption,
@@ -43,6 +50,12 @@ export interface UseEditorSchemaResult {
   fields: FormField[];
   /** Schema view of the in-memory state — for preview rendering. */
   schema: FormSchema;
+  /** Schema view with the active saved layout applied (or === schema when none). */
+  previewSchema: FormSchema;
+  /** Currently-active saved layout id, or null = "Jelenlegi nézet". */
+  activeLayoutId: string | null;
+  /** Set the active layout (null = use current editor state). */
+  setActiveLayout: (layoutId: string | null) => Promise<void>;
   saveStatus: SaveStatus;
 
   /** Re-fetch all editor data from the DB (e.g. after applying a saved layout). */
@@ -88,6 +101,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [activeLayoutId, setActiveLayoutIdState] = useState<string | null>(null);
+  const [activeSnapshot, setActiveSnapshot] = useState<LayoutSnapshot | null>(null);
 
   // Debounced patch buffers, keyed by row id.
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
@@ -102,9 +117,10 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       setLoading(true);
       try {
         const f = await ensureForm(slug, defaults);
-        const [b, conditions] = await Promise.all([
+        const [b, conditions, activeId] = await Promise.all([
           loadEditorBundle(f.id),
           loadConditions(f.id),
+          getActiveLayoutId(f.id),
         ]);
         if (signal?.cancelled) return;
         const fieldsWithCond: FormField[] = b.fields.map((field) =>
@@ -112,8 +128,22 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             ? ({ ...field, condition: conditions.get(field.id) } as FormField)
             : field
         );
+        // Load the active layout snapshot if there is one.
+        let snap: LayoutSnapshot | null = null;
+        if (activeId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const sb = supabase as unknown as { from: (t: string) => any };
+          const { data: layoutRow } = await sb
+            .from("form_layouts")
+            .select("snapshot")
+            .eq("id", activeId)
+            .maybeSingle();
+          snap = ((layoutRow?.snapshot as LayoutSnapshot | undefined) ?? null);
+        }
         setForm(f);
         setBundle({ ...b, fields: fieldsWithCond });
+        setActiveLayoutIdState(activeId);
+        setActiveSnapshot(snap);
         setError(null);
       } catch (e) {
         if (!signal?.cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
@@ -548,6 +578,46 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     ? bundleToSchema(form, bundle)
     : { title: defaults.title, description: defaults.description, groups: [], subGroups: [], fields: [] };
 
+  // Schema as it will appear in the live form: applies the active saved layout
+  // (if any) over the in-memory bundle without writing to the DB.
+  const previewSchema: FormSchema = (() => {
+    if (!bundle || !form) return schema;
+    if (!activeSnapshot) return schema;
+    const applied = applySnapshotToBundle(
+      activeSnapshot,
+      bundle.groups,
+      bundle.subGroups,
+      bundle.fields
+    );
+    return bundleToSchema(form, applied);
+  })();
+
+  const setActiveLayout = useCallback(
+    async (layoutId: string | null) => {
+      if (!form) return;
+      // Optimistic local update.
+      setActiveLayoutIdState(layoutId);
+      if (!layoutId) {
+        setActiveSnapshot(null);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sb = supabase as unknown as { from: (t: string) => any };
+        const { data: layoutRow } = await sb
+          .from("form_layouts")
+          .select("snapshot")
+          .eq("id", layoutId)
+          .maybeSingle();
+        setActiveSnapshot(((layoutRow?.snapshot as LayoutSnapshot | undefined) ?? null));
+      }
+      try {
+        await apiSetActiveLayoutId(form.id, layoutId);
+      } catch (e) {
+        console.error("Failed to set active layout", e);
+      }
+    },
+    [form]
+  );
+
   return {
     loading,
     error,
@@ -556,6 +626,9 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     subGroups: bundle?.subGroups ?? [],
     fields: bundle?.fields ?? [],
     schema,
+    previewSchema,
+    activeLayoutId,
+    setActiveLayout,
     saveStatus,
     reload,
     patchForm,

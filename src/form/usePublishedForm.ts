@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { loadEditorBundle, bundleToSchema, type EditorForm } from "./editorApi";
 import { loadConditions } from "./conditionApi";
+import { applySnapshotToBundle, type LayoutSnapshot } from "./layoutsApi";
 import type { FormField, FormSchema } from "./types";
 
 export interface UseFormResult {
@@ -25,9 +26,17 @@ const EMPTY_SCHEMA: FormSchema = {
   fields: [],
 };
 
+// `forms.active_layout_id` was added after the last types regeneration.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sb = supabase as unknown as { from: (table: string) => any };
+
 /**
  * Loads a published form by slug from the normalized editor tables. Returns
  * an empty schema when no published row exists or the form has no fields yet.
+ *
+ * If the form has an `active_layout_id` set, the corresponding saved layout
+ * snapshot is applied virtually (in memory) before rendering. When the
+ * pointer is null, the live editor state is used as-is ("Jelenlegi nézet").
  */
 export function usePublishedForm(slug = "default"): UseFormResult {
   const [form, setForm] = useState<EditorForm | null>(null);
@@ -40,9 +49,9 @@ export function usePublishedForm(slug = "default"): UseFormResult {
     setLoading(true);
     (async () => {
       try {
-        const { data: row, error: selErr } = await supabase
+        const { data: row, error: selErr } = await sb
           .from("forms")
-          .select("id, slug, title, description, published, webhook_url, thank_you_text")
+          .select("id, slug, title, description, published, webhook_url, thank_you_text, active_layout_id")
           .eq("slug", slug)
           .eq("published", true)
           .maybeSingle();
@@ -56,19 +65,40 @@ export function usePublishedForm(slug = "default"): UseFormResult {
           return;
         }
         const f: EditorForm = row as EditorForm;
-        const [bundle, conditions] = await Promise.all([
+        const activeLayoutId: string | null = (row as { active_layout_id: string | null }).active_layout_id ?? null;
+
+        const [bundle, conditions, layoutRes] = await Promise.all([
           loadEditorBundle(f.id),
           loadConditions(f.id),
+          activeLayoutId
+            ? sb.from("form_layouts").select("snapshot").eq("id", activeLayoutId).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
         ]);
         if (cancelled) return;
+
         // Merge per-field conditions into the bundle so isFieldVisible works.
         const mergedFields: FormField[] = bundle.fields.map((field) =>
           conditions.has(field.id)
             ? ({ ...field, condition: conditions.get(field.id) } as FormField)
             : field
         );
+
+        // If an active layout is set, apply its snapshot virtually.
+        let finalGroups = bundle.groups;
+        let finalSubGroups = bundle.subGroups;
+        let finalFields = mergedFields;
+        const snapshot = (layoutRes?.data?.snapshot ?? null) as LayoutSnapshot | null;
+        if (snapshot) {
+          const applied = applySnapshotToBundle(snapshot, bundle.groups, bundle.subGroups, mergedFields);
+          finalGroups = applied.groups;
+          finalSubGroups = applied.subGroups;
+          finalFields = applied.fields;
+        }
+
         setForm(f);
-        setSchema(bundleToSchema(f, { ...bundle, fields: mergedFields }));
+        setSchema(
+          bundleToSchema(f, { groups: finalGroups, subGroups: finalSubGroups, fields: finalFields })
+        );
         setError(null);
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Ismeretlen hiba");
