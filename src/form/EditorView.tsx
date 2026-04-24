@@ -140,7 +140,8 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     groups={editor.groups}
                     subGroups={editor.subGroups}
                     fields={editor.fields}
-                    onApplied={editor.reload}
+                    activeLayoutId={editor.activeLayoutId}
+                    onSetActiveLayout={editor.setActiveLayout}
                   />
                 )}
               </div>
