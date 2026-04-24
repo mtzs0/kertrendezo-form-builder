@@ -226,6 +226,7 @@ export function StructureEditor(props: Props) {
     onPlaceField,
     onChangeGroupWidth,
     onChangeSubGroupWidth,
+    onClearAllFields,
   } = props;
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
