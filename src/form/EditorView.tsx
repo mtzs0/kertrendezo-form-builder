@@ -254,7 +254,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     </header>
                   )}
                   <FormView
-                    schema={editor.schema}
+                    schema={editor.previewSchema}
                     layout="horizontal"
                     formId={editor.form?.id ?? null}
                     showDemoButton
