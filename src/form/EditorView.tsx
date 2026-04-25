@@ -111,6 +111,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     onReorderFields={editor.reorderFields}
                     onPlaceGroup={(id, location) => editor.patchGroup(id, { location })}
                     onPlaceSubGroup={(id, location) => editor.patchSubGroup(id, { location })}
+                    onNestGroup={(id, parentGroupId, location) => editor.nestGroup(id, parentGroupId, location)}
                     onPlaceField={(id, target) =>
                       editor.patchField(id, {
                         groupId: target.groupId ?? undefined,
