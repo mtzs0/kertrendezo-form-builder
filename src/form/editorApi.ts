@@ -109,9 +109,8 @@ export async function updateFormMeta(
 }
 
 export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundle, "form">> {
-  const [groupsRes, subGroupsRes, fieldsRes, optionsRes] = await Promise.all([
-    supabase.from("form_groups").select("*").eq("form_id", formId),
-    supabase.from("form_sub_groups").select("*").eq("form_id", formId),
+  const [allGroupsRes, fieldsRes, optionsRes] = await Promise.all([
+    sbAny.from("form_groups").select("*").eq("form_id", formId),
     supabase.from("form_fields").select("*").eq("form_id", formId),
     supabase
       .from("form_field_options")
@@ -119,26 +118,35 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       .eq("form_fields.form_id", formId),
   ]);
 
-  for (const r of [groupsRes, subGroupsRes, fieldsRes, optionsRes]) {
+  if (allGroupsRes.error) throw allGroupsRes.error;
+  for (const r of [fieldsRes, optionsRes]) {
     if (r.error) throw r.error;
   }
 
-  const groups: FormGroup[] = (groupsRes.data ?? []).map((g: GroupRow) => ({
-    id: g.id,
-    internalName: g.internal_name,
-    label: g.label,
-    location: g.position,
-    width: asWidth(g.width_percent),
-  }));
+  const allGroupRows = (allGroupsRes.data ?? []) as GroupRow[];
 
-  const subGroups: FormSubGroup[] = (subGroupsRes.data ?? []).map((s: SubGroupRow) => ({
-    id: s.id,
-    groupId: s.group_id,
-    internalName: s.internal_name,
-    label: s.label,
-    location: s.position,
-    width: asWidth(s.width_percent),
-  }));
+  // Top-level groups: parent_group_id is null/undefined.
+  const groups: FormGroup[] = allGroupRows
+    .filter((g) => !g.parent_group_id)
+    .map((g) => ({
+      id: g.id,
+      internalName: g.internal_name,
+      label: g.label,
+      location: g.position,
+      width: asWidth(g.width_percent),
+    }));
+
+  // Sub-groups: rows in form_groups that have parent_group_id set.
+  const subGroups: FormSubGroup[] = allGroupRows
+    .filter((g) => !!g.parent_group_id)
+    .map((s) => ({
+      id: s.id,
+      groupId: s.parent_group_id as string,
+      internalName: s.internal_name,
+      label: s.label,
+      location: s.position,
+      width: asWidth(s.width_percent),
+    }));
 
   const optionsByField = new Map<string, OptionRow[]>();
   for (const o of (optionsRes.data ?? []) as unknown as OptionRow[]) {
