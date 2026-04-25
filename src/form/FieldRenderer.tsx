@@ -191,6 +191,84 @@ function FieldNote({ children, position }: { children: React.ReactNode; position
   );
 }
 
+/**
+ * Number input shown to the LEFT of a slider. Lets the user type an exact
+ * value; while typing, anything that parses as a number inside [min, max] is
+ * pushed via `onCommit` so the slider knob live-updates. Out-of-range values
+ * (or non-numeric input) are kept in the input but NOT applied to the slider.
+ *
+ * For modes that snap to discrete stops (custom-stops slider), the parent
+ * supplies a `snap` function so the slider can land on the nearest legal stop.
+ */
+function SliderNumberInput({
+  id,
+  min,
+  max,
+  unit,
+  value,
+  snap,
+  onCommit,
+}: {
+  id: string;
+  min: number;
+  max: number;
+  unit?: string;
+  /** The currently displayed slider value (or undefined when nothing chosen yet). */
+  value: number | undefined;
+  /** Optional snap function for discrete-stop sliders. */
+  snap?: (n: number) => number;
+  /** Called with a clamped (and optionally snapped) numeric value. */
+  onCommit: (n: number) => void;
+}) {
+  // Local text state lets the user type freely (including intermediate states
+  // like "" or "12.") without us fighting their input.
+  const [text, setText] = useState<string>(
+    value === undefined || Number.isNaN(value) ? "" : String(value)
+  );
+
+  // Sync text when the slider is moved externally (e.g. dragging the knob)
+  // — but never while the input itself is focused, to avoid clobbering typing.
+  const parsed = text.trim() === "" ? NaN : Number(text);
+  const focused =
+    typeof document !== "undefined" &&
+    document.activeElement?.id === `${id}__num`;
+  if (
+    !focused &&
+    value !== undefined &&
+    !Number.isNaN(value) &&
+    (Number.isNaN(parsed) || Math.abs(parsed - value) > 1e-9)
+  ) {
+    queueMicrotask(() => setText(String(value)));
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      <Input
+        id={`${id}__num`}
+        type="number"
+        inputMode="decimal"
+        value={text}
+        onChange={(e) => {
+          const t = e.target.value;
+          setText(t);
+          if (t.trim() === "") return;
+          const n = Number(t);
+          if (Number.isNaN(n)) return;
+          if (n < min || n > max) return; // out-of-range → don't move slider
+          onCommit(snap ? snap(n) : n);
+        }}
+        className="w-20 h-9 text-sm"
+        aria-label="Egyedi érték"
+      />
+      {unit && (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          {unit}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function FieldRenderer({ field, value, onChange, layout = "horizontal" }: Props) {
   // Display-only "Cím" element: render as a heading and stop.
   if (field.type === "label") {
