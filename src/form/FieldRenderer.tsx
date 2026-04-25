@@ -485,57 +485,76 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
           // Tick percentages: each stop sits at i/total of the track (i = 1..total).
           const ticks = selectable.map((_, i) => ((i + 1) / total) * 100);
 
+          // For the typed-input mode: snap any number to the nearest end-of-
+          // range stop (these are the only legal values the slider can store).
+          const snapToStop = (n: number) =>
+            selectable.reduce(
+              (best, s) => (Math.abs(s - n) < Math.abs(best - n) ? s : best),
+              selectable[0]
+            );
+
           control = (
-            <div className="space-y-3 pt-1">
-              <div className="relative">
-                <Slider
-                  id={field.id}
-                  min={0}
-                  max={total}
-                  step={1}
-                  value={[knobIdx]}
-                  onValueChange={(v) => {
-                    const i = v[0];
-                    if (i === 0) onChange(field.id, undefined);
-                    else onChange(field.id, selectable[i - 1]);
-                  }}
-                />
-                <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
-                  {ticks.map((pct, i) => (
-                    <span
-                      key={i}
-                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
-                      style={{ left: `${pct}%` }}
-                    />
-                  ))}
+            <div className="flex items-start gap-3 pt-1">
+              <SliderNumberInput
+                id={field.id}
+                min={field.min}
+                max={field.max}
+                unit={field.unit}
+                value={hasSelection ? stored : undefined}
+                snap={snapToStop}
+                onCommit={(n) => onChange(field.id, n)}
+              />
+              <div className="space-y-3 flex-1 min-w-0">
+                <div className="relative">
+                  <Slider
+                    id={field.id}
+                    min={0}
+                    max={total}
+                    step={1}
+                    value={[knobIdx]}
+                    onValueChange={(v) => {
+                      const i = v[0];
+                      if (i === 0) onChange(field.id, undefined);
+                      else onChange(field.id, selectable[i - 1]);
+                    }}
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
+                    {ticks.map((pct, i) => (
+                      <span
+                        key={i}
+                        className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
+                        style={{ left: `${pct}%` }}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="relative h-4 text-[10px] text-muted-foreground">
-                <span className="absolute left-0">
-                  {field.min}{field.unit ? ` ${field.unit}` : ""}
-                </span>
-                {selectable.map((n, i) => {
-                  const last = i === selectable.length - 1;
-                  // Skip the very last label here — we render max+ as the right edge.
-                  if (last) return null;
-                  return (
-                    <span
-                      key={i}
-                      className="absolute -translate-x-1/2"
-                      style={{ left: `${ticks[i]}%` }}
-                    >
-                      {n}
-                    </span>
-                  );
-                })}
-                <span className="absolute right-0">{fmt(field.max, true)}</span>
-              </div>
-              <div className="text-xs text-center text-foreground font-medium">
-                {!hasSelection
-                  ? <span className="text-muted-foreground">Húzd a csúszkát a választáshoz</span>
-                  : isLast
-                    ? fmt(rangeEnd, true)
-                    : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+                <div className="relative h-4 text-[10px] text-muted-foreground">
+                  <span className="absolute left-0">
+                    {field.min}{field.unit ? ` ${field.unit}` : ""}
+                  </span>
+                  {selectable.map((n, i) => {
+                    const last = i === selectable.length - 1;
+                    // Skip the very last label here — we render max+ as the right edge.
+                    if (last) return null;
+                    return (
+                      <span
+                        key={i}
+                        className="absolute -translate-x-1/2"
+                        style={{ left: `${ticks[i]}%` }}
+                      >
+                        {n}
+                      </span>
+                    );
+                  })}
+                  <span className="absolute right-0">{fmt(field.max, true)}</span>
+                </div>
+                <div className="text-xs text-center text-foreground font-medium">
+                  {!hasSelection
+                    ? <span className="text-muted-foreground">Húzd a csúszkát a választáshoz</span>
+                    : isLast
+                      ? fmt(rangeEnd, true)
+                      : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+                </div>
               </div>
             </div>
           );
