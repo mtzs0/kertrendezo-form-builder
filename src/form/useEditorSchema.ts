@@ -414,6 +414,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     },
     [bundle]
   );
+
+  const addSubGroup = useCallback(
     async (groupId: string) => {
       if (!form || !bundle) return;
       // New sub-groups start as 'unplaced' (position = 0).
