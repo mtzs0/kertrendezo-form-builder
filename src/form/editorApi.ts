@@ -28,10 +28,19 @@ type FieldExtraCols = {
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
   hide_label?: boolean | null;
 };
-type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
-type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
+// `parent_group_id` was added after the last Supabase types regeneration.
+type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
+  WidthCol & { parent_group_id?: string | null };
+// Legacy alias — sub-groups are now just rows in form_groups with parent_group_id set.
+// Kept under this name to avoid renaming the rest of the file.
+type SubGroupRow = GroupRow & { parent_group_id: string };
 type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & FieldExtraCols;
 type OptionRow = Database["public"]["Tables"]["form_field_options"]["Row"];
+
+// Untyped supabase view — types haven't been regenerated since form_sub_groups was dropped
+// and parent_group_id was added.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sbAny = supabase as unknown as { from: (t: string) => any };
 
 function asWidth(v: number | null | undefined): WidthPercent | undefined {
   if (v == null) return undefined;
@@ -100,9 +109,8 @@ export async function updateFormMeta(
 }
 
 export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundle, "form">> {
-  const [groupsRes, subGroupsRes, fieldsRes, optionsRes] = await Promise.all([
-    supabase.from("form_groups").select("*").eq("form_id", formId),
-    supabase.from("form_sub_groups").select("*").eq("form_id", formId),
+  const [allGroupsRes, fieldsRes, optionsRes] = await Promise.all([
+    sbAny.from("form_groups").select("*").eq("form_id", formId),
     supabase.from("form_fields").select("*").eq("form_id", formId),
     supabase
       .from("form_field_options")
@@ -110,26 +118,35 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       .eq("form_fields.form_id", formId),
   ]);
 
-  for (const r of [groupsRes, subGroupsRes, fieldsRes, optionsRes]) {
+  if (allGroupsRes.error) throw allGroupsRes.error;
+  for (const r of [fieldsRes, optionsRes]) {
     if (r.error) throw r.error;
   }
 
-  const groups: FormGroup[] = (groupsRes.data ?? []).map((g: GroupRow) => ({
-    id: g.id,
-    internalName: g.internal_name,
-    label: g.label,
-    location: g.position,
-    width: asWidth(g.width_percent),
-  }));
+  const allGroupRows = (allGroupsRes.data ?? []) as GroupRow[];
 
-  const subGroups: FormSubGroup[] = (subGroupsRes.data ?? []).map((s: SubGroupRow) => ({
-    id: s.id,
-    groupId: s.group_id,
-    internalName: s.internal_name,
-    label: s.label,
-    location: s.position,
-    width: asWidth(s.width_percent),
-  }));
+  // Top-level groups: parent_group_id is null/undefined.
+  const groups: FormGroup[] = allGroupRows
+    .filter((g) => !g.parent_group_id)
+    .map((g) => ({
+      id: g.id,
+      internalName: g.internal_name,
+      label: g.label,
+      location: g.position,
+      width: asWidth(g.width_percent),
+    }));
+
+  // Sub-groups: rows in form_groups that have parent_group_id set.
+  const subGroups: FormSubGroup[] = allGroupRows
+    .filter((g) => !!g.parent_group_id)
+    .map((s) => ({
+      id: s.id,
+      groupId: s.parent_group_id as string,
+      internalName: s.internal_name,
+      label: s.label,
+      location: s.position,
+      width: asWidth(s.width_percent),
+    }));
 
   const optionsByField = new Map<string, OptionRow[]>();
   for (const o of (optionsRes.data ?? []) as unknown as OptionRow[]) {
@@ -245,7 +262,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
 // ---------- Mutations ----------
 
 export async function createGroup(formId: string, position: number) {
-  const { data, error } = await supabase
+  const { data, error } = await sbAny
     .from("form_groups")
     .insert({ form_id: formId, internal_name: "uj_csoport", label: "Új csoport", position })
     .select("*")
@@ -256,15 +273,23 @@ export async function createGroup(formId: string, position: number) {
 
 export async function updateGroup(
   id: string,
-  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
+  patch: Partial<{
+    internalName: string;
+    label: string;
+    position: number;
+    width: WidthPercent | null;
+    /** Set/clear the parent group (null = make top-level, string = nest under that group). */
+    parentGroupId: string | null;
+  }>
 ) {
-  const u: Database["public"]["Tables"]["form_groups"]["Update"] & WidthCol = {
-    internal_name: patch.internalName,
-    label: patch.label,
-    position: patch.position,
-  };
+  const u: Record<string, unknown> = {};
+  if (patch.internalName !== undefined) u.internal_name = patch.internalName;
+  if (patch.label !== undefined) u.label = patch.label;
+  if (patch.position !== undefined) u.position = patch.position;
   if (patch.width !== undefined) u.width_percent = patch.width;
-  const { error } = await supabase.from("form_groups").update(u).eq("id", id);
+  if (patch.parentGroupId !== undefined) u.parent_group_id = patch.parentGroupId;
+  if (Object.keys(u).length === 0) return;
+  const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -273,12 +298,16 @@ export async function deleteGroup(id: string) {
   if (error) throw error;
 }
 
+/**
+ * Sub-groups are now stored as rows in `form_groups` with `parent_group_id` set.
+ * Creating a sub-group = inserting a group row with parent_group_id = groupId.
+ */
 export async function createSubGroup(formId: string, groupId: string, position: number) {
-  const { data, error } = await supabase
-    .from("form_sub_groups")
+  const { data, error } = await sbAny
+    .from("form_groups")
     .insert({
       form_id: formId,
-      group_id: groupId,
+      parent_group_id: groupId,
       internal_name: "uj_alcsoport",
       label: "Új al-csoport",
       position,
@@ -293,19 +322,19 @@ export async function updateSubGroup(
   id: string,
   patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null; groupId: string }>
 ) {
-  const u: Database["public"]["Tables"]["form_sub_groups"]["Update"] & WidthCol = {
-    internal_name: patch.internalName,
-    label: patch.label,
-    position: patch.position,
-  };
+  const u: Record<string, unknown> = {};
+  if (patch.internalName !== undefined) u.internal_name = patch.internalName;
+  if (patch.label !== undefined) u.label = patch.label;
+  if (patch.position !== undefined) u.position = patch.position;
   if (patch.width !== undefined) u.width_percent = patch.width;
-  if (patch.groupId !== undefined) u.group_id = patch.groupId;
-  const { error } = await supabase.from("form_sub_groups").update(u).eq("id", id);
+  if (patch.groupId !== undefined) u.parent_group_id = patch.groupId;
+  if (Object.keys(u).length === 0) return;
+  const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteSubGroup(id: string) {
-  const { error } = await supabase.from("form_sub_groups").delete().eq("id", id);
+  const { error } = await supabase.from("form_groups").delete().eq("id", id);
   if (error) throw error;
 }
 
@@ -476,11 +505,9 @@ export async function setSubGroupPositions(
 ) {
   await Promise.all(
     updates.map((u) => {
-      const patch: Database["public"]["Tables"]["form_sub_groups"]["Update"] = {
-        position: u.position,
-      };
-      if (u.groupId !== undefined) patch.group_id = u.groupId;
-      return supabase.from("form_sub_groups").update(patch).eq("id", u.id);
+      const patch: Record<string, unknown> = { position: u.position };
+      if (u.groupId !== undefined) patch.parent_group_id = u.groupId;
+      return sbAny.from("form_groups").update(patch).eq("id", u.id);
     })
   );
 }

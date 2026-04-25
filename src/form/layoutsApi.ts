@@ -207,14 +207,20 @@ export async function applyLayout(
   snapshot: LayoutSnapshot
 ): Promise<void> {
   // Pull the current set of ids so we can unplace anything not in the snapshot.
-  const [groupsRes, subGroupsRes, fieldsRes] = await Promise.all([
-    supabase.from("form_groups").select("id").eq("form_id", formId),
-    supabase.from("form_sub_groups").select("id, group_id").eq("form_id", formId),
+  // Sub-groups now live in form_groups (parent_group_id IS NOT NULL).
+  const [allGroupsRes, fieldsRes] = await Promise.all([
+    sb.from("form_groups").select("id, parent_group_id").eq("form_id", formId),
     supabase.from("form_fields").select("id").eq("form_id", formId),
   ]);
-  if (groupsRes.error) throw groupsRes.error;
-  if (subGroupsRes.error) throw subGroupsRes.error;
+  if (allGroupsRes.error) throw allGroupsRes.error;
   if (fieldsRes.error) throw fieldsRes.error;
+
+  const allGroupRows = (allGroupsRes.data ?? []) as Array<{
+    id: string;
+    parent_group_id: string | null;
+  }>;
+  const topLevelGroups = allGroupRows.filter((g) => !g.parent_group_id);
+  const subGroupRows = allGroupRows.filter((g) => !!g.parent_group_id);
 
   const snapGroupPos = new Map(snapshot.groups.map((g) => [g.id, g.position]));
   const snapSubGroup = new Map(
@@ -227,18 +233,16 @@ export async function applyLayout(
     ])
   );
 
-  const groupUpdates = (groupsRes.data ?? []).map((g) => ({
+  const groupUpdates = topLevelGroups.map((g) => ({
     id: g.id,
     position: snapGroupPos.get(g.id) ?? 0,
   }));
 
-  const subGroupUpdates = (subGroupsRes.data ?? []).map((s) => {
+  const subGroupUpdates = subGroupRows.map((s) => {
     const snap = snapSubGroup.get(s.id);
     return {
       id: s.id,
-      // If the snapshot reassigns this sub-group to a different parent group,
-      // honor it; otherwise keep its current group.
-      group_id: snap?.groupId ?? s.group_id,
+      parent_group_id: snap?.groupId ?? s.parent_group_id,
       position: snap?.position ?? 0,
     };
   });
@@ -255,12 +259,12 @@ export async function applyLayout(
 
   await Promise.all([
     ...groupUpdates.map((u) =>
-      supabase.from("form_groups").update({ position: u.position }).eq("id", u.id)
+      sb.from("form_groups").update({ position: u.position }).eq("id", u.id)
     ),
     ...subGroupUpdates.map((u) =>
-      supabase
-        .from("form_sub_groups")
-        .update({ position: u.position, group_id: u.group_id })
+      sb
+        .from("form_groups")
+        .update({ position: u.position, parent_group_id: u.parent_group_id })
         .eq("id", u.id)
     ),
     ...fieldUpdates.map((u) =>

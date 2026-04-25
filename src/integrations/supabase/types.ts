@@ -221,7 +221,7 @@ export type Database = {
             foreignKeyName: "form_fields_sub_group_id_fkey"
             columns: ["sub_group_id"]
             isOneToOne: false
-            referencedRelation: "form_sub_groups"
+            referencedRelation: "form_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -233,6 +233,7 @@ export type Database = {
           id: string
           internal_name: string
           label: string
+          parent_group_id: string | null
           position: number
           updated_at: string
           width_percent: number | null
@@ -243,6 +244,7 @@ export type Database = {
           id?: string
           internal_name: string
           label: string
+          parent_group_id?: string | null
           position?: number
           updated_at?: string
           width_percent?: number | null
@@ -253,6 +255,7 @@ export type Database = {
           id?: string
           internal_name?: string
           label?: string
+          parent_group_id?: string | null
           position?: number
           updated_at?: string
           width_percent?: number | null
@@ -263,6 +266,13 @@ export type Database = {
             columns: ["form_id"]
             isOneToOne: false
             referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "form_groups_parent_group_id_fkey"
+            columns: ["parent_group_id"]
+            isOneToOne: false
+            referencedRelation: "form_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -293,57 +303,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      form_sub_groups: {
-        Row: {
-          created_at: string
-          form_id: string
-          group_id: string
-          id: string
-          internal_name: string
-          label: string
-          position: number
-          updated_at: string
-          width_percent: number | null
-        }
-        Insert: {
-          created_at?: string
-          form_id: string
-          group_id: string
-          id?: string
-          internal_name: string
-          label: string
-          position?: number
-          updated_at?: string
-          width_percent?: number | null
-        }
-        Update: {
-          created_at?: string
-          form_id?: string
-          group_id?: string
-          id?: string
-          internal_name?: string
-          label?: string
-          position?: number
-          updated_at?: string
-          width_percent?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "form_sub_groups_form_id_fkey"
-            columns: ["form_id"]
-            isOneToOne: false
-            referencedRelation: "forms"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "form_sub_groups_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "form_groups"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       form_submissions: {
         Row: {
