@@ -35,6 +35,7 @@ export function LayoutsManager({
   fields,
   activeLayoutId,
   onSetActiveLayout,
+  onReloadEditor,
 }: Props) {
   const [layouts, setLayouts] = useState<FormLayout[]>([]);
   const [loading, setLoading] = useState(true);
