@@ -315,7 +315,105 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     }
   }, []);
 
-  const addSubGroup = useCallback(
+  /**
+   * Re-parent a group: pass a parent groupId to demote it to a sub-group of
+   * that group, or `null` to promote it back to top-level. Updates local
+   * state so `groups` and `subGroups` arrays stay in sync, then persists via
+   * `updateGroup` (parent_group_id column).
+   *
+   * Note: demoting a group that already has its own sub-groups is rejected by
+   * a DB trigger (max 2 levels deep). We let that error bubble up.
+   */
+  const nestGroup = useCallback(
+    async (id: string, parentGroupId: string | null, location = 0) => {
+      setBundle((b) => {
+        if (!b) return b;
+        // Locate the row in either array.
+        const fromGroups = b.groups.find((g) => g.id === id);
+        const fromSubs = b.subGroups.find((s) => s.id === id);
+        const src = fromGroups
+          ? {
+              id: fromGroups.id,
+              internalName: fromGroups.internalName,
+              label: fromGroups.label,
+              width: fromGroups.width,
+            }
+          : fromSubs
+          ? {
+              id: fromSubs.id,
+              internalName: fromSubs.internalName,
+              label: fromSubs.label,
+              width: fromSubs.width,
+            }
+          : null;
+        if (!src) return b;
+
+        if (parentGroupId === null) {
+          // Promote → top-level group.
+          const newGroup: FormGroup = { ...src, location };
+          return {
+            ...b,
+            groups: fromGroups
+              ? b.groups.map((g) => (g.id === id ? newGroup : g))
+              : [...b.groups, newGroup],
+            subGroups: b.subGroups.filter((s) => s.id !== id),
+            // Any field that was attached to this id as subGroupId now no longer makes sense.
+            fields: b.fields.map((f) =>
+              f.subGroupId === id ? { ...f, subGroupId: undefined } : f
+            ),
+          };
+        }
+
+        // Demote → becomes sub-group of parentGroupId.
+        const newSub: FormSubGroup = { ...src, groupId: parentGroupId, location };
+        return {
+          ...b,
+          groups: b.groups.filter((g) => g.id !== id),
+          subGroups: fromSubs
+            ? b.subGroups.map((s) => (s.id === id ? newSub : s))
+            : [...b.subGroups, newSub],
+          // If the group being demoted contained fields directly, those fields'
+          // subGroupId is irrelevant; only their groupId matters. Move any
+          // field that was inside this group at the top-level (subGroupId
+          // null) so it ends up inside the new sub-group's parent group.
+          fields: b.fields.map((f) =>
+            f.groupId === id
+              ? { ...f, groupId: parentGroupId, subGroupId: id }
+              : f
+          ),
+        };
+      });
+
+      setSaveStatus("saving");
+      try {
+        await updateGroup(id, { parentGroupId, position: location });
+        // Also re-parent any fields that lived inside this (now demoted) group:
+        // group_id becomes parentGroupId and sub_group_id becomes this id.
+        const orphans = (bundle?.fields ?? []).filter(
+          (f) => f.groupId === id && parentGroupId !== null
+        );
+        if (orphans.length) {
+          await setFieldPositions(
+            orphans.map((f) => ({
+              id: f.id,
+              position: f.location,
+              groupId: parentGroupId,
+              subGroupId: id,
+            }))
+          );
+        }
+        setSaveStatus("saved");
+        window.setTimeout(
+          () => setSaveStatus((s) => (s === "saved" ? "idle" : s)),
+          1500
+        );
+      } catch (e) {
+        console.error("Nest/unnest group failed", e);
+        setSaveStatus("error");
+      }
+    },
+    [bundle]
+  );
     async (groupId: string) => {
       if (!form || !bundle) return;
       // New sub-groups start as 'unplaced' (position = 0).
