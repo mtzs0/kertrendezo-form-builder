@@ -262,7 +262,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
 // ---------- Mutations ----------
 
 export async function createGroup(formId: string, position: number) {
-  const { data, error } = await supabase
+  const { data, error } = await sbAny
     .from("form_groups")
     .insert({ form_id: formId, internal_name: "uj_csoport", label: "Új csoport", position })
     .select("*")
@@ -273,15 +273,23 @@ export async function createGroup(formId: string, position: number) {
 
 export async function updateGroup(
   id: string,
-  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null }>
+  patch: Partial<{
+    internalName: string;
+    label: string;
+    position: number;
+    width: WidthPercent | null;
+    /** Set/clear the parent group (null = make top-level, string = nest under that group). */
+    parentGroupId: string | null;
+  }>
 ) {
-  const u: Database["public"]["Tables"]["form_groups"]["Update"] & WidthCol = {
-    internal_name: patch.internalName,
-    label: patch.label,
-    position: patch.position,
-  };
+  const u: Record<string, unknown> = {};
+  if (patch.internalName !== undefined) u.internal_name = patch.internalName;
+  if (patch.label !== undefined) u.label = patch.label;
+  if (patch.position !== undefined) u.position = patch.position;
   if (patch.width !== undefined) u.width_percent = patch.width;
-  const { error } = await supabase.from("form_groups").update(u).eq("id", id);
+  if (patch.parentGroupId !== undefined) u.parent_group_id = patch.parentGroupId;
+  if (Object.keys(u).length === 0) return;
+  const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -290,12 +298,16 @@ export async function deleteGroup(id: string) {
   if (error) throw error;
 }
 
+/**
+ * Sub-groups are now stored as rows in `form_groups` with `parent_group_id` set.
+ * Creating a sub-group = inserting a group row with parent_group_id = groupId.
+ */
 export async function createSubGroup(formId: string, groupId: string, position: number) {
-  const { data, error } = await supabase
-    .from("form_sub_groups")
+  const { data, error } = await sbAny
+    .from("form_groups")
     .insert({
       form_id: formId,
-      group_id: groupId,
+      parent_group_id: groupId,
       internal_name: "uj_alcsoport",
       label: "Új al-csoport",
       position,
@@ -310,19 +322,19 @@ export async function updateSubGroup(
   id: string,
   patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null; groupId: string }>
 ) {
-  const u: Database["public"]["Tables"]["form_sub_groups"]["Update"] & WidthCol = {
-    internal_name: patch.internalName,
-    label: patch.label,
-    position: patch.position,
-  };
+  const u: Record<string, unknown> = {};
+  if (patch.internalName !== undefined) u.internal_name = patch.internalName;
+  if (patch.label !== undefined) u.label = patch.label;
+  if (patch.position !== undefined) u.position = patch.position;
   if (patch.width !== undefined) u.width_percent = patch.width;
-  if (patch.groupId !== undefined) u.group_id = patch.groupId;
-  const { error } = await supabase.from("form_sub_groups").update(u).eq("id", id);
+  if (patch.groupId !== undefined) u.parent_group_id = patch.groupId;
+  if (Object.keys(u).length === 0) return;
+  const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteSubGroup(id: string) {
-  const { error } = await supabase.from("form_sub_groups").delete().eq("id", id);
+  const { error } = await supabase.from("form_groups").delete().eq("id", id);
   if (error) throw error;
 }
 
