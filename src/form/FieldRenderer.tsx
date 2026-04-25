@@ -560,23 +560,42 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
           );
         }
       } else {
-        const current = (value as number) ?? field.min;
+        const hasValue = typeof value === "number";
+        const current = hasValue ? (value as number) : field.min;
+        const step = field.step ?? 1;
+        const snapToStep = (n: number) => {
+          // Snap to the nearest step starting from min, then clamp to [min,max].
+          const offset = Math.round((n - field.min) / step) * step;
+          const v = field.min + offset;
+          return Math.min(field.max, Math.max(field.min, v));
+        };
         control = (
-          <div className="space-y-3 pt-1">
-            <Slider
+          <div className="flex items-start gap-3 pt-1">
+            <SliderNumberInput
               id={field.id}
               min={field.min}
               max={field.max}
-              step={field.step ?? 1}
-              value={[current]}
-              onValueChange={(v) => onChange(field.id, v[0])}
+              unit={field.unit}
+              value={hasValue ? current : undefined}
+              snap={snapToStep}
+              onCommit={(n) => onChange(field.id, n)}
             />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{field.min} {field.unit}</span>
-              <span className="text-foreground font-medium">
-                {current} {field.unit}
-              </span>
-              <span>{field.max} {field.unit}</span>
+            <div className="space-y-3 flex-1 min-w-0">
+              <Slider
+                id={field.id}
+                min={field.min}
+                max={field.max}
+                step={step}
+                value={[current]}
+                onValueChange={(v) => onChange(field.id, v[0])}
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{field.min} {field.unit}</span>
+                <span className="text-foreground font-medium">
+                  {current} {field.unit}
+                </span>
+                <span>{field.max} {field.unit}</span>
+              </div>
             </div>
           </div>
         );
