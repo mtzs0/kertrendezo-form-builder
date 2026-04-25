@@ -420,48 +420,59 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
           const ticks = middle.map((n) => ((n - field.min) / span) * 100);
 
           control = (
-            <div className="space-y-3 pt-1">
-              <div className="relative">
-                <Slider
-                  id={field.id}
-                  min={field.min}
-                  max={field.max}
-                  step={1}
-                  value={[knob]}
-                  onValueChange={(v) => onChange(field.id, v[0])}
-                  onValueCommit={(v) => onChange(field.id, snap(v[0]))}
-                />
-                <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
-                  {ticks.map((pct, i) => (
+            <div className="flex items-start gap-3 pt-1">
+              <SliderNumberInput
+                id={field.id}
+                min={field.min}
+                max={field.max}
+                unit={field.unit}
+                value={hasSelection ? stored : undefined}
+                snap={snap}
+                onCommit={(n) => onChange(field.id, n)}
+              />
+              <div className="space-y-3 flex-1 min-w-0">
+                <div className="relative">
+                  <Slider
+                    id={field.id}
+                    min={field.min}
+                    max={field.max}
+                    step={1}
+                    value={[knob]}
+                    onValueChange={(v) => onChange(field.id, v[0])}
+                    onValueCommit={(v) => onChange(field.id, snap(v[0]))}
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
+                    {ticks.map((pct, i) => (
+                      <span
+                        key={i}
+                        className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
+                        style={{ left: `${pct}%` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className="relative h-4 text-[10px] text-muted-foreground">
+                  <span className="absolute left-0">
+                    {field.min}{field.unit ? ` ${field.unit}` : ""}
+                  </span>
+                  {middle.map((n, i) => (
                     <span
                       key={i}
-                      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 h-3 w-0.5 rounded-full bg-muted-foreground/60"
-                      style={{ left: `${pct}%` }}
-                    />
+                      className="absolute -translate-x-1/2"
+                      style={{ left: `${ticks[i]}%` }}
+                    >
+                      {n}
+                    </span>
                   ))}
+                  <span className="absolute right-0">{fmt(field.max, true)}</span>
                 </div>
-              </div>
-              <div className="relative h-4 text-[10px] text-muted-foreground">
-                <span className="absolute left-0">
-                  {field.min}{field.unit ? ` ${field.unit}` : ""}
-                </span>
-                {middle.map((n, i) => (
-                  <span
-                    key={i}
-                    className="absolute -translate-x-1/2"
-                    style={{ left: `${ticks[i]}%` }}
-                  >
-                    {n}
-                  </span>
-                ))}
-                <span className="absolute right-0">{fmt(field.max, true)}</span>
-              </div>
-              <div className="text-xs text-center text-foreground font-medium">
-                {!hasSelection
-                  ? <span className="text-muted-foreground">Húzd a csúszkát a választáshoz</span>
-                  : isLast
-                    ? fmt(rangeEnd, true)
-                    : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+                <div className="text-xs text-center text-foreground font-medium">
+                  {!hasSelection
+                    ? <span className="text-muted-foreground">Húzd a csúszkát a választáshoz</span>
+                    : isLast
+                      ? fmt(rangeEnd, true)
+                      : `${rangeStart}–${rangeEnd}${field.unit ? " " + field.unit : ""}`}
+                </div>
               </div>
             </div>
           );
