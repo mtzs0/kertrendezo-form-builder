@@ -142,9 +142,14 @@ export function LayoutsManager({
       <div>
         <h3 className="text-lg font-semibold">Elrendezés mentések</h3>
         <p className="text-sm text-muted-foreground">
-          Mentsd el a jelenlegi mező-elrendezést egyedi névvel. A bekapcsolt
-          mentés (vagy a „Jelenlegi nézet") jelenik meg az élő űrlapon és az
-          előnézetben — egyszerre csak egy lehet aktív.
+          Mentsd el a jelenlegi mező-elrendezést egyedi névvel. A „Publikus
+          űrlap" kapcsolóval választhatod ki, melyik verzió jelenjen meg az
+          éles, publikus űrlapon a végfelhasználóknak — egyszerre csak egy
+          lehet aktív.
+        </p>
+        <p className="text-xs text-muted-foreground mt-1.5 italic">
+          Megjegyzés: az „Előnézet" fül mindig a jelenlegi szerkesztői állapotot
+          mutatja, függetlenül attól, melyik mentés aktív.
         </p>
       </div>
 
@@ -183,6 +188,13 @@ export function LayoutsManager({
           <div className="py-6 text-center text-sm text-muted-foreground">Betöltés…</div>
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+            {/* Column header row — labels the toggle column on the right. */}
+            <li className="flex items-center gap-3 px-3 py-1.5 bg-muted/50">
+              <div className="min-w-0 flex-1" />
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Publikus űrlap
+              </span>
+            </li>
             {/* Virtual "Jelenlegi nézet" row — always present, slightly different style. */}
             <li
               className={`flex items-center gap-3 px-3 py-2.5 ${
