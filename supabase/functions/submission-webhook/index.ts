@@ -206,7 +206,7 @@ Deno.serve(async (req) => {
 
     // Only include fields that are actually placed (position > 0) and whose
     // containing group/sub-group (if any) is also placed.
-    const placedFields = (fields ?? []).filter((f) => {
+    const placedFields = effFields.filter((f) => {
       if ((f.position ?? 0) <= 0) return false;
       if (f.group_id && (groupPos.get(f.group_id) ?? 0) <= 0) return false;
       if (f.sub_group_id && (subGroupPos.get(f.sub_group_id) ?? 0) <= 0) return false;
