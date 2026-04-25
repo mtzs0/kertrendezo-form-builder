@@ -118,6 +118,32 @@ export function LayoutsManager({
   };
 
   /**
+   * Apply the saved layout's snapshot back into the editor's normalized tables,
+   * effectively replacing the current editor state with the save's contents.
+   * If this layout is also the active (public) one, no toggle change is needed;
+   * otherwise we leave the active pointer untouched — loading is independent
+   * from "what the public sees".
+   */
+  const handleLoad = async (layout: FormLayout) => {
+    if (
+      !window.confirm(
+        `Betöltöd a(z) "${layout.name}" mentést a szerkesztőbe? A jelenlegi szerkesztett elrendezés felülíródik (a mezők, csoportok és tartalmuk megmaradnak — csak az elhelyezésük áll vissza erre a mentésre).`
+      )
+    )
+      return;
+    setBusyId(layout.id);
+    setError(null);
+    try {
+      await applyLayout(formId, layout.snapshot);
+      await onReloadEditor();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Betöltés sikertelen");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  /**
    * Toggle the active layout. Exactly one toggle is on at a time, and at
    * least one is always on — so toggling OFF the active one is a no-op.
    * `target` = null means activating the "Jelenlegi nézet" virtual row.
