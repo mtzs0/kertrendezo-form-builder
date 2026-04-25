@@ -188,6 +188,13 @@ export function LayoutsManager({
           <div className="py-6 text-center text-sm text-muted-foreground">Betöltés…</div>
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+            {/* Column header row — labels the toggle column on the right. */}
+            <li className="flex items-center gap-3 px-3 py-1.5 bg-muted/50">
+              <div className="min-w-0 flex-1" />
+              <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Publikus űrlap
+              </span>
+            </li>
             {/* Virtual "Jelenlegi nézet" row — always present, slightly different style. */}
             <li
               className={`flex items-center gap-3 px-3 py-2.5 ${
