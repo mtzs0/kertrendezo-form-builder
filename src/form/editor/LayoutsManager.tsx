@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Trash2, Plus } from "lucide-react";
+import { Loader2, Save, Trash2, Plus, Download } from "lucide-react";
 import {
+  applyLayout,
   buildSnapshot,
   createLayout,
   deleteLayout,
@@ -23,6 +24,8 @@ interface Props {
   activeLayoutId: string | null;
   /** Set the active layout (null = use current editor state). */
   onSetActiveLayout: (layoutId: string | null) => Promise<void>;
+  /** Reload the editor bundle from the database (after applying a saved layout). */
+  onReloadEditor: () => Promise<void>;
 }
 
 export function LayoutsManager({
@@ -32,6 +35,7 @@ export function LayoutsManager({
   fields,
   activeLayoutId,
   onSetActiveLayout,
+  onReloadEditor,
 }: Props) {
   const [layouts, setLayouts] = useState<FormLayout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,6 +112,32 @@ export function LayoutsManager({
       await refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Törlés sikertelen");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  /**
+   * Apply the saved layout's snapshot back into the editor's normalized tables,
+   * effectively replacing the current editor state with the save's contents.
+   * If this layout is also the active (public) one, no toggle change is needed;
+   * otherwise we leave the active pointer untouched — loading is independent
+   * from "what the public sees".
+   */
+  const handleLoad = async (layout: FormLayout) => {
+    if (
+      !window.confirm(
+        `Betöltöd a(z) "${layout.name}" mentést a szerkesztőbe? A jelenlegi szerkesztett elrendezés felülíródik (a mezők, csoportok és tartalmuk megmaradnak — csak az elhelyezésük áll vissza erre a mentésre).`
+      )
+    )
+      return;
+    setBusyId(layout.id);
+    setError(null);
+    try {
+      await applyLayout(formId, layout.snapshot);
+      await onReloadEditor();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Betöltés sikertelen");
     } finally {
       setBusyId(null);
     }
@@ -239,6 +269,16 @@ export function LayoutsManager({
                         Frissítve: {new Date(l.updated_at).toLocaleString("hu-HU")}
                       </p>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleLoad(l)}
+                      disabled={isBusy}
+                      title="Mentés betöltése a szerkesztőbe (a jelenlegi elrendezés felülíródik)"
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                      Betöltés
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
