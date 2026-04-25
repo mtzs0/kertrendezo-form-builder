@@ -69,6 +69,8 @@ export interface UseEditorSchemaResult {
   patchGroup: (id: string, patch: Partial<FormGroup>) => void;
   removeGroup: (id: string) => Promise<void>;
   reorderGroups: (orderedIds: string[]) => Promise<void>;
+  /** Re-parent a group: pass a parent id to demote it to a sub-group, or null to promote it back to top-level. */
+  nestGroup: (id: string, parentGroupId: string | null, location?: number) => Promise<void>;
 
   // Sub-group ops
   addSubGroup: (groupId: string) => Promise<void>;
