@@ -99,10 +99,14 @@ Deno.serve(async (req) => {
       return json({ ok: true, submissionId, relayed: false, reason: "no webhook configured" });
     }
 
-    // Load all placed fields for this form along with their group/sub-group
-    // so we can order the webhook payload to match the visual form structure
-    // and exclude unplaced fields (position <= 0).
-    const [{ data: fields }, { data: groups }, { data: subGroups }] = await Promise.all([
+    // Load all fields/groups/sub-groups, then optionally apply the form's
+    // active layout snapshot so we use the same placement the user sees.
+    const [
+      { data: fields },
+      { data: groups },
+      { data: subGroups },
+      { data: formRow },
+    ] = await Promise.all([
       admin
         .from("form_fields")
         .select("id, internal_name, position, group_id, sub_group_id")
@@ -115,18 +119,94 @@ Deno.serve(async (req) => {
         .from("form_sub_groups")
         .select("id, position, group_id")
         .eq("form_id", form.id),
+      admin
+        .from("forms")
+        .select("active_layout_id")
+        .eq("id", form.id)
+        .maybeSingle(),
     ]);
 
+    // If an active layout exists, virtually override positions/parents using
+    // the snapshot — exactly what the live/preview renderer does.
+    const activeLayoutId = (formRow as { active_layout_id: string | null } | null)
+      ?.active_layout_id ?? null;
+    let effFields = (fields ?? []).map((f) => ({ ...f }));
+    let effGroups = (groups ?? []).map((g) => ({ ...g }));
+    let effSubGroups = (subGroups ?? []).map((s) => ({ ...s }));
+
+    if (activeLayoutId) {
+      const { data: layoutRow } = await admin
+        .from("form_layouts")
+        .select("snapshot")
+        .eq("id", activeLayoutId)
+        .maybeSingle();
+      const snapshot = (layoutRow?.snapshot ?? null) as
+        | {
+            groups?: Array<{ id: string; position: number }>;
+            subGroups?: Array<{ id: string; groupId: string; position: number }>;
+            fields?: Array<{
+              id: string;
+              position: number;
+              groupId: string | null;
+              sub_group_id?: string | null;
+              subGroupId?: string | null;
+            }>;
+          }
+        | null;
+      if (snapshot) {
+        const snapGroup = new Map(
+          (snapshot.groups ?? []).map((g) => [g.id, g.position]),
+        );
+        const snapSub = new Map(
+          (snapshot.subGroups ?? []).map((s) => [
+            s.id,
+            { position: s.position, groupId: s.groupId },
+          ]),
+        );
+        const snapField = new Map(
+          (snapshot.fields ?? []).map((f) => [
+            f.id,
+            {
+              position: f.position,
+              groupId: f.groupId,
+              subGroupId: f.subGroupId ?? f.sub_group_id ?? null,
+            },
+          ]),
+        );
+        effGroups = effGroups.map((g) => ({
+          ...g,
+          position: snapGroup.get(g.id) ?? 0,
+        }));
+        effSubGroups = effSubGroups.map((s) => {
+          const snap = snapSub.get(s.id);
+          return {
+            ...s,
+            group_id: snap?.groupId ?? s.group_id,
+            position: snap?.position ?? 0,
+          };
+        });
+        effFields = effFields.map((f) => {
+          const snap = snapField.get(f.id);
+          return {
+            ...f,
+            position: snap?.position ?? 0,
+            group_id: snap ? snap.groupId : null,
+            sub_group_id: snap ? snap.subGroupId : null,
+          };
+        });
+      }
+    }
+
     const groupPos = new Map<string, number>(
-      (groups ?? []).map((g) => [g.id, g.position ?? 0]),
+      effGroups.map((g) => [g.id, g.position ?? 0]),
     );
     const subGroupPos = new Map<string, number>(
-      (subGroups ?? []).map((s) => [s.id, s.position ?? 0]),
+      effSubGroups.map((s) => [s.id, s.position ?? 0]),
     );
 
     // Only include fields that are actually placed (position > 0) and whose
     // containing group/sub-group (if any) is also placed.
-    const placedFields = (fields ?? []).filter((f) => {
+    const placedFields = effFields.filter((f) => {
       if ((f.position ?? 0) <= 0) return false;
       if (f.group_id && (groupPos.get(f.group_id) ?? 0) <= 0) return false;
       if (f.sub_group_id && (subGroupPos.get(f.sub_group_id) ?? 0) <= 0) return false;
