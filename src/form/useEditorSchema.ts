@@ -328,7 +328,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                 ...b.subGroups,
                 {
                   id: row.id,
-                  groupId: row.group_id,
+                  groupId: row.parent_group_id,
                   internalName: row.internal_name,
                   label: row.label,
                   location: row.position,
