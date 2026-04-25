@@ -738,6 +738,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     patchGroup,
     removeGroup,
     reorderGroups,
+    nestGroup,
     addSubGroup,
     patchSubGroup,
     removeSubGroup,
