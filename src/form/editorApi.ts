@@ -505,11 +505,9 @@ export async function setSubGroupPositions(
 ) {
   await Promise.all(
     updates.map((u) => {
-      const patch: Database["public"]["Tables"]["form_sub_groups"]["Update"] = {
-        position: u.position,
-      };
-      if (u.groupId !== undefined) patch.group_id = u.groupId;
-      return supabase.from("form_sub_groups").update(patch).eq("id", u.id);
+      const patch: Record<string, unknown> = { position: u.position };
+      if (u.groupId !== undefined) patch.parent_group_id = u.groupId;
+      return sbAny.from("form_groups").update(patch).eq("id", u.id);
     })
   );
 }
