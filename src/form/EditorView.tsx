@@ -161,6 +161,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     fields={editor.fields}
                     activeLayoutId={editor.activeLayoutId}
                     onSetActiveLayout={editor.setActiveLayout}
+                    onReloadEditor={editor.reload}
                   />
                 )}
               </div>
