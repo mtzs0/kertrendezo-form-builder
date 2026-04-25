@@ -28,10 +28,19 @@ type FieldExtraCols = {
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
   hide_label?: boolean | null;
 };
-type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] & WidthCol;
-type SubGroupRow = Database["public"]["Tables"]["form_sub_groups"]["Row"] & WidthCol;
+// `parent_group_id` was added after the last Supabase types regeneration.
+type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
+  WidthCol & { parent_group_id?: string | null };
+// Legacy alias — sub-groups are now just rows in form_groups with parent_group_id set.
+// Kept under this name to avoid renaming the rest of the file.
+type SubGroupRow = GroupRow & { parent_group_id: string };
 type FieldRow = Database["public"]["Tables"]["form_fields"]["Row"] & FieldExtraCols;
 type OptionRow = Database["public"]["Tables"]["form_field_options"]["Row"];
+
+// Untyped supabase view — types haven't been regenerated since form_sub_groups was dropped
+// and parent_group_id was added.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sbAny = supabase as unknown as { from: (t: string) => any };
 
 function asWidth(v: number | null | undefined): WidthPercent | undefined {
   if (v == null) return undefined;
