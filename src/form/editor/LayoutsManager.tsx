@@ -272,6 +272,16 @@ export function LayoutsManager({
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => handleLoad(l)}
+                      disabled={isBusy}
+                      title="Mentés betöltése a szerkesztőbe (a jelenlegi elrendezés felülíródik)"
+                    >
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                      Betöltés
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleOverwrite(l)}
                       disabled={isBusy}
                       title="Jelenlegi elrendezés mentése erre a névre"
