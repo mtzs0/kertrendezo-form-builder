@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Save, Trash2, Plus } from "lucide-react";
+import { Loader2, Save, Trash2, Plus, Download } from "lucide-react";
 import {
+  applyLayout,
   buildSnapshot,
   createLayout,
   deleteLayout,
@@ -23,6 +24,8 @@ interface Props {
   activeLayoutId: string | null;
   /** Set the active layout (null = use current editor state). */
   onSetActiveLayout: (layoutId: string | null) => Promise<void>;
+  /** Reload the editor bundle from the database (after applying a saved layout). */
+  onReloadEditor: () => Promise<void>;
 }
 
 export function LayoutsManager({
