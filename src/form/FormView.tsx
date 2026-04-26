@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { ArrowRight } from "lucide-react";
 import { FieldRenderer } from "./FieldRenderer";
 import {
   buildRenderTree,
@@ -13,7 +14,11 @@ import {
   type RenderSubGroup,
 } from "./structure";
 import { submitForm } from "./api";
+import { StepNavigator, type StepGroup } from "./StepNavigator";
 import type { FormSchema, FormValues, FormField } from "./types";
+
+/** "group-level" pseudo sub-step id for fields directly on a group. */
+const GROUP_LEVEL_SUB = "__group_level__";
 
 interface Props {
   schema: FormSchema;
