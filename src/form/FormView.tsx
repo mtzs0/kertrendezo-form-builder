@@ -122,6 +122,62 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
   const [submitted, setSubmitted] = useState(false);
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
+  // Stepped mode is active when at least one top-level group is placed.
+  // Groups become steps; their sub-groups (+ group-level fields as a pseudo
+  // sub-step) become sub-steps. Global (no-group) top-level fields are NOT
+  // rendered in stepped mode per requirement.
+  const groupSteps = useMemo<RenderGroup[]>(
+    () => tree.filter((it): it is RenderGroup => it.kind === "group"),
+    [tree],
+  );
+  const isStepped = groupSteps.length > 0;
+
+  /**
+   * Build per-group sub-step ids in render order. Group-level fields (children
+   * with kind === "field") are merged into a single pseudo sub-step rendered
+   * at their first occurrence position.
+   */
+  const subStepsByGroup = useMemo(() => {
+    const out: Record<string, { ids: string[]; labels: Record<string, string> }> = {};
+    for (const g of groupSteps) {
+      const ids: string[] = [];
+      const labels: Record<string, string> = {};
+      let pseudoAdded = false;
+      for (const child of g.children) {
+        if (child.kind === "subgroup") {
+          ids.push(child.id);
+          labels[child.id] = child.label;
+        } else if (!pseudoAdded) {
+          ids.push(GROUP_LEVEL_SUB);
+          labels[GROUP_LEVEL_SUB] = "Általános";
+          pseudoAdded = true;
+        }
+      }
+      out[g.id] = { ids, labels };
+    }
+    return out;
+  }, [groupSteps]);
+
+  // Active step state.
+  const [activeGroupIdx, setActiveGroupIdx] = useState(0);
+  const [activeSubByGroup, setActiveSubByGroup] = useState<Record<string, string | null>>({});
+  const [maxGroupIdx, setMaxGroupIdx] = useState(0);
+  const [maxSubIdxByGroup, setMaxSubIdxByGroup] = useState<Record<string, number>>({});
+
+  // Reset stepper when groups change shape.
+  const groupsKey = groupSteps.map((g) => g.id).join("|");
+  useEffect(() => {
+    setActiveGroupIdx(0);
+    setMaxGroupIdx(0);
+    setActiveSubByGroup({});
+    setMaxSubIdxByGroup({});
+  }, [groupsKey]);
+
+  const activeGroup = isStepped ? groupSteps[activeGroupIdx] : null;
+  const activeSubId = activeGroup
+    ? (activeSubByGroup[activeGroup.id] ?? subStepsByGroup[activeGroup.id]?.ids[0] ?? null)
+    : null;
+
   const handleChange = (id: string, v: FormValues[string]) =>
     setValues((prev) => ({ ...prev, [id]: v }));
 
@@ -145,7 +201,6 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     renderOne: (it: T) => React.ReactNode,
     keyOf: (it: T) => string,
   ) {
-    // On vertical (mobile) layout, ignore widths and stack everything full-width.
     if (layout === "vertical") {
       return (
         <div className="flex flex-col gap-4">
@@ -178,6 +233,37 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
       </div>
     );
   }
+
+  function collectFieldsForSubStep(group: RenderGroup, subId: string): FormField[] {
+    if (subId === GROUP_LEVEL_SUB) {
+      return group.children
+        .filter((c): c is RenderGroupChild => c.kind === "field")
+        .map((c) => c.field);
+    }
+    const sg = group.children.find(
+      (c): c is RenderSubGroup => c.kind === "subgroup" && c.id === subId,
+    );
+    return sg?.fields ?? [];
+  }
+
+  /** Soft-warn missing required (visible) fields in current sub-step. */
+  const collectMissingInCurrentStep = (): string[] => {
+    if (!activeGroup || !activeSubId) return [];
+    const fields = collectFieldsForSubStep(activeGroup, activeSubId);
+    const missing: string[] = [];
+    for (const f of fields) {
+      if (!isFieldVisible(f, values)) continue;
+      if (!f.required) continue;
+      const v = values[f.id];
+      const empty =
+        v === undefined ||
+        v === null ||
+        v === "" ||
+        (Array.isArray(v) && v.length === 0);
+      if (empty) missing.push(f.label || f.internalName);
+    }
+    return missing;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,12 +305,11 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     );
   }
 
-  // Top-level rendering: groups (with their own widths) + global fields, packed by width.
+  // ---- Non-stepped (legacy) rendering: only used when no groups are placed ----
   const renderTopItem = (item: RenderItem) => {
     if (item.kind === "field") return renderField(item.field);
     return renderGroup(item);
   };
-
   const topWidth = (item: RenderItem) =>
     item.kind === "field" ? item.field.width : (item as RenderGroup).width;
 
@@ -236,13 +321,8 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     };
     const childWidth = (child: RenderSubGroup | RenderGroupChild) =>
       child.kind === "field" ? child.field.width : child.width;
-
     return (
       <section key={group.id} className="space-y-4">
-        <header className="flex items-baseline gap-3">
-          <h3 className="text-lg md:text-xl font-semibold text-foreground">{group.label}</h3>
-          <div className="flex-1 h-px bg-border" />
-        </header>
         {renderPacked(
           children,
           childWidth,
@@ -252,7 +332,6 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
       </section>
     );
   }
-
   function renderSubGroup(sg: RenderSubGroup) {
     return (
       <div className="rounded-xl border border-border/70 bg-secondary/40 p-4 md:p-5 space-y-4 h-full">
@@ -269,14 +348,96 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     );
   }
 
+  // ---- Stepped-mode active sub-step body ----
+  function renderActiveSubStep() {
+    if (!activeGroup || !activeSubId) return null;
+    const fields = collectFieldsForSubStep(activeGroup, activeSubId);
+    return (
+      <div className="space-y-5">
+        {renderPacked(
+          fields,
+          (f) => f.width,
+          (f) => renderField(f),
+          (f) => f.id,
+        )}
+      </div>
+    );
+  }
+
+  const isLastGroup = activeGroupIdx === groupSteps.length - 1;
+  const subInfo = activeGroup ? subStepsByGroup[activeGroup.id] : null;
+  const activeSubIdxInGroup =
+    activeGroup && activeSubId && subInfo ? subInfo.ids.indexOf(activeSubId) : -1;
+  const isLastSubInGroup = subInfo
+    ? activeSubIdxInGroup === subInfo.ids.length - 1
+    : true;
+  const isFinalStep = isStepped && isLastGroup && isLastSubInGroup;
+
+  const goNext = () => {
+    if (!isStepped || !activeGroup || !subInfo) return;
+    const missing = collectMissingInCurrentStep();
+    if (missing.length > 0) {
+      toast.warning(
+        `Hiányzó kötelező mezők: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`,
+      );
+    }
+    if (!isLastSubInGroup) {
+      const nextSubId = subInfo.ids[activeSubIdxInGroup + 1];
+      setActiveSubByGroup((p) => ({ ...p, [activeGroup.id]: nextSubId }));
+      setMaxSubIdxByGroup((p) => ({
+        ...p,
+        [activeGroup.id]: Math.max(p[activeGroup.id] ?? 0, activeSubIdxInGroup + 1),
+      }));
+      return;
+    }
+    if (!isLastGroup) {
+      const nextIdx = activeGroupIdx + 1;
+      setActiveGroupIdx(nextIdx);
+      setMaxGroupIdx((m) => Math.max(m, nextIdx));
+    }
+  };
+
+  const stepNavGroups: StepGroup[] = groupSteps.map((g) => ({
+    id: g.id,
+    label: g.label,
+    subIds: subStepsByGroup[g.id]?.ids ?? [],
+    subLabels: subStepsByGroup[g.id]?.labels ?? {},
+  }));
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-      {renderPacked(
-        tree,
-        topWidth,
-        renderTopItem,
-        (it) => (it.kind === "field" ? it.field.id : it.id),
+      {isStepped && (
+        <StepNavigator
+          groups={stepNavGroups}
+          activeGroupIndex={activeGroupIdx}
+          activeSubId={activeSubId}
+          maxGroupIndex={maxGroupIdx}
+          maxSubIndexByGroup={maxSubIdxByGroup}
+          onJumpGroup={(i) => {
+            if (i > maxGroupIdx) return;
+            setActiveGroupIdx(i);
+          }}
+          onJumpSub={(gi, sid) => {
+            const g = groupSteps[gi];
+            if (!g) return;
+            const ids = subStepsByGroup[g.id]?.ids ?? [];
+            const idx = ids.indexOf(sid);
+            const cap = maxSubIdxByGroup[g.id] ?? 0;
+            if (idx < 0 || idx > cap) return;
+            setActiveGroupIdx(gi);
+            setActiveSubByGroup((p) => ({ ...p, [g.id]: sid }));
+          }}
+        />
       )}
+
+      {isStepped
+        ? renderActiveSubStep()
+        : renderPacked(
+            tree,
+            topWidth,
+            renderTopItem,
+            (it) => (it.kind === "field" ? it.field.id : it.id),
+          )}
 
       <div className="flex justify-end pt-2 gap-2">
         {showDemoButton && (
@@ -289,14 +450,25 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
             Demo
           </Button>
         )}
-        <Button
-          type="submit"
-          size="lg"
-          disabled={submitting}
-          className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
-        >
-          {submitting ? "Küldés…" : "Küldés"}
-        </Button>
+        {isStepped && !isFinalStep ? (
+          <Button
+            type="button"
+            size="lg"
+            onClick={goNext}
+            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+          >
+            Tovább <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            type="submit"
+            size="lg"
+            disabled={submitting}
+            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+          >
+            {submitting ? "Küldés…" : "Küldés"}
+          </Button>
+        )}
       </div>
     </form>
   );
