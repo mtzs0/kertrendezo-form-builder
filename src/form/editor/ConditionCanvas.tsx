@@ -861,10 +861,11 @@ export function ConditionCanvas({
         </div>
       </div>
 
-      {/* Right-side: field config panel for the currently selected box */}
-      <aside className="lg:sticky lg:top-4 self-start max-h-[calc(100vh-6rem)] overflow-auto">
-        {fieldConfigPanel}
-      </aside>
+        {/* Right-side: field config panel for the currently selected box */}
+        <aside className="lg:sticky lg:top-4 self-start max-h-[calc(100vh-6rem)] overflow-auto">
+          {fieldConfigPanel}
+        </aside>
+      </div>
     </div>
   );
 }
