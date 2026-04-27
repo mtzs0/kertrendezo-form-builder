@@ -70,8 +70,10 @@ import {
   operatorsForField,
 } from "./conditionInputs";
 import {
-  loadPositions,
-  savePositions,
+  clearPositions,
+  removePosition,
+  updatePositions,
+  useCanvasPositions,
   type BoxPos,
 } from "./canvasPositionsStore";
 
