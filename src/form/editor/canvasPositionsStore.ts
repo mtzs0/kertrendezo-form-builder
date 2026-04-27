@@ -211,21 +211,44 @@ function scheduleSave(s: FormState, formId: string, fieldId: string) {
 /**
  * Re-renders whenever positions for the given form change. Triggers a
  * lazy load from Supabase the first time it's mounted for a given form.
+ *
+ * Returns both the snapshot and a `loaded` flag indicating whether the
+ * initial DB fetch has resolved. Callers MUST gate any auto-placement
+ * logic on `loaded === true` — otherwise they'd write grid-default
+ * positions over the (still-loading) DB values and scramble the canvas.
  */
 export function useCanvasPositions(formId: string | null | undefined): PositionsMap {
-  const s = getState(formId);
-  const [snap, setSnap] = useState<PositionsMap>(s.positions);
+  const [, force] = useState(0);
 
   useEffect(() => {
     const st = getState(formId);
-    setSnap(st.positions);
-    const listener = () => setSnap(getState(formId).positions);
+    const listener = () => force((n) => n + 1);
     st.listeners.add(listener);
-    void ensurePositionsLoaded(formId);
+    // Trigger the load and re-render once it resolves so consumers see
+    // `loaded === true` (via useCanvasPositionsLoaded) at the same time.
+    void ensurePositionsLoaded(formId).then(() => force((n) => n + 1));
+    // Re-sync immediately in case state changed between render and effect.
+    force((n) => n + 1);
     return () => {
       st.listeners.delete(listener);
     };
   }, [formId]);
 
-  return snap;
+  return getState(formId).positions;
+}
+
+/** Whether the initial DB load for this form's positions has resolved. */
+export function useCanvasPositionsLoaded(formId: string | null | undefined): boolean {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const st = getState(formId);
+    const listener = () => force((n) => n + 1);
+    st.listeners.add(listener);
+    void ensurePositionsLoaded(formId).then(() => force((n) => n + 1));
+    force((n) => n + 1);
+    return () => {
+      st.listeners.delete(listener);
+    };
+  }, [formId]);
+  return getState(formId).loaded;
 }

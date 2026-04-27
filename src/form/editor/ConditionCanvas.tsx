@@ -74,6 +74,7 @@ import {
   removePosition,
   updatePositions,
   useCanvasPositions,
+  useCanvasPositionsLoaded,
   type BoxPos,
 } from "./canvasPositionsStore";
 
@@ -151,6 +152,11 @@ export function ConditionCanvas({
   // Box positions — backed by Supabase via the shared store. The hook
   // returns the latest cached snapshot and re-renders on any change.
   const positions = useCanvasPositions(formId);
+  // Whether the initial DB fetch has resolved. We MUST gate auto-placement
+  // on this — placing boxes before the DB load returns would write
+  // grid-default coords over the saved positions and scramble the canvas
+  // (and also wipe out arrows whose target/source ended up moved).
+  const positionsLoaded = useCanvasPositionsLoaded(formId);
 
   /**
    * Local helper that mirrors the previous `setPositions((prev) => …)` API
@@ -183,7 +189,14 @@ export function ConditionCanvas({
 
   // Auto-place any field that already has a condition (so the user sees
   // existing conditions when first opening the tab).
+  //
+  // IMPORTANT: only run AFTER the initial DB load resolves. Otherwise we'd
+  // place boxes at grid defaults while the saved positions are still
+  // loading — those defaults would then be persisted and overwrite the DB
+  // values, scrambling the canvas and dropping arrows whose endpoints
+  // moved.
   useEffect(() => {
+    if (!positionsLoaded) return;
     setPositions((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -201,16 +214,21 @@ export function ConditionCanvas({
         };
       };
       for (const f of fields) {
-        if (next[f.id]) continue;
-        if (f.condition && f.condition.rules.length > 0) {
+        if (!f.condition || f.condition.rules.length === 0) continue;
+        // Place the target itself if missing.
+        if (!next[f.id]) {
           next[f.id] = placeAt(nextIndex++, ++nextOrder);
           changed = true;
-          // Also place referenced source fields if missing.
-          for (const r of f.condition.rules) {
-            if ("combinator" in r) continue;
-            if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
-              next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
-            }
+        }
+        // Always make sure referenced source fields have a position too —
+        // otherwise their arrows would be hidden. This must run even when
+        // the target is already placed (e.g. user just added a new rule
+        // referencing a field that hasn't been dropped on the canvas).
+        for (const r of f.condition.rules) {
+          if ("combinator" in r) continue;
+          if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
+            next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
+            changed = true;
           }
         }
       }
@@ -218,7 +236,7 @@ export function ConditionCanvas({
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields]);
+  }, [fields, positionsLoaded]);
 
   const placedFieldIds = useMemo(
     () => Object.keys(positions).filter((id) => fieldById.has(id)),
