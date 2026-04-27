@@ -52,6 +52,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   city: "Város",
   street: "Utca, házszám",
   email: "Email",
+  repeater: "Ismétlődő blokk",
 };
 
 const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
