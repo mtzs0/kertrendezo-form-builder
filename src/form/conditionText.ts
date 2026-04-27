@@ -65,6 +65,7 @@ const OPERATORS = new Map<string, FieldCondition["operator"]>([
   ["<", "less_than"],
   ["<=", "less_than"],
   ["contains", "contains"],
+  ["answered", "answered"],
 ]);
 
 export class ConditionParseError extends Error {
@@ -326,6 +327,7 @@ const OP_TO_TEXT: Record<FieldCondition["operator"], string> = {
   greater_than: ">",
   less_than: "<",
   contains: "contains",
+  answered: "answered",
 };
 
 function valueToText(value: FieldCondition["value"]): string {
