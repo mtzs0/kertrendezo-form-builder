@@ -189,7 +189,14 @@ export function ConditionCanvas({
 
   // Auto-place any field that already has a condition (so the user sees
   // existing conditions when first opening the tab).
+  //
+  // IMPORTANT: only run AFTER the initial DB load resolves. Otherwise we'd
+  // place boxes at grid defaults while the saved positions are still
+  // loading — those defaults would then be persisted and overwrite the DB
+  // values, scrambling the canvas and dropping arrows whose endpoints
+  // moved.
   useEffect(() => {
+    if (!positionsLoaded) return;
     setPositions((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -224,7 +231,7 @@ export function ConditionCanvas({
       return next;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fields]);
+  }, [fields, positionsLoaded]);
 
   const placedFieldIds = useMemo(
     () => Object.keys(positions).filter((id) => fieldById.has(id)),
