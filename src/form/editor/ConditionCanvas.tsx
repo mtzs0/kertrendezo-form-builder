@@ -136,6 +136,7 @@ export function ConditionCanvas({
   onSetCondition,
   selectedFieldId,
   onSelectField,
+  onAddField,
   fieldConfigPanel,
 }: Props) {
   const fieldById = useMemo(() => {
