@@ -634,23 +634,29 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
             }}
             className="flex-1"
           />
-          <div className="w-40 shrink-0">
-            <select
-              value={unit}
-              onChange={(e) => commit({ unit: e.target.value })}
-              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              aria-label="Mértékegység"
-            >
-              {field.options.length === 0 && (
-                <option value="">— nincs egység —</option>
-              )}
-              {field.options.map((o) => (
-                <option key={o.dataName} value={o.dataName}>
-                  {o.displayName}
-                </option>
-              ))}
-            </select>
-          </div>
+          {field.options.length === 1 ? (
+            <span className="shrink-0 text-sm text-muted-foreground px-1">
+              {field.options[0].displayName}
+            </span>
+          ) : (
+            <div className="w-40 shrink-0">
+              <select
+                value={unit}
+                onChange={(e) => commit({ unit: e.target.value })}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                aria-label="Mértékegység"
+              >
+                {field.options.length === 0 && (
+                  <option value="">— nincs egység —</option>
+                )}
+                {field.options.map((o) => (
+                  <option key={o.dataName} value={o.dataName}>
+                    {o.displayName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       );
       break;
