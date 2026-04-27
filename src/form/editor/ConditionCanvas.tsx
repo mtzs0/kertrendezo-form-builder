@@ -152,6 +152,11 @@ export function ConditionCanvas({
   // Box positions — backed by Supabase via the shared store. The hook
   // returns the latest cached snapshot and re-renders on any change.
   const positions = useCanvasPositions(formId);
+  // Whether the initial DB fetch has resolved. We MUST gate auto-placement
+  // on this — placing boxes before the DB load returns would write
+  // grid-default coords over the saved positions and scramble the canvas
+  // (and also wipe out arrows whose target/source ended up moved).
+  const positionsLoaded = useCanvasPositionsLoaded(formId);
 
   /**
    * Local helper that mirrors the previous `setPositions((prev) => …)` API
