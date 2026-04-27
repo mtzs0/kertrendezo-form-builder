@@ -328,7 +328,7 @@ export function ConditionCanvas({
       const w = toWorld(ev.clientX, ev.clientY);
       setPositions((prev) => ({
         ...prev,
-        [fieldId]: { x: w.x - offsetX, y: w.y - offsetY },
+        [fieldId]: { ...prev[fieldId], x: w.x - offsetX, y: w.y - offsetY },
       }));
     };
     const up = () => {
