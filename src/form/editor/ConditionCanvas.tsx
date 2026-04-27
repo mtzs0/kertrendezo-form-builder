@@ -628,36 +628,39 @@ export function ConditionCanvas({
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
-          className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft w-full"
+          onPointerDown={onCanvasPointerDown}
+          className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
           style={{
             height: "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
             backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+            backgroundPosition: `${pan.x}px ${pan.y}px`,
           }}
         >
+          {/* World layer: panned + scaled. Children use world coords. */}
           <div
-            className="relative"
-            style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
-            onClick={(e) => {
-              // Click on empty canvas clears selection.
-              if (e.target === e.currentTarget) setSelectedEdge(null);
+            className="absolute top-0 left-0"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "0 0",
+              width: 1,
+              height: 1,
             }}
           >
-            <div
-              className="absolute top-0 left-0"
+            {/* SVG overlay — large enough to fit any practical layout. */}
+            <svg
+              width={20000}
+              height={20000}
+              viewBox="-10000 -10000 20000 20000"
               style={{
-                width: CANVAS_W,
-                height: CANVAS_H,
-                transform: `scale(${zoom})`,
-                transformOrigin: "0 0",
+                position: "absolute",
+                left: -10000,
+                top: -10000,
+                overflow: "visible",
+                pointerEvents: "none",
               }}
             >
-            {/* Connector layer */}
-            <svg
-              width={CANVAS_W}
-              height={CANVAS_H}
-              className="absolute inset-0 pointer-events-none"
             >
               <defs>
                 <marker
