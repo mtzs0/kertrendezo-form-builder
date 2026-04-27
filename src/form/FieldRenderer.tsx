@@ -623,6 +623,16 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
         />
       );
       break;
+    case "repeater":
+      control = (
+        <RepeaterRenderer
+          field={field as RepeaterField}
+          value={value as RepeaterInstance[] | undefined}
+          onChange={(id, v) => onChange(id, v)}
+          layout={layout}
+        />
+      );
+      break;
   }
 
   return (
