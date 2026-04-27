@@ -292,8 +292,8 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
             {row.map(({ item, width }) => (
               <div
                 key={keyOf(item)}
-                style={{ flexBasis: `calc(${width}% - 1.5rem)` }}
-                className="min-w-0 flex-grow"
+                style={{ flexBasis: `calc(${width}% - 1.5rem)`, maxWidth: `calc(${width}% - 1.5rem)` }}
+                className="min-w-0 flex-grow-0 flex-shrink-0"
               >
                 {renderOne(item)}
               </div>
