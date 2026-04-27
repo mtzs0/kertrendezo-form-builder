@@ -27,6 +27,7 @@ type FieldExtraCols = {
   field_image_position?: FieldImagePosition | null;
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
   hide_label?: boolean | null;
+  repeater_config?: unknown | null;
 };
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
