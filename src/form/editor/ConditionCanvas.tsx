@@ -299,7 +299,11 @@ export function ConditionCanvas({
     const w = toWorld(e.clientX, e.clientY);
     setPositions((prev) => ({
       ...prev,
-      [fieldId]: { x: w.x - BOX_W / 2, y: w.y - BOX_H / 2 },
+      [fieldId]: {
+        x: w.x - BOX_W / 2,
+        y: w.y - BOX_H / 2,
+        order: maxOrder(prev) + 1,
+      },
     }));
   };
 
