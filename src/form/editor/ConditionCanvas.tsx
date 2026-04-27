@@ -117,7 +117,14 @@ function savePositions(
   }
 }
 
-export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
+export function ConditionCanvas({
+  fields,
+  formId,
+  onSetCondition,
+  selectedFieldId,
+  onSelectField,
+  fieldConfigPanel,
+}: Props) {
   const fieldById = useMemo(() => {
     const m = new Map<string, FormField>();
     for (const f of fields) m.set(f.id, f);
