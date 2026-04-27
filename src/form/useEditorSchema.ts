@@ -569,6 +569,44 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
         fp.placeholderNoteValue = op.placeholderNote?.value ?? null;
         fp.placeholderNotePosition = op.placeholderNote?.position ?? null;
       }
+      // Repeater extras: any change to a repeater-specific attribute triggers
+      // a rewrite of the entire `repeater_config` JSONB blob from the merged
+      // in-memory state. We compute it after the local setBundle below by
+      // reading the just-patched field.
+      const repeaterKeys = [
+        "children",
+        "itemLabel",
+        "addButtonLabel",
+        "minInstances",
+        "maxInstances",
+        "titleChildId",
+      ] as const;
+      const touchesRepeater = repeaterKeys.some((k) => k in (patch as Record<string, unknown>));
+      if (touchesRepeater) {
+        // Read the merged field from the bundle (after setBundle above).
+        // setBundle is synchronous for our purposes here — but since React
+        // state updates are async, instead build the merged shape inline.
+        const current = bundle?.fields.find((f) => f.id === id);
+        const merged = { ...(current ?? {}), ...patch } as Partial<{
+          children: unknown;
+          itemLabel: string;
+          addButtonLabel: string;
+          minInstances: number;
+          maxInstances: number;
+          titleChildId: string;
+        }>;
+        fp.repeaterConfig = {
+          itemLabel: merged.itemLabel ?? null,
+          addButtonLabel: merged.addButtonLabel ?? null,
+          minInstances: merged.minInstances ?? null,
+          maxInstances: merged.maxInstances ?? null,
+          titleChildId: merged.titleChildId ?? null,
+          children: Array.isArray(merged.children) ? merged.children : [],
+        };
+      }
+        fp.placeholderNoteValue = op.placeholderNote?.value ?? null;
+        fp.placeholderNotePosition = op.placeholderNote?.position ?? null;
+      }
       const buf = fieldPatchBuf.current.get(id) ?? {};
       fieldPatchBuf.current.set(id, { ...buf, ...fp });
       scheduleFlush();
