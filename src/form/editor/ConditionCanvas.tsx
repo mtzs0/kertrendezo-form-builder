@@ -62,6 +62,9 @@ interface Props {
     fieldId: string,
     condition: ConditionGroup | undefined
   ) => Promise<void> | void;
+  selectedFieldId: string | null;
+  onSelectField: (id: string | null) => void;
+  fieldConfigPanel: React.ReactNode;
 }
 
 interface BoxPos {
@@ -71,8 +74,6 @@ interface BoxPos {
 
 const BOX_W = 220;
 const BOX_H = 88;
-const CANVAS_W = 2400;
-const CANVAS_H = 1600;
 
 interface Edge {
   /** target field id (the field whose visibility is conditional) */
@@ -116,7 +117,14 @@ function savePositions(
   }
 }
 
-export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
+export function ConditionCanvas({
+  fields,
+  formId,
+  onSetCondition,
+  selectedFieldId,
+  onSelectField,
+  fieldConfigPanel,
+}: Props) {
   const fieldById = useMemo(() => {
     const m = new Map<string, FormField>();
     for (const f of fields) m.set(f.id, f);
@@ -199,36 +207,89 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // ------- Zoom (ctrl+wheel) -------
+  // ------- Zoom (ctrl+wheel) + Pan -------
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(zoom);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const panRef = useRef(pan);
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
+
+  // Convert a clientX/Y into world (canvas) coordinates.
+  const toWorld = (clientX: number, clientY: number) => {
+    const r = canvasRef.current?.getBoundingClientRect();
+    if (!r) return { x: 0, y: 0 };
+    const z = zoomRef.current;
+    const p = panRef.current;
+    return {
+      x: (clientX - r.left - p.x) / z,
+      y: (clientY - r.top - p.y) / z,
+    };
+  };
+
   // Native wheel handler so we can call preventDefault (React's onWheel is passive).
+  // ctrl/meta+wheel = zoom (focused on cursor). Plain wheel = pan vertically;
+  // shift+wheel = pan horizontally.
   useEffect(() => {
     const el = canvasRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
-      e.preventDefault();
-      setZoom((z) => {
-        const next = z * (e.deltaY > 0 ? 0.9 : 1.1);
-        return Math.max(0.25, Math.min(2.5, next));
-      });
+      const r = el.getBoundingClientRect();
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const oldZoom = zoomRef.current;
+        const factor = e.deltaY > 0 ? 0.9 : 1.1;
+        const newZoom = Math.max(0.25, Math.min(2.5, oldZoom * factor));
+        if (newZoom === oldZoom) return;
+        // Zoom anchored at the cursor: keep world point under cursor stable.
+        const cx = e.clientX - r.left;
+        const cy = e.clientY - r.top;
+        const p = panRef.current;
+        const wx = (cx - p.x) / oldZoom;
+        const wy = (cy - p.y) / oldZoom;
+        setZoom(newZoom);
+        setPan({ x: cx - wx * newZoom, y: cy - wy * newZoom });
+      } else {
+        e.preventDefault();
+        const dx = e.shiftKey ? e.deltaY : e.deltaX;
+        const dy = e.shiftKey ? 0 : e.deltaY;
+        setPan((p) => ({ x: p.x - dx, y: p.y - dy }));
+      }
     };
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler);
   }, []);
 
-  // ------- Drag-from-palette / drag-existing-box -------
-  const dragRef = useRef<{
-    fieldId: string;
-    offsetX: number;
-    offsetY: number;
-    fromPalette: boolean;
-  } | null>(null);
+  // ------- Pan via dragging empty canvas -------
+  const onCanvasPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // Only pan when clicking on the empty background (not a box / handle / svg path).
+    if (e.target !== e.currentTarget) return;
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startPan = { ...panRef.current };
+    const move = (ev: PointerEvent) => {
+      setPan({
+        x: startPan.x + (ev.clientX - startX),
+        y: startPan.y + (ev.clientY - startY),
+      });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    onSelectField(null);
+    setSelectedEdge(null);
+  };
 
+  // ------- Drag-from-palette / drag-existing-box -------
   const onPaletteDragStart = (e: React.DragEvent, fieldId: string) => {
     e.dataTransfer.setData("application/x-field-id", fieldId);
     e.dataTransfer.effectAllowed = "copy";
@@ -243,26 +304,11 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     e.preventDefault();
     const fieldId = e.dataTransfer.getData("application/x-field-id");
     if (!fieldId || !fieldById.has(fieldId)) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
-    const scrollTop = canvasRef.current?.scrollTop ?? 0;
-    const z = zoomRef.current;
-    const x = Math.max(
-      0,
-      Math.min(
-        CANVAS_W - BOX_W,
-        (e.clientX - rect.left + scrollLeft) / z - BOX_W / 2
-      )
-    );
-    const y = Math.max(
-      0,
-      Math.min(
-        CANVAS_H - BOX_H,
-        (e.clientY - rect.top + scrollTop) / z - BOX_H / 2
-      )
-    );
-    setPositions((prev) => ({ ...prev, [fieldId]: { x, y } }));
+    const w = toWorld(e.clientX, e.clientY);
+    setPositions((prev) => ({
+      ...prev,
+      [fieldId]: { x: w.x - BOX_W / 2, y: w.y - BOX_H / 2 },
+    }));
   };
 
   // ------- Drag existing boxes around -------
@@ -276,41 +322,27 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     e.preventDefault();
     const pos = positions[fieldId];
     if (!pos) return;
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
-    const scrollTop = canvasRef.current?.scrollTop ?? 0;
-    const z = zoomRef.current;
-    const startX = (e.clientX - rect.left + scrollLeft) / z;
-    const startY = (e.clientY - rect.top + scrollTop) / z;
-    const offsetX = startX - pos.x;
-    const offsetY = startY - pos.y;
+    const start = toWorld(e.clientX, e.clientY);
+    const offsetX = start.x - pos.x;
+    const offsetY = start.y - pos.y;
+    let moved = false;
 
     const move = (ev: PointerEvent) => {
-      const r = canvasRef.current?.getBoundingClientRect();
-      if (!r) return;
-      const sl = canvasRef.current?.scrollLeft ?? 0;
-      const st = canvasRef.current?.scrollTop ?? 0;
-      const zz = zoomRef.current;
-      const nx = Math.max(
-        0,
-        Math.min(
-          CANVAS_W - BOX_W,
-          (ev.clientX - r.left + sl) / zz - offsetX
-        )
-      );
-      const ny = Math.max(
-        0,
-        Math.min(
-          CANVAS_H - BOX_H,
-          (ev.clientY - r.top + st) / zz - offsetY
-        )
-      );
-      setPositions((prev) => ({ ...prev, [fieldId]: { x: nx, y: ny } }));
+      moved = true;
+      const w = toWorld(ev.clientX, ev.clientY);
+      setPositions((prev) => ({
+        ...prev,
+        [fieldId]: { x: w.x - offsetX, y: w.y - offsetY },
+      }));
     };
     const up = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      if (!moved) {
+        // Treat as click → select field for the right-side panel.
+        onSelectField(fieldId);
+        setSelectedEdge(null);
+      }
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -328,26 +360,12 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
   ) => {
     e.preventDefault();
     e.stopPropagation();
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
     const updateCursor = (ev: PointerEvent) => {
-      const r = canvasRef.current?.getBoundingClientRect();
-      if (!r) return;
-      const sl = canvasRef.current?.scrollLeft ?? 0;
-      const st = canvasRef.current?.scrollTop ?? 0;
-      const zz = zoomRef.current;
-      setDrawing({
-        sourceId,
-        cursor: {
-          x: (ev.clientX - r.left + sl) / zz,
-          y: (ev.clientY - r.top + st) / zz,
-        },
-      });
+      setDrawing({ sourceId, cursor: toWorld(ev.clientX, ev.clientY) });
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", updateCursor);
       window.removeEventListener("pointerup", up);
-      // Determine drop target — element under pointer with data-target-id.
       const el = document.elementFromPoint(ev.clientX, ev.clientY);
       const targetEl = el?.closest("[data-target-id]") as HTMLElement | null;
       const targetId = targetEl?.dataset.targetId;
@@ -355,14 +373,7 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!targetId || targetId === sourceId) return;
       addConditionEdge(targetId, sourceId);
     };
-    const z = zoomRef.current;
-    setDrawing({
-      sourceId,
-      cursor: {
-        x: (e.clientX - rect.left + (canvasRef.current?.scrollLeft ?? 0)) / z,
-        y: (e.clientY - rect.top + (canvasRef.current?.scrollTop ?? 0)) / z,
-      },
-    });
+    setDrawing({ sourceId, cursor: toWorld(e.clientX, e.clientY) });
     window.addEventListener("pointermove", updateCursor);
     window.addEventListener("pointerup", up);
   };
@@ -492,7 +503,7 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_360px] gap-4">
       {/* Palette */}
       <aside className="rounded-2xl border border-border bg-card kr-shadow-soft p-3 self-start max-h-[calc(100vh-12rem)] overflow-auto">
         <div className="px-1 pb-2">
@@ -617,37 +628,38 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
-          
-          className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft w-full"
+          onPointerDown={onCanvasPointerDown}
+          className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
           style={{
             height: "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
             backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
+            backgroundPosition: `${pan.x}px ${pan.y}px`,
           }}
         >
+          {/* World layer: panned + scaled. Children use world coords. */}
           <div
-            className="relative"
-            style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
-            onClick={(e) => {
-              // Click on empty canvas clears selection.
-              if (e.target === e.currentTarget) setSelectedEdge(null);
+            className="absolute top-0 left-0"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "0 0",
+              width: 1,
+              height: 1,
             }}
           >
-            <div
-              className="absolute top-0 left-0"
-              style={{
-                width: CANVAS_W,
-                height: CANVAS_H,
-                transform: `scale(${zoom})`,
-                transformOrigin: "0 0",
-              }}
-            >
-            {/* Connector layer */}
+            {/* SVG overlay — large enough to fit any practical layout. */}
             <svg
-              width={CANVAS_W}
-              height={CANVAS_H}
-              className="absolute inset-0 pointer-events-none"
+              width={20000}
+              height={20000}
+              viewBox="-10000 -10000 20000 20000"
+              style={{
+                position: "absolute",
+                left: -10000,
+                top: -10000,
+                overflow: "visible",
+                pointerEvents: "none",
+              }}
             >
               <defs>
                 <marker
@@ -754,7 +766,12 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
                   key={id}
                   data-target-id={id}
                   onPointerDown={(e) => onBoxPointerDown(e, id)}
-                  className="absolute rounded-lg border border-border bg-card kr-shadow-soft select-none cursor-move group"
+                  className={cn(
+                    "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
+                    selectedFieldId === id
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-border"
+                  )}
                   style={style}
                 >
                   {/* Top handle (incoming) */}
@@ -833,19 +850,23 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
                 </div>
               );
             })}
-
-            {placedFieldIds.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center text-sm text-muted-foreground">
-                  <MousePointer2 className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                  Húzz ide mezőket a bal oldali listából.
-                </div>
-              </div>
-            )}
-            </div>
           </div>
+
+          {placedFieldIds.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center text-sm text-muted-foreground">
+                <MousePointer2 className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                Húzz ide mezőket a bal oldali listából.
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Right-side: field config panel for the currently selected box */}
+      <aside className="lg:sticky lg:top-4 self-start max-h-[calc(100vh-6rem)] overflow-auto">
+        {fieldConfigPanel}
+      </aside>
     </div>
   );
 }

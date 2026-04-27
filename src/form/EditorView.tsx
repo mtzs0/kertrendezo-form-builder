@@ -263,6 +263,22 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 fields={editor.fields}
                 formId={editor.form?.id ?? null}
                 onSetCondition={editor.setFieldCondition}
+                selectedFieldId={selectedFieldId}
+                onSelectField={setSelectedFieldId}
+                fieldConfigPanel={
+                  <FieldConfigPanel
+                    field={editor.fields.find((f) => f.id === selectedFieldId) ?? null}
+                    onChange={(patch) => {
+                      if (selectedFieldId) editor.patchField(selectedFieldId, patch);
+                    }}
+                    onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
+                    onDelete={async () => {
+                      if (!selectedFieldId) return;
+                      await editor.removeField(selectedFieldId);
+                      setSelectedFieldId(null);
+                    }}
+                  />
+                }
               />
             )}
           </TabsContent>
