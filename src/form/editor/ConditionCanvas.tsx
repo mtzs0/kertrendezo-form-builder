@@ -499,42 +499,44 @@ export function ConditionCanvas({
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_360px] gap-4">
-      {/* Palette */}
-      <aside className="rounded-2xl border border-border bg-card kr-shadow-soft p-3 self-start max-h-[calc(100vh-12rem)] overflow-auto">
-        <div className="px-1 pb-2">
+    <div className="space-y-4">
+      {/* Top palette strip — compact horizontal chips */}
+      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-3">
+        <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
           <h3 className="text-sm font-semibold">Mezők</h3>
           <p className="text-[11px] text-muted-foreground">
             Húzd a vászonra a kívánt mezőket, majd kösd össze őket.
           </p>
         </div>
-        <div className="space-y-1.5">
-          {paletteFields.length === 0 && (
-            <p className="text-xs text-muted-foreground italic px-1 py-2">
+        <div className="flex flex-wrap gap-1.5">
+          {paletteFields.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic px-1 py-1.5">
               Minden mező a vásznon van.
             </p>
+          ) : (
+            paletteFields.map((f) => (
+              <div
+                key={f.id}
+                draggable
+                onDragStart={(e) => onPaletteDragStart(e, f.id)}
+                className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs cursor-grab active:cursor-grabbing hover:border-primary hover:bg-accent transition-colors max-w-[200px]"
+                title={`${f.label || f.internalName} (${f.type})`}
+              >
+                <div className="font-medium truncate leading-tight">
+                  {f.label || f.internalName}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                  {f.internalName} · {f.type}
+                </div>
+              </div>
+            ))
           )}
-          {paletteFields.map((f) => (
-            <div
-              key={f.id}
-              draggable
-              onDragStart={(e) => onPaletteDragStart(e, f.id)}
-              className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs cursor-grab active:cursor-grabbing hover:border-primary hover:bg-accent transition-colors"
-              title={`${f.label || f.internalName} (${f.type})`}
-            >
-              <div className="font-medium truncate">
-                {f.label || f.internalName}
-              </div>
-              <div className="text-[10px] text-muted-foreground truncate">
-                {f.internalName} · {f.type}
-              </div>
-            </div>
-          ))}
         </div>
-      </aside>
+      </div>
 
-      {/* Canvas */}
-      <div className="space-y-3 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
+        {/* Canvas column */}
+        <div className="space-y-3 min-w-0">
         {/* Selected edge inspector — always rendered to avoid layout shift */}
         <div>
           {selectedEdgeData ? (
