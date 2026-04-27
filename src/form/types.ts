@@ -15,7 +15,8 @@ export type FieldType =
   | "post_code"
   | "city"
   | "street"
-  | "email";
+  | "email"
+  | "repeater";
 
 export type NotePosition = "above" | "below" | "side";
 
