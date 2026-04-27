@@ -258,6 +258,21 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             imageUrl: o.image_url ?? undefined,
           })),
       };
+    case "repeater": {
+      const cfg = ((f as FieldRow & { repeater_config?: unknown }).repeater_config ?? null) as
+        | (Partial<RepeaterField> & { children?: FormField[] })
+        | null;
+      return {
+        ...base,
+        type: "repeater",
+        itemLabel: cfg?.itemLabel,
+        addButtonLabel: cfg?.addButtonLabel,
+        minInstances: cfg?.minInstances,
+        maxInstances: cfg?.maxInstances,
+        titleChildId: cfg?.titleChildId,
+        children: Array.isArray(cfg?.children) ? (cfg!.children as FormField[]) : [],
+      };
+    }
   }
 }
 
