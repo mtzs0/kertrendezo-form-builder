@@ -1,68 +1,109 @@
+## Repeater field — multi-instance sub-forms
 
+A new field type that lets end-users dynamically create N "instances" (e.g. gardening areas), each with its own set of parameter values. The editor defines the child fields once; the user fills them in per instance through a modal.
 
-## Embed the form on a live site via GitHub Pages + iframe
+### Concept summary
 
-Yes, the project can be embedded via iframe — but a few things need to change first. The app is currently a Vite SPA that uses `BrowserRouter`, has `DEFAULT_VIEW = "editor"` as the landing screen, and isn't configured for GitHub Pages' subpath hosting. Here's what we'll do.
+- New `FieldType` value: `"repeater"`.
+- A repeater field owns its own list of **child fields** (text, slider, select, even nested repeaters).
+- Live form renders: instructions/note → list of saved instance cards → "Hozzáadás" (Add) button.
+- Clicking Add or a card opens a modal containing the child sub-form. Save → the instance is added/updated to the parent value array.
+- Submission shape: `values[repeaterFieldId] = [{ childInternalName: value, … }, …]`.
 
-### What needs to change in the code
+### Editor experience
 
-1. **Make the public form the default view (not the editor).**
-   In `src/pages/Index.tsx`, flip `DEFAULT_VIEW` to `"form"`. Visitors hitting the embedded URL must see the form, not the editor UI. The double-Ctrl+K shortcut still opens the editor for you.
+In `FieldConfigPanel`, when `field.type === "repeater"`, a dedicated "Almezők" section appears with:
 
-2. **Add a dedicated `/embed` route with a stripped-down chrome.**
-   In `src/App.tsx`, add a route `/embed` that renders only the `FormView` (no outer header card, no editor hotkey hint, transparent background). This is the URL the iframe will point at. The existing `/` keeps the full page for direct visits.
+- **Item label** ("Elem neve") — singular noun used in buttons/empty state, e.g. "Terület".
+- **Add-button label** — defaults to `Új ${itemLabel} hozzáadása`.
+- **Min / Max példány** numeric inputs. Required toggle implies min ≥ 1.
+- **Címke mező** — dropdown of the repeater's child fields; the chosen field's value becomes each card's title (falls back to `${itemLabel} #N`).
+- **Almezők lista** — a nested mini version of the existing `FieldPicker` + `FieldConfigPanel` UI:
+  - Add child field via the same type dropdown (all types allowed, including nested repeater).
+  - Click a child to edit it in an inline sub-panel (reuses `FieldConfigPanel` recursively, with `deleteLabel="Almező törlése"`).
+  - Reorder via existing `SortableItem` drag handles.
+  - Conditions on child fields evaluate against **the current modal's values only**, not the outer form.
 
-3. **Switch from `BrowserRouter` to `HashRouter`.**
-   GitHub Pages doesn't do SPA fallback — refreshing `/embed` would 404. `HashRouter` (`/#/embed`) sidesteps this entirely and works on any static host.
+The repeater field itself is added like any other field via `FieldPicker` / `AddFieldMenu`, and can live globally, in a group, or in a sub-group (no placement restriction). It participates in the stepper just like any regular field.
 
-4. **Configure Vite for GitHub Pages subpath.**
-   In `vite.config.ts`, set `base: "/<repo-name>/"` so built asset URLs resolve correctly when the site is served from `https://<user>.github.io/<repo-name>/`. If you use a custom domain or `<user>.github.io` root repo, `base` stays `/`.
+### Live form experience (preview + published)
 
-5. **Iframe-friendly styles.**
-   - Remove `min-height: 800px` forcing on the embed route.
-   - Make the embed body background transparent so the host page shows through.
-   - Auto-resize: post the document height to the parent via `postMessage` on resize/mutation, so the parent can set the iframe height (no scrollbars-inside-scrollbars).
+`FieldRenderer` gets a new branch for `type === "repeater"`:
 
-6. **Add a GitHub Actions workflow** (`.github/workflows/deploy.yml`) that on every push to `main` runs `npm ci && npm run build` and publishes `dist/` to the `gh-pages` branch (or uses the official `actions/deploy-pages`).
+```text
+┌─────────────────────────────────────────┐
+│ Külső név (Pl. Területek)               │
+│ Megjegyzés / instructions               │
+│                                          │
+│ ┌─ Grass · 120 m² ──────────── [✎] [🗑] ┐│
+│ ┌─ Forest · 40 m² ─────────────[✎] [🗑] ┐│
+│                                          │
+│ [+ Új terület hozzáadása]                │
+└─────────────────────────────────────────┘
+```
 
-7. **Add `public/404.html`** as a copy of `index.html` — belt-and-suspenders fallback for GitHub Pages even with HashRouter.
+- Cards show the title-field value (or `${itemLabel} #N`) and a 1-line summary of 1–2 other filled values.
+- Edit pencil & delete trash on each card. Delete confirms inline (no extra dialog).
+- "Add" button is disabled at max; min violation shows a soft warning at submit/next step (consistent with existing soft-warn validation).
+- Modal/Drawer (uses existing `Dialog` component): renders the child sub-form using the same `FieldRenderer` + width-packed row layout as the main form. Footer: "Mégse" / "Mentés".
+- Modal validation: required child fields block save with inline messages (modal is a confirmed action, unlike step navigation).
+- Nested repeaters work the same way — a child repeater inside a modal opens *another* modal stacked on top.
 
-### What you do on GitHub / your website
+### Submission shape
 
-1. **Push to GitHub** — already connected via Lovable's GitHub integration, so this is automatic.
-2. **Enable GitHub Pages** — repo Settings → Pages → Source: "GitHub Actions" (or `gh-pages` branch, depending on workflow choice).
-3. **Wait for the workflow to finish.** Your form will be live at `https://<user>.github.io/<repo-name>/#/embed`.
-4. **Embed on your live website** with:
-   ```html
-   <iframe
-     src="https://<user>.github.io/<repo-name>/#/embed"
-     style="width:100%;border:0;"
-     id="kertrendezo-form"
-     title="Kertrendező űrlap"
-   ></iframe>
-   <script>
-     window.addEventListener("message", (e) => {
-       if (e.data?.type === "kr-form-height") {
-         document.getElementById("kertrendezo-form").style.height = e.data.height + "px";
-       }
-     });
-   </script>
-   ```
+```json
+{
+  "<repeaterFieldId>": [
+    { "tipus": "fu", "terulet_m2": 120, "megjegyzes": "..." },
+    { "tipus": "erdo", "terulet_m2": 40 }
+  ]
+}
+```
 
-### Caveats you should know about
+Keys are the **internal names** of the child fields. Empty/undefined child values are omitted. Demo-fill generates 2 random instances per repeater.
 
-- **Supabase still works from the iframe** — the client uses the public anon key and talks directly to `dszwidenccggatcyuabr.supabase.co` from the browser. No backend hosting needed.
-- **Security findings remain.** The "TEMP" RLS policies + open editor are still wide-open; anyone who finds your editor URL (or just opens devtools) can edit forms. You chose to defer this, which is fine for prototyping but worth fixing before the form is publicly linked from a real site. At minimum, after this change the editor is no longer the default landing page.
-- **Custom fonts (Fraunces, Inter)** are loaded from Google Fonts in `index.html` — works inside iframes without changes.
-- **CSP on the host site:** if your live site sets a strict Content-Security-Policy with `frame-src`, you'll need to allow `https://<user>.github.io` (and Supabase if anything embeds it further).
-- **`/mnt/documents`-style file uploads**: image uploads go to Supabase Storage, which works cross-origin from the iframe — no extra config.
+### Technical changes
 
-### Files that will be created or modified
+**1. Schema (`src/form/types.ts`)**
+- Add `"repeater"` to `FieldType`.
+- New `RepeaterField extends BaseField`:
+  ```ts
+  type: "repeater";
+  itemLabel?: string;          // "Terület"
+  addButtonLabel?: string;
+  minInstances?: number;
+  maxInstances?: number;
+  titleChildId?: string;       // child field id used for card title
+  children: FormField[];       // nested children, sorted by location
+  ```
+- Extend `FieldValue` to include `Array<Record<string, FieldValue>>`.
+- Children's `groupId`/`subGroupId` are unused (always undefined) — they live inside the repeater, not the form's group tree.
 
-- modify `src/pages/Index.tsx` (flip default view, optional embed mode)
-- modify `src/App.tsx` (add `/embed` route, switch to HashRouter)
-- create `src/pages/Embed.tsx` (stripped-chrome form + height postMessage)
-- modify `vite.config.ts` (`base` for GH Pages subpath)
-- create `.github/workflows/deploy.yml` (build + publish)
-- create `public/404.html` (SPA fallback safety net)
+**2. Persistence (Supabase)**
+- Add column `form_fields.parent_field_id UUID NULL` to allow rows to be children of a repeater. Existing fields keep `parent_field_id = NULL`.
+- Add columns for repeater config: `repeater_item_label TEXT`, `repeater_add_label TEXT`, `repeater_min INT`, `repeater_max INT`, `repeater_title_child_id UUID`.
+- Update `editorApi.ts` and `usePublishedForm.ts` to:
+  - Load child fields by `parent_field_id` and attach them to their repeater's `children` array (sorted by `position`).
+  - Save children with `parent_field_id` set; `form_id` still set so RLS policies keep working.
+- Submission JSON simply round-trips the array as-is (already `jsonb`).
 
+**3. Editor UI**
+- `FieldConfigPanel.tsx`: add `RepeaterConfig` sub-component rendered when `field.type === "repeater"`. It internally uses a simplified picker + recursive `FieldConfigPanel` for the selected child.
+- `FieldPicker.tsx` / `AddFieldMenu`: add `{ value: "repeater", label: "Ismétlődő blokk" }` to `FIELD_TYPES`.
+- `StructureEditor.tsx`: a repeater field is placed like any other field (single block, no expansion of its children into the structure tree).
+- `OptionsEditor`-style nested editor for children stays inside the repeater config and never appears in the global structure / field picker lists.
+
+**4. Live rendering**
+- `FieldRenderer.tsx`: new `RepeaterRenderer` component handling list, modal, add/edit/delete, summary. Reuses `FieldRenderer` recursively for child fields inside the modal, with an isolated `values` state scoped to the modal.
+- `structure.ts` `isFieldVisible`: when evaluating a child field's condition inside a modal, pass the modal-scoped values, not the outer form values.
+- `FormView.tsx` demo-fill: generate `1 + floor(random*2)` instances of random child values per repeater.
+- Soft-warn collector: if `field.required` and array length < `max(minInstances ?? 1, 1)`, include in missing list.
+
+**5. Stepper compatibility**
+- No changes needed — repeater fields render in whichever group/sub-group they're placed in (or globally) and behave as a single field for layout/width/packing purposes.
+
+### Out of scope (for now)
+
+- Drag-reordering saved instances on the live form (only add/edit/delete).
+- Per-instance conditions referencing values from other instances or the outer form.
+- Importing/exporting children from another repeater.
