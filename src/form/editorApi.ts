@@ -10,6 +10,7 @@ import type {
   FormSubGroup,
   NotePosition,
   OptionLabelPosition,
+  RepeaterField,
   WidthPercent,
 } from "./types";
 
