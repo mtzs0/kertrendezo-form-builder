@@ -77,6 +77,8 @@ import {
   useCanvasPositionsLoaded,
   type BoxPos,
 } from "./canvasPositionsStore";
+import { useRevealOneByOne } from "./revealModeStore";
+import { Switch } from "@/components/ui/switch";
 
 interface Props {
   fields: FormField[];
