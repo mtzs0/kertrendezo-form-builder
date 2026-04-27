@@ -16,6 +16,7 @@ export type FieldType =
   | "city"
   | "street"
   | "email"
+  | "measurement"
   | "repeater";
 
 export type NotePosition = "above" | "below" | "side";
