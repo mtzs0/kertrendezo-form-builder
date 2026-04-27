@@ -717,7 +717,7 @@ export function ConditionCanvas({
                   placedFieldIds.length > 0 &&
                   window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
                 ) {
-                  setPositions({});
+                  clearPositions(formId);
                   setSelectedEdge(null);
                 }
               }}
