@@ -42,11 +42,26 @@ import {
   Plus,
   MousePointer2,
   Info,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import type {
   ConditionGroup,
   FieldCondition,
+  FieldType,
   FormField,
 } from "@/form/types";
 import {
@@ -69,8 +84,29 @@ interface Props {
   ) => Promise<void> | void;
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
+  /** Creates a new field (no group) and returns its id. */
+  onAddField: (type: FieldType) => Promise<string>;
   fieldConfigPanel: React.ReactNode;
 }
+
+/** Field types selectable when creating a new field from the canvas. */
+const NEW_FIELD_TYPES: { value: FieldType; label: string }[] = [
+  { value: "text", label: "Szöveg" },
+  { value: "textarea", label: "Hosszú szöveg" },
+  { value: "slider", label: "Csúszka" },
+  { value: "radio", label: "Rádió" },
+  { value: "checkbox", label: "Jelölőnégyzet" },
+  { value: "select", label: "Kiválasztás" },
+  { value: "phone", label: "Telefonszám" },
+  { value: "date", label: "Dátum" },
+  { value: "image", label: "Kép feltöltés" },
+  { value: "label", label: "Cím" },
+  { value: "post_code", label: "Irányítószám" },
+  { value: "city", label: "Város" },
+  { value: "street", label: "Utca, házszám" },
+  { value: "email", label: "Email" },
+  { value: "repeater", label: "Ismétlődő blokk" },
+];
 
 const BOX_W = 220;
 const BOX_H = 88;
