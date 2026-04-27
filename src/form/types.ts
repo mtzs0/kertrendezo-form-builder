@@ -160,6 +160,18 @@ export interface RepeaterField extends BaseField {
   children: FormField[];
 }
 
+/**
+ * Measurement field — a single numeric input paired with a unit dropdown.
+ * The author defines the available units (e.g. "hour", "day", "week"); the
+ * end-user types a number and picks one unit. Stored as
+ * `{ amount: number; unit: string }` (unit = the chosen option's `dataName`).
+ */
+export interface MeasurementField extends BaseField {
+  type: "measurement";
+  /** Available unit options (uses the same shape as radio/checkbox/select). */
+  options: FieldOption[];
+}
+
 export type FormField =
   | TextField
   | TextAreaField
@@ -173,6 +185,7 @@ export type FormField =
   | CityField
   | StreetField
   | EmailField
+  | MeasurementField
   | RepeaterField;
 
 export interface FormGroup {
