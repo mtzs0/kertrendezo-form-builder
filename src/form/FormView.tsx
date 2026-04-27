@@ -240,6 +240,30 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     );
   };
 
+  /**
+   * Filter helpers: items hidden by display conditions are removed BEFORE
+   * width-packing so they don't leave empty space in the row.
+   */
+  const visibleFields = (fields: FormField[]) =>
+    fields.filter((f) => isFieldVisible(f, values));
+
+  const subGroupHasVisible = (sg: RenderSubGroup) => visibleFields(sg.fields).length > 0;
+
+  const groupHasVisible = (g: RenderGroup) =>
+    g.children.some((c) =>
+      c.kind === "field" ? isFieldVisible(c.field, values) : subGroupHasVisible(c),
+    );
+
+  const visibleGroupChildren = (g: RenderGroup) =>
+    g.children.filter((c) =>
+      c.kind === "field" ? isFieldVisible(c.field, values) : subGroupHasVisible(c),
+    );
+
+  const visibleTopItems = (items: RenderItem[]) =>
+    items.filter((it) =>
+      it.kind === "field" ? isFieldVisible(it.field, values) : groupHasVisible(it),
+    );
+
   /** Render an array of items (fields/subgroups/groups) as width-packed rows. */
   function renderPacked<T>(
     items: T[],
