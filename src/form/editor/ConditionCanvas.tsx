@@ -118,6 +118,16 @@ export function ConditionCanvas({
     setPositions(loadPositions(formId));
   }, [formId]);
 
+  /** Returns max existing order on the canvas (0 when none). */
+  const maxOrder = (map: Record<string, BoxPos>) => {
+    let m = 0;
+    for (const k of Object.keys(map)) {
+      const o = map[k]?.order;
+      if (typeof o === "number" && o > m) m = o;
+    }
+    return m;
+  };
+
   // Auto-place any field that already has a condition (so the user sees
   // existing conditions when first opening the tab).
   useEffect(() => {
@@ -126,22 +136,27 @@ export function ConditionCanvas({
       let changed = false;
       const placedCount = Object.keys(next).length;
       let nextIndex = placedCount;
-      const placeAt = (i: number): BoxPos => {
+      let nextOrder = maxOrder(next);
+      const placeAt = (i: number, order: number): BoxPos => {
         const cols = 3;
         const col = i % cols;
         const row = Math.floor(i / cols);
-        return { x: 80 + col * (BOX_W + 80), y: 80 + row * (BOX_H + 80) };
+        return {
+          x: 80 + col * (BOX_W + 80),
+          y: 80 + row * (BOX_H + 80),
+          order,
+        };
       };
       for (const f of fields) {
         if (next[f.id]) continue;
         if (f.condition && f.condition.rules.length > 0) {
-          next[f.id] = placeAt(nextIndex++);
+          next[f.id] = placeAt(nextIndex++, ++nextOrder);
           changed = true;
           // Also place referenced source fields if missing.
           for (const r of f.condition.rules) {
             if ("combinator" in r) continue;
             if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
-              next[r.fieldId] = placeAt(nextIndex++);
+              next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
             }
           }
         }
