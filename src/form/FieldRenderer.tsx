@@ -614,6 +614,47 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
         />
       );
       break;
+    case "measurement": {
+      const mv = (value as { amount?: number | ""; unit?: string } | undefined) ?? {};
+      const amount = mv.amount ?? "";
+      const unit = mv.unit ?? (field.options[0]?.dataName ?? "");
+      const commit = (next: { amount?: number | ""; unit?: string }) =>
+        onChange(field.id, { amount: next.amount ?? amount, unit: next.unit ?? unit });
+      control = (
+        <div className="flex items-center gap-2">
+          <Input
+            id={field.id}
+            type="number"
+            inputMode="decimal"
+            placeholder={field.placeholder}
+            value={amount === "" ? "" : String(amount)}
+            onChange={(e) => {
+              const t = e.target.value;
+              commit({ amount: t === "" ? "" : Number(t) });
+            }}
+            className="flex-1"
+          />
+          <div className="w-40 shrink-0">
+            <select
+              value={unit}
+              onChange={(e) => commit({ unit: e.target.value })}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              aria-label="Mértékegység"
+            >
+              {field.options.length === 0 && (
+                <option value="">— nincs egység —</option>
+              )}
+              {field.options.map((o) => (
+                <option key={o.dataName} value={o.dataName}>
+                  {o.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      );
+      break;
+    }
     case "image":
       control = (
         <ImageFieldControl

@@ -54,6 +54,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   city: "Város",
   street: "Utca, házszám",
   email: "Email",
+  measurement: "Mértékegység",
   repeater: "Ismétlődő blokk",
 };
 
@@ -306,6 +307,21 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, d
           onChange={onChange}
           onChangeOptions={onChangeOptions}
         />
+      )}
+
+      {field.type === "measurement" && onChangeOptions && (
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <div>
+            <Label className="text-sm font-medium">Mértékegységek</Label>
+            <p className="text-xs text-muted-foreground">
+              Add meg az elérhető egységeket (pl. óra, nap, hét). A felhasználó beír egy számot, és kiválaszt egyet ezek közül.
+            </p>
+          </div>
+          <OptionsEditor
+            field={field as unknown as OptionField}
+            onChange={(opts) => onChangeOptions(field.id, opts)}
+          />
+        </div>
       )}
 
       {field.type === "repeater" && (

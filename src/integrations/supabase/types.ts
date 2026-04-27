@@ -457,6 +457,7 @@ export type Database = {
         | "street"
         | "email"
         | "repeater"
+        | "measurement"
       note_position: "above" | "below" | "side"
     }
     CompositeTypes: {
@@ -601,6 +602,7 @@ export const Constants = {
         "street",
         "email",
         "repeater",
+        "measurement",
       ],
       note_position: ["above", "below", "side"],
     },

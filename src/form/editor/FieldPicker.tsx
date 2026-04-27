@@ -47,6 +47,7 @@ const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "city", label: "Város" },
   { value: "street", label: "Utca, házszám" },
   { value: "email", label: "Email" },
+  { value: "measurement", label: "Mértékegység" },
   { value: "repeater", label: "Ismétlődő blokk" },
 ];
 

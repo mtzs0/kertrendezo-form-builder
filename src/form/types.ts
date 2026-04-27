@@ -16,6 +16,7 @@ export type FieldType =
   | "city"
   | "street"
   | "email"
+  | "measurement"
   | "repeater";
 
 export type NotePosition = "above" | "below" | "side";
@@ -159,6 +160,18 @@ export interface RepeaterField extends BaseField {
   children: FormField[];
 }
 
+/**
+ * Measurement field — a single numeric input paired with a unit dropdown.
+ * The author defines the available units (e.g. "hour", "day", "week"); the
+ * end-user types a number and picks one unit. Stored as
+ * `{ amount: number; unit: string }` (unit = the chosen option's `dataName`).
+ */
+export interface MeasurementField extends BaseField {
+  type: "measurement";
+  /** Available unit options (uses the same shape as radio/checkbox/select). */
+  options: FieldOption[];
+}
+
 export type FormField =
   | TextField
   | TextAreaField
@@ -172,6 +185,7 @@ export type FormField =
   | CityField
   | StreetField
   | EmailField
+  | MeasurementField
   | RepeaterField;
 
 export interface FormGroup {
@@ -202,6 +216,12 @@ export interface FormSchema {
 /** A single repeater instance: child internalName → its value. */
 export type RepeaterInstance = Record<string, FieldValue>;
 
+/** Stored value of a measurement field. */
+export interface MeasurementValue {
+  amount: number | "";
+  unit: string;
+}
+
 export type FieldValue =
   | string
   | number
@@ -211,6 +231,7 @@ export type FieldValue =
   | File[]
   | Array<{ name: string; url: string }>
   | RepeaterInstance[]
+  | MeasurementValue
   | undefined;
 
 export type FormValues = Record<string, FieldValue>;
