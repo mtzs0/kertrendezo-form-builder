@@ -494,51 +494,122 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       </aside>
 
       {/* Canvas */}
-      <div className="space-y-3">
+      <div className="space-y-3 min-w-0">
+        {/* Selected edge inspector — always rendered to avoid layout shift */}
+        <div>
+          {selectedEdgeData ? (
+            <EdgeInspector
+              targetField={fieldById.get(selectedEdgeData.targetId)!}
+              sourceField={fieldById.get(selectedEdgeData.sourceId)!}
+              rule={selectedEdgeData.rule}
+              onChange={(patch) =>
+                updateRule(
+                  selectedEdgeData.targetId,
+                  selectedEdgeData.ruleIndex,
+                  patch
+                )
+              }
+              onRemove={() =>
+                removeRule(selectedEdgeData.targetId, selectedEdgeData.ruleIndex)
+              }
+              onClose={() => setSelectedEdge(null)}
+            />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-muted/10 p-4 text-xs text-muted-foreground flex items-center justify-center min-h-[124px]">
+              Válassz egy összekötő vonalat a vásznon a feltétel szerkesztéséhez.
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" />
-            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához.
+            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz.
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (
-                placedFieldIds.length > 0 &&
-                window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
-              ) {
-                setPositions({});
-                setSelectedEdge(null);
-              }
-            }}
-            className="text-xs"
-          >
-            Vászon ürítése
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom((z) => Math.max(0.25, z * 0.9))}
+              className="text-xs h-7 w-7 p-0"
+              title="Kicsinyítés"
+            >
+              −
+            </Button>
+            <span className="text-[11px] text-muted-foreground tabular-nums w-10 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom((z) => Math.min(2.5, z * 1.1))}
+              className="text-xs h-7 w-7 p-0"
+              title="Nagyítás"
+            >
+              +
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom(1)}
+              className="text-xs h-7"
+              title="Visszaállítás"
+            >
+              100%
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (
+                  placedFieldIds.length > 0 &&
+                  window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
+                ) {
+                  setPositions({});
+                  setSelectedEdge(null);
+                }
+              }}
+              className="text-xs"
+            >
+              Vászon ürítése
+            </Button>
+          </div>
         </div>
 
         <div
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
-          className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft"
+          onWheel={onCanvasWheel}
+          className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft w-full"
           style={{
-            height: "calc(100vh - 16rem)",
+            height: "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
+            backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
           }}
         >
           <div
             className="relative"
-            style={{ width: CANVAS_W, height: CANVAS_H }}
+            style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
             onClick={(e) => {
               // Click on empty canvas clears selection.
               if (e.target === e.currentTarget) setSelectedEdge(null);
             }}
           >
+            <div
+              className="absolute top-0 left-0"
+              style={{
+                width: CANVAS_W,
+                height: CANVAS_H,
+                transform: `scale(${zoom})`,
+                transformOrigin: "0 0",
+              }}
+            >
             {/* Connector layer */}
             <svg
               width={CANVAS_W}
@@ -738,28 +809,9 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
-
-        {/* Selected edge inspector */}
-        {selectedEdgeData && (
-          <EdgeInspector
-            targetField={fieldById.get(selectedEdgeData.targetId)!}
-            sourceField={fieldById.get(selectedEdgeData.sourceId)!}
-            rule={selectedEdgeData.rule}
-            onChange={(patch) =>
-              updateRule(
-                selectedEdgeData.targetId,
-                selectedEdgeData.ruleIndex,
-                patch
-              )
-            }
-            onRemove={() =>
-              removeRule(selectedEdgeData.targetId, selectedEdgeData.ruleIndex)
-            }
-            onClose={() => setSelectedEdge(null)}
-          />
-        )}
       </div>
     </div>
   );
