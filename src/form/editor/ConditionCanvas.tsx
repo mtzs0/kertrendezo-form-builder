@@ -642,9 +642,31 @@ export function ConditionCanvas({
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" />
-            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz.
+            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz. Jobb klikk a vásznon új mezőhöz.
           </p>
           <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" size="sm" className="h-7 text-xs">
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Új mező
+                  <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-[60vh] overflow-y-auto">
+                <DropdownMenuLabel>Új mező típusa</DropdownMenuLabel>
+                {NEW_FIELD_TYPES.map((t) => (
+                  <DropdownMenuItem
+                    key={`canvas_new_${t.value}`}
+                    onClick={() => {
+                      void createFieldAt(t.value);
+                    }}
+                  >
+                    {t.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               type="button"
               variant="ghost"
