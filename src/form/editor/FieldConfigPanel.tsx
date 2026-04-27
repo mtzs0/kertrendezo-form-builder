@@ -20,12 +20,14 @@ import type {
   NotePosition,
   OptionField,
   OptionLabelPosition,
+  RepeaterField,
   SliderField,
   WidthPercent,
 } from "@/form/types";
 import { WIDTH_OPTIONS } from "@/form/types";
 import { OptionsEditor } from "./OptionsEditor";
 import { ImageUploader } from "./ImageUploader";
+import { RepeaterChildrenEditor } from "./RepeaterChildrenEditor";
 
 interface Props {
   field: FormField | null;
