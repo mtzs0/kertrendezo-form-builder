@@ -779,6 +779,29 @@ export function ConditionCanvas({
                     title="Bejövő feltételek"
                   />
 
+                  {/* Order number (drives demo preview ordering) */}
+                  <input
+                    type="number"
+                    data-no-drag
+                    value={pos.order ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const n = raw === "" ? undefined : Number(raw);
+                      setPositions((prev) => ({
+                        ...prev,
+                        [id]: {
+                          ...prev[id],
+                          order: typeof n === "number" && !Number.isNaN(n) ? n : undefined,
+                        },
+                      }));
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="#"
+                    title="Sorrend (kisebb szám előbb jelenik meg az Előnézet (demo) fülön)"
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 w-9 h-7 rounded-md border border-border bg-card text-[11px] text-center font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+
                   {/* Body */}
                   <div className="px-3 py-2 h-full flex flex-col justify-between">
                     <div className="min-w-0">
