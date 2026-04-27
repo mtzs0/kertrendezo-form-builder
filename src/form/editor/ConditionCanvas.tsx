@@ -205,14 +205,21 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
-  const onCanvasWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (!(e.ctrlKey || e.metaKey)) return;
-    e.preventDefault();
-    setZoom((z) => {
-      const next = z * (e.deltaY > 0 ? 0.9 : 1.1);
-      return Math.max(0.25, Math.min(2.5, next));
-    });
-  };
+  // Native wheel handler so we can call preventDefault (React's onWheel is passive).
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      setZoom((z) => {
+        const next = z * (e.deltaY > 0 ? 0.9 : 1.1);
+        return Math.max(0.25, Math.min(2.5, next));
+      });
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
 
   // ------- Drag-from-palette / drag-existing-box -------
   const dragRef = useRef<{
