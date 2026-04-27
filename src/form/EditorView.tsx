@@ -267,6 +267,11 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 onSetCondition={editor.setFieldCondition}
                 selectedFieldId={selectedFieldId}
                 onSelectField={setSelectedFieldId}
+                onAddField={async (type) => {
+                  const id = await editor.addField(type);
+                  setSelectedFieldId(id);
+                  return id;
+                }}
                 fieldConfigPanel={
                   <FieldConfigPanel
                     field={editor.fields.find((f) => f.id === selectedFieldId) ?? null}

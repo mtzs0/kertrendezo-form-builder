@@ -42,11 +42,26 @@ import {
   Plus,
   MousePointer2,
   Info,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { cn } from "@/lib/utils";
 import type {
   ConditionGroup,
   FieldCondition,
+  FieldType,
   FormField,
 } from "@/form/types";
 import {
@@ -69,8 +84,29 @@ interface Props {
   ) => Promise<void> | void;
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
+  /** Creates a new field (no group) and returns its id. */
+  onAddField: (type: FieldType) => Promise<string>;
   fieldConfigPanel: React.ReactNode;
 }
+
+/** Field types selectable when creating a new field from the canvas. */
+const NEW_FIELD_TYPES: { value: FieldType; label: string }[] = [
+  { value: "text", label: "Szöveg" },
+  { value: "textarea", label: "Hosszú szöveg" },
+  { value: "slider", label: "Csúszka" },
+  { value: "radio", label: "Rádió" },
+  { value: "checkbox", label: "Jelölőnégyzet" },
+  { value: "select", label: "Kiválasztás" },
+  { value: "phone", label: "Telefonszám" },
+  { value: "date", label: "Dátum" },
+  { value: "image", label: "Kép feltöltés" },
+  { value: "label", label: "Cím" },
+  { value: "post_code", label: "Irányítószám" },
+  { value: "city", label: "Város" },
+  { value: "street", label: "Utca, házszám" },
+  { value: "email", label: "Email" },
+  { value: "repeater", label: "Ismétlődő blokk" },
+];
 
 const BOX_W = 220;
 const BOX_H = 88;
@@ -100,6 +136,7 @@ export function ConditionCanvas({
   onSetCondition,
   selectedFieldId,
   onSelectField,
+  onAddField,
   fieldConfigPanel,
 }: Props) {
   const fieldById = useMemo(() => {
@@ -453,6 +490,45 @@ export function ConditionCanvas({
     // We don't touch the field's condition — the user may want to keep it.
   };
 
+  // ------- Create a brand-new field from the canvas -------
+  // When the user creates a field from the canvas (via the "Új mező" button
+  // or the right-click context menu), we:
+  //   1. Call onAddField(type) — this saves the field and returns its id.
+  //   2. Place a box for it on the canvas at the requested world coords
+  //      (or canvas center, if the button was used).
+  //   3. Select it so the right-side FieldConfigPanel opens for editing.
+  const createFieldAt = useCallback(
+    async (type: FieldType, world?: { x: number; y: number }) => {
+      const id = await onAddField(type);
+      if (!id) return;
+      const target =
+        world ??
+        (() => {
+          // Fall back to the visible center of the canvas in world coords.
+          const r = canvasRef.current?.getBoundingClientRect();
+          if (!r) return { x: 200, y: 200 };
+          return toWorld(r.left + r.width / 2, r.top + r.height / 2);
+        })();
+      setPositions((prev) => ({
+        ...prev,
+        [id]: {
+          x: target.x - BOX_W / 2,
+          y: target.y - BOX_H / 2,
+          order: maxOrder(prev) + 1,
+        },
+      }));
+      setSelectedEdge(null);
+      // onAddField also selects the field via EditorView, but call it here
+      // too in case the parent doesn't.
+      onSelectField(id);
+    },
+    [onAddField, onSelectField]
+  );
+
+  // World coords captured when the user opens the right-click context menu,
+  // so we can place the new box exactly where they clicked.
+  const contextMenuWorldRef = useRef<{ x: number; y: number } | null>(null);
+
   // ------- Selected edge (for the bottom inspector) -------
   const [selectedEdge, setSelectedEdge] = useState<
     { targetId: string; ruleIndex: number } | null
@@ -566,9 +642,31 @@ export function ConditionCanvas({
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" />
-            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz.
+            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz. Jobb klikk a vásznon új mezőhöz.
           </p>
           <div className="flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" size="sm" className="h-7 text-xs">
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Új mező
+                  <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-[60vh] overflow-y-auto">
+                <DropdownMenuLabel>Új mező típusa</DropdownMenuLabel>
+                {NEW_FIELD_TYPES.map((t) => (
+                  <DropdownMenuItem
+                    key={`canvas_new_${t.value}`}
+                    onClick={() => {
+                      void createFieldAt(t.value);
+                    }}
+                  >
+                    {t.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               type="button"
               variant="ghost"
@@ -622,11 +720,18 @@ export function ConditionCanvas({
           </div>
         </div>
 
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
         <div
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
           onPointerDown={onCanvasPointerDown}
+          onContextMenu={(e) => {
+            // Capture world coords before the context menu opens so
+            // "Új mező hozzáadása" can place the new box exactly here.
+            contextMenuWorldRef.current = toWorld(e.clientX, e.clientY);
+          }}
           className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
           style={{
             height: "calc(100vh - 24rem)",
@@ -882,6 +987,23 @@ export function ConditionCanvas({
             </div>
           )}
         </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem
+              onSelect={() => {
+                // Default to a plain text field. The user can change the
+                // type in the right-side FieldConfigPanel that opens after
+                // creation.
+                const world = contextMenuWorldRef.current ?? undefined;
+                contextMenuWorldRef.current = null;
+                void createFieldAt("text", world);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5 mr-2" />
+              Új mező hozzáadása
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </div>
 
         {/* Right-side: field config panel for the currently selected box */}
