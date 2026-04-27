@@ -1091,16 +1091,27 @@ function EdgeInspector({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Érték
-          </Label>
-          <ValueInput
-            field={sourceField}
-            value={rule.value}
-            onChange={(v) => onChange({ value: v })}
-          />
-        </div>
+        {rule.operator === "answered" ? (
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Érték
+            </Label>
+            <p className="h-9 flex items-center text-xs text-muted-foreground italic">
+              Bármely válasz elegendő
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Érték
+            </Label>
+            <ValueInput
+              field={sourceField}
+              value={rule.value}
+              onChange={(v) => onChange({ value: v })}
+            />
+          </div>
+        )}
         <Button
           type="button"
           variant="ghost"
