@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      form_field_canvas_positions: {
+        Row: {
+          created_at: string
+          field_id: string
+          order_index: number | null
+          updated_at: string
+          x: number
+          y: number
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          order_index?: number | null
+          updated_at?: string
+          x?: number
+          y?: number
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          order_index?: number | null
+          updated_at?: string
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_field_canvas_positions_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: true
+            referencedRelation: "form_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_field_conditions: {
         Row: {
           combinator: string

@@ -70,8 +70,10 @@ import {
   operatorsForField,
 } from "./conditionInputs";
 import {
-  loadPositions,
-  savePositions,
+  clearPositions,
+  removePosition,
+  updatePositions,
+  useCanvasPositions,
   type BoxPos,
 } from "./canvasPositionsStore";
 
@@ -145,15 +147,28 @@ export function ConditionCanvas({
     return m;
   }, [fields]);
 
-  // Box positions — which fields are "on the canvas".
-  const [positions, setPositions] = useState<Record<string, BoxPos>>(() =>
-    loadPositions(formId)
-  );
+  // Box positions — backed by Supabase via the shared store. The hook
+  // returns the latest cached snapshot and re-renders on any change.
+  const positions = useCanvasPositions(formId);
 
-  // Re-load positions whenever the form changes.
-  useEffect(() => {
-    setPositions(loadPositions(formId));
-  }, [formId]);
+  /**
+   * Local helper that mirrors the previous `setPositions((prev) => …)` API
+   * so the rest of the component reads the same. Internally it routes
+   * through the store, which updates the cache + persists to Supabase
+   * (debounced per field).
+   */
+  const setPositions = useCallback(
+    (
+      next: Record<string, BoxPos> | ((prev: Record<string, BoxPos>) => Record<string, BoxPos>)
+    ) => {
+      if (typeof next === "function") {
+        updatePositions(formId, next);
+      } else {
+        updatePositions(formId, () => next);
+      }
+    },
+    [formId]
+  );
 
   /** Returns max existing order on the canvas (0 when none). */
   const maxOrder = (map: Record<string, BoxPos>) => {
@@ -203,11 +218,6 @@ export function ConditionCanvas({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields]);
-
-  // Persist positions whenever they change.
-  useEffect(() => {
-    savePositions(formId, positions);
-  }, [formId, positions]);
 
   const placedFieldIds = useMemo(
     () => Object.keys(positions).filter((id) => fieldById.has(id)),
@@ -483,10 +493,8 @@ export function ConditionCanvas({
 
   // ------- Remove a box from the canvas -------
   const removeBox = (fieldId: string) => {
-    setPositions((prev) => {
-      const { [fieldId]: _, ...rest } = prev;
-      return rest;
-    });
+    // Goes straight through the store so the row is also deleted from the DB.
+    removePosition(formId, fieldId);
     // We don't touch the field's condition — the user may want to keep it.
   };
 
@@ -709,7 +717,7 @@ export function ConditionCanvas({
                   placedFieldIds.length > 0 &&
                   window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
                 ) {
-                  setPositions({});
+                  clearPositions(formId);
                   setSelectedEdge(null);
                 }
               }}
