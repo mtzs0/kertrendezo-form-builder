@@ -766,7 +766,12 @@ export function ConditionCanvas({
                   key={id}
                   data-target-id={id}
                   onPointerDown={(e) => onBoxPointerDown(e, id)}
-                  className="absolute rounded-lg border border-border bg-card kr-shadow-soft select-none cursor-move group"
+                  className={cn(
+                    "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
+                    selectedFieldId === id
+                      ? "border-primary ring-2 ring-primary/30"
+                      : "border-border"
+                  )}
                   style={style}
                 >
                   {/* Top handle (incoming) */}
