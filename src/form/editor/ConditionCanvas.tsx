@@ -987,6 +987,23 @@ export function ConditionCanvas({
             </div>
           )}
         </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem
+              onSelect={() => {
+                // Default to a plain text field. The user can change the
+                // type in the right-side FieldConfigPanel that opens after
+                // creation.
+                const world = contextMenuWorldRef.current ?? undefined;
+                contextMenuWorldRef.current = null;
+                void createFieldAt("text", world);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5 mr-2" />
+              Új mező hozzáadása
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </div>
 
         {/* Right-side: field config panel for the currently selected box */}
