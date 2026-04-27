@@ -720,11 +720,18 @@ export function ConditionCanvas({
           </div>
         </div>
 
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
         <div
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
           onPointerDown={onCanvasPointerDown}
+          onContextMenu={(e) => {
+            // Capture world coords before the context menu opens so
+            // "Új mező hozzáadása" can place the new box exactly here.
+            contextMenuWorldRef.current = toWorld(e.clientX, e.clientY);
+          }}
           className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
           style={{
             height: "calc(100vh - 24rem)",
