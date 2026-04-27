@@ -15,7 +15,8 @@ export type FieldType =
   | "post_code"
   | "city"
   | "street"
-  | "email";
+  | "email"
+  | "repeater";
 
 export type NotePosition = "above" | "below" | "side";
 
@@ -133,6 +134,31 @@ export interface OptionField extends BaseField {
   placeholderNote?: { value: string; position: NotePosition };
 }
 
+/**
+ * Repeater field — lets the end-user add multiple "instances" (e.g. gardening
+ * areas), each filled out via a modal sub-form. The repeater owns its own
+ * list of child fields. Child fields are NOT rows in `form_fields`; they live
+ * entirely inside this object (and are persisted in the `repeater_config`
+ * JSONB column on the parent row).
+ *
+ * Submission shape: `values[repeaterId] = Array<Record<childInternalName, FieldValue>>`.
+ */
+export interface RepeaterField extends BaseField {
+  type: "repeater";
+  /** Singular noun used in buttons / empty state, e.g. "Terület". */
+  itemLabel?: string;
+  /** Override for the add-button label. Defaults to `Új ${itemLabel} hozzáadása`. */
+  addButtonLabel?: string;
+  /** Minimum required instances. `required` implies min ≥ 1 at validation time. */
+  minInstances?: number;
+  /** Maximum allowed instances; users can't add beyond this. */
+  maxInstances?: number;
+  /** Id of a child field whose value becomes the card title. Falls back to "${itemLabel} #N". */
+  titleChildId?: string;
+  /** Child fields rendered inside the per-instance modal. */
+  children: FormField[];
+}
+
 export type FormField =
   | TextField
   | TextAreaField
@@ -145,7 +171,8 @@ export type FormField =
   | PostCodeField
   | CityField
   | StreetField
-  | EmailField;
+  | EmailField
+  | RepeaterField;
 
 export interface FormGroup {
   id: string;
@@ -172,6 +199,9 @@ export interface FormSchema {
   fields: FormField[];
 }
 
+/** A single repeater instance: child internalName → its value. */
+export type RepeaterInstance = Record<string, FieldValue>;
+
 export type FieldValue =
   | string
   | number
@@ -180,6 +210,7 @@ export type FieldValue =
   | Date
   | File[]
   | Array<{ name: string; url: string }>
+  | RepeaterInstance[]
   | undefined;
 
 export type FormValues = Record<string, FieldValue>;

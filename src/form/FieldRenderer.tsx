@@ -6,8 +6,9 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Loader2, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { FormField, FormValues, ImageField, NotePosition, OptionField } from "@/form/types";
+import type { FormField, FormValues, ImageField, NotePosition, OptionField, RepeaterField, RepeaterInstance } from "@/form/types";
 import { OptionFieldRenderer } from "./OptionFieldRenderer";
+import { RepeaterRenderer } from "./RepeaterRenderer";
 import { uploadOptionImage } from "@/form/editorApi";
 import { toast } from "sonner";
 
@@ -619,6 +620,16 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
           field={field}
           value={value as File[] | undefined}
           onChange={(files) => onChange(field.id, files)}
+        />
+      );
+      break;
+    case "repeater":
+      control = (
+        <RepeaterRenderer
+          field={field as RepeaterField}
+          value={value as RepeaterInstance[] | undefined}
+          onChange={(id, v) => onChange(id, v)}
+          layout={layout}
         />
       );
       break;

@@ -111,6 +111,52 @@ function buildDemoValues(schema: FormSchema): FormValues {
       case "label":
         // Skip: image upload requires real files; label collects no value.
         break;
+      case "repeater": {
+        // Generate 1–2 demo instances using each child's default demo logic.
+        const childCount = 1 + Math.floor(Math.random() * 2);
+        const out: Record<string, unknown>[] = [];
+        for (let i = 0; i < childCount; i++) {
+          const inst: Record<string, unknown> = {};
+          for (const c of field.children ?? []) {
+            switch (c.type) {
+              case "text":
+              case "textarea":
+                inst[c.internalName] = randomString(8);
+                break;
+              case "email":
+                inst[c.internalName] = "test@test.com";
+                break;
+              case "phone":
+                inst[c.internalName] = "06701234567";
+                break;
+              case "post_code":
+                inst[c.internalName] = "1027";
+                break;
+              case "city":
+                inst[c.internalName] = "Budapest";
+                break;
+              case "street":
+                inst[c.internalName] = "Margit krt. 64/b";
+                break;
+              case "slider":
+                inst[c.internalName] = c.min + Math.floor(Math.random() * (c.max - c.min));
+                break;
+              case "radio":
+              case "select":
+                if (c.options.length > 0) inst[c.internalName] = pickRandom(c.options).dataName;
+                break;
+              case "checkbox":
+                if (c.options.length > 0) inst[c.internalName] = [pickRandom(c.options).dataName];
+                break;
+              default:
+                break;
+            }
+          }
+          out.push(inst);
+        }
+        values[field.id] = out as FormValues[string];
+        break;
+      }
     }
   }
   return values;

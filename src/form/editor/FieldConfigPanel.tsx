@@ -20,12 +20,14 @@ import type {
   NotePosition,
   OptionField,
   OptionLabelPosition,
+  RepeaterField,
   SliderField,
   WidthPercent,
 } from "@/form/types";
 import { WIDTH_OPTIONS } from "@/form/types";
 import { OptionsEditor } from "./OptionsEditor";
 import { ImageUploader } from "./ImageUploader";
+import { RepeaterChildrenEditor } from "./RepeaterChildrenEditor";
 
 interface Props {
   field: FormField | null;
@@ -52,6 +54,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   city: "Város",
   street: "Utca, házszám",
   email: "Email",
+  repeater: "Ismétlődő blokk",
 };
 
 const NOTE_POSITION_LABELS: Record<NotePosition, string> = {
@@ -302,6 +305,13 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, d
           field={field as OptionField}
           onChange={onChange}
           onChangeOptions={onChangeOptions}
+        />
+      )}
+
+      {field.type === "repeater" && (
+        <RepeaterConfig
+          field={field as RepeaterField}
+          onChange={(patch) => onChange(patch as Partial<FormField>)}
         />
       )}
     </div>
@@ -664,6 +674,116 @@ function OptionTypeConfig({ field, onChange, onChangeOptions }: OptionTypeConfig
           onChange={(opts) => onChangeOptions(field.id, opts)}
         />
       )}
+    </div>
+  );
+}
+
+// ---------- Repeater config ----------
+
+interface RepeaterConfigProps {
+  field: RepeaterField;
+  onChange: (patch: Partial<RepeaterField>) => void;
+}
+
+function RepeaterConfig({ field, onChange }: RepeaterConfigProps) {
+  const itemLabel = field.itemLabel ?? "elem";
+  const childOptions = (field.children ?? []).filter((c) => c.type !== "label");
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <div>
+        <Label className="text-sm font-medium">Ismétlődő blokk beállítások</Label>
+        <p className="text-xs text-muted-foreground">
+          A felhasználó tetszőleges számú „{itemLabel}" elemet adhat hozzá. Minden elem külön nyíló ablakban tölthető ki, az alábbi almezőkkel.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_rep_item_label" className="text-xs text-muted-foreground">
+            Elem neve (egyes szám)
+          </Label>
+          <Input
+            id="cfg_rep_item_label"
+            value={field.itemLabel ?? ""}
+            placeholder="pl. terület"
+            onChange={(e) => onChange({ itemLabel: e.target.value || undefined })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_rep_add_label" className="text-xs text-muted-foreground">
+            Hozzáadás gomb felirata
+          </Label>
+          <Input
+            id="cfg_rep_add_label"
+            value={field.addButtonLabel ?? ""}
+            placeholder={`Új ${itemLabel} hozzáadása`}
+            onChange={(e) => onChange({ addButtonLabel: e.target.value || undefined })}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_rep_min" className="text-xs text-muted-foreground">
+            Minimum darabszám
+          </Label>
+          <Input
+            id="cfg_rep_min"
+            type="number"
+            min={0}
+            value={field.minInstances ?? ""}
+            placeholder="0"
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ minInstances: v === "" ? undefined : Math.max(0, Number(v)) });
+            }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cfg_rep_max" className="text-xs text-muted-foreground">
+            Maximum darabszám
+          </Label>
+          <Input
+            id="cfg_rep_max"
+            type="number"
+            min={1}
+            value={field.maxInstances ?? ""}
+            placeholder="korlátlan"
+            onChange={(e) => {
+              const v = e.target.value;
+              onChange({ maxInstances: v === "" ? undefined : Math.max(1, Number(v)) });
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs text-muted-foreground">Címke almező</Label>
+        <Select
+          value={field.titleChildId ?? "__none__"}
+          onValueChange={(v) =>
+            onChange({ titleChildId: v === "__none__" ? undefined : v })
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">Alapértelmezett ({itemLabel} #N)</SelectItem>
+            {childOptions.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.label || c.internalName || "(névtelen)"}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          A kiválasztott almező értéke jelenik meg az egyes elemek kártyájának címeként.
+        </p>
+      </div>
+
+      <RepeaterChildrenEditor
+        children={field.children ?? []}
+        onChange={(next) => onChange({ children: next })}
+      />
     </div>
   );
 }

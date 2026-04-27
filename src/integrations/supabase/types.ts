@@ -118,6 +118,7 @@ export type Database = {
             | null
           placeholder_note_value: string | null
           position: number
+          repeater_config: Json | null
           required: boolean
           slider_custom_stops: Json | null
           slider_max: number | null
@@ -153,6 +154,7 @@ export type Database = {
             | null
           placeholder_note_value?: string | null
           position?: number
+          repeater_config?: Json | null
           required?: boolean
           slider_custom_stops?: Json | null
           slider_max?: number | null
@@ -188,6 +190,7 @@ export type Database = {
             | null
           placeholder_note_value?: string | null
           position?: number
+          repeater_config?: Json | null
           required?: boolean
           slider_custom_stops?: Json | null
           slider_max?: number | null
@@ -418,6 +421,7 @@ export type Database = {
         | "city"
         | "street"
         | "email"
+        | "repeater"
       note_position: "above" | "below" | "side"
     }
     CompositeTypes: {
@@ -561,6 +565,7 @@ export const Constants = {
         "city",
         "street",
         "email",
+        "repeater",
       ],
       note_position: ["above", "below", "side"],
     },

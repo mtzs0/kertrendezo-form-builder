@@ -10,6 +10,7 @@ import type {
   FormSubGroup,
   NotePosition,
   OptionLabelPosition,
+  RepeaterField,
   WidthPercent,
 } from "./types";
 
@@ -27,6 +28,7 @@ type FieldExtraCols = {
   field_image_position?: FieldImagePosition | null;
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
   hide_label?: boolean | null;
+  repeater_config?: unknown | null;
 };
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
@@ -256,6 +258,21 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             imageUrl: o.image_url ?? undefined,
           })),
       };
+    case "repeater": {
+      const cfg = ((f as FieldRow & { repeater_config?: unknown }).repeater_config ?? null) as
+        | (Partial<RepeaterField> & { children?: FormField[] })
+        | null;
+      return {
+        ...base,
+        type: "repeater",
+        itemLabel: cfg?.itemLabel,
+        addButtonLabel: cfg?.addButtonLabel,
+        minInstances: cfg?.minInstances,
+        maxInstances: cfg?.maxInstances,
+        titleChildId: cfg?.titleChildId,
+        children: Array.isArray(cfg?.children) ? (cfg!.children as FormField[]) : [],
+      };
+    }
   }
 }
 
@@ -359,6 +376,9 @@ export async function createField(
     insert.slider_max = 100;
     insert.slider_step = 1;
   }
+  if (type === "repeater") {
+    (insert as Record<string, unknown>).repeater_config = { children: [] };
+  }
   const { data, error } = await supabase.from("form_fields").insert(insert).select("*").single();
   if (error) throw error;
   return data as FieldRow;
@@ -395,6 +415,11 @@ export interface FieldPatch {
   placeholderNoteValue?: string | null;
   placeholderNotePosition?: NotePosition | null;
   hideLabel?: boolean;
+  /**
+   * Full repeater config blob (children + settings) — written verbatim to the
+   * `repeater_config` JSONB column. `null` clears the column.
+   */
+  repeaterConfig?: Record<string, unknown> | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
@@ -426,6 +451,7 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderNoteValue !== undefined) u.placeholder_note_value = patch.placeholderNoteValue;
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
   if (patch.hideLabel !== undefined) u.hide_label = patch.hideLabel;
+  if (patch.repeaterConfig !== undefined) (u as Record<string, unknown>).repeater_config = patch.repeaterConfig;
   if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
     // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
     if (patch.sliderCustomStops === null) {
