@@ -844,6 +844,7 @@ export function ConditionCanvas({
                   )}
                 </div>
               );
+            })}
           </div>
 
           {placedFieldIds.length === 0 && (
