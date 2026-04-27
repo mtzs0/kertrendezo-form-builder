@@ -40,6 +40,7 @@ const OPERATOR_LABELS: Record<FieldCondition["operator"], string> = {
   greater_than: "nagyobb mint (>)",
   less_than: "kisebb mint (<)",
   contains: "tartalmazza",
+  answered: "megválaszolva",
 };
 
 function emptyCondition(fieldId: string): FieldCondition {
@@ -378,10 +379,12 @@ function ConditionRow({
     (field.type === "radio" || field.type === "checkbox" || field.type === "select");
 
   const operators: FieldCondition["operator"][] = isNumeric
-    ? ["equals", "is_not", "greater_than", "less_than"]
+    ? ["equals", "is_not", "greater_than", "less_than", "answered"]
     : isOption
-    ? ["equals", "is_not", "contains"]
-    : ["equals", "is_not", "contains"];
+    ? ["equals", "is_not", "contains", "answered"]
+    : ["equals", "is_not", "contains", "answered"];
+
+  const needsValue = condition.operator !== "answered";
 
   return (
     <div className="rounded-md border border-border bg-background p-2.5 space-y-2">
@@ -428,17 +431,28 @@ function ConditionRow({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Feltétel értéke
-          </Label>
-          <ValueInput
-            field={field ?? null}
-            isNumeric={isNumeric}
-            value={condition.value}
-            onChange={(v) => onChange({ ...condition, value: v })}
-          />
-        </div>
+        {needsValue ? (
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Feltétel értéke
+            </Label>
+            <ValueInput
+              field={field ?? null}
+              isNumeric={isNumeric}
+              value={condition.value}
+              onChange={(v) => onChange({ ...condition, value: v })}
+            />
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Érték
+            </Label>
+            <p className="h-9 flex items-center text-xs text-muted-foreground italic">
+              Bármely válasz elegendő
+            </p>
+          </div>
+        )}
         <Button
           type="button"
           variant="ghost"
@@ -762,7 +776,7 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          Operátorok: <code>= != &gt; &lt; contains</code> · logika:{" "}
+          Operátorok: <code>= != &gt; &lt; contains answered</code> · logika:{" "}
           <code>&amp;&amp; ||</code> · csoportosítás: <code>( )</code>. Tab a
           javaslat elfogadásához.
         </p>

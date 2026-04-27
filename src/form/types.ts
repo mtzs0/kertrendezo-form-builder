@@ -39,7 +39,7 @@ export interface FieldOption {
 export interface FieldCondition {
   /** Field id whose answer we evaluate. */
   fieldId: string;
-  operator: "is" | "is_not" | "equals" | "greater_than" | "less_than" | "contains";
+  operator: "is" | "is_not" | "equals" | "greater_than" | "less_than" | "contains" | "answered";
   value: string | number | boolean;
 }
 

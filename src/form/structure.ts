@@ -124,9 +124,26 @@ export function buildRenderTree(schema: FormSchema): RenderItem[] {
 
 // ---------- Conditions ----------
 
+function isAnswered(v: unknown): boolean {
+  if (v === undefined || v === null) return false;
+  if (typeof v === "string") return v.trim() !== "";
+  if (typeof v === "number") return !Number.isNaN(v);
+  if (typeof v === "boolean") return v;
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === "object") {
+    // Measurement values: { amount, unit }
+    const o = v as { amount?: unknown };
+    if ("amount" in o) return o.amount !== "" && o.amount !== undefined && o.amount !== null;
+    return Object.keys(v).length > 0;
+  }
+  return true;
+}
+
 function evalCondition(c: FieldCondition, values: FormValues): boolean {
   const v = values[c.fieldId];
   switch (c.operator) {
+    case "answered":
+      return isAnswered(v);
     case "is":
     case "equals":
       return v === c.value;

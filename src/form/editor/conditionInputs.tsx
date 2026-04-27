@@ -19,6 +19,7 @@ export const OPERATOR_LABELS: Record<FieldCondition["operator"], string> = {
   greater_than: "nagyobb mint (>)",
   less_than: "kisebb mint (<)",
   contains: "tartalmazza",
+  answered: "megválaszolva",
 };
 
 const NUMERIC_TYPES = new Set(["slider"]);
@@ -39,12 +40,17 @@ export function operatorsForField(
   field: FormField | null | undefined
 ): FieldCondition["operator"][] {
   if (isNumericField(field)) {
-    return ["equals", "is_not", "greater_than", "less_than"];
+    return ["equals", "is_not", "greater_than", "less_than", "answered"];
   }
   if (isOptionField(field)) {
-    return ["equals", "is_not", "contains"];
+    return ["equals", "is_not", "contains", "answered"];
   }
-  return ["equals", "is_not", "contains"];
+  return ["equals", "is_not", "contains", "answered"];
+}
+
+/** True when the operator does not need a value (e.g. "megválaszolva"). */
+export function operatorNeedsValue(op: FieldCondition["operator"]): boolean {
+  return op !== "answered";
 }
 
 interface ValueInputProps {
