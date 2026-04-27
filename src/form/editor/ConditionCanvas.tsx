@@ -447,8 +447,19 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     return `M ${a.x} ${a.y} C ${a.x} ${a.y + dy}, ${b.x} ${b.y - dy}, ${b.x} ${b.y}`;
   };
 
+  // ------- Zoom (ctrl+wheel) -------
+  const [zoom, setZoom] = useState(1);
+  const onCanvasWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    setZoom((z) => {
+      const next = z * (e.deltaY > 0 ? 0.9 : 1.1);
+      return Math.max(0.25, Math.min(2.5, next));
+    });
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4">
       {/* Palette */}
       <aside className="rounded-2xl border border-border bg-card kr-shadow-soft p-3 self-start max-h-[calc(100vh-12rem)] overflow-auto">
         <div className="px-1 pb-2">
