@@ -1,78 +1,74 @@
 ## Goal
 
-Add a new **"Vizuális feltételek (demo)"** tab to the editor where conditions can be authored on a large freeform canvas — dragging fields in as boxes and drawing connector lines between them to represent display conditions. The existing per-field condition workflow stays untouched.
+Three refinements to the visual condition canvas demo:
 
-## How it works (end-user flow)
+1. Move the field palette from the left sidebar to a horizontal strip at the top of the tab — frees the canvas to span full width.
+2. Add a small per-box order-number input on the left side of every canvas box. The number drives field order in the new demo preview.
+3. Add a new **Előnézet (demo)** tab that renders the form using the canvas state: fields appear in `order`-number sequence (linear, no groups), with the same conditional-visibility rules already saved on each field.
 
-1. Open editor → new tab **"Vizuális feltételek (demo)"** appears next to the existing tabs.
-2. Left side: a **field palette** listing all form fields (same source as the Mező/Űrlap tabs).
-3. Right side: a large **scrollable/zoomable canvas**.
-4. Drag a field from the palette onto the canvas → a **field box** appears at drop position showing the field's label, internal name and type icon.
-5. Each box has two anchor handles:
-   - **Top handle** = "this field's display depends on…"
-   - **Bottom handle** = "this field is a source for other conditions"
-6. Click + drag from `field_B`'s **top** to `field_A`'s **bottom** → a curved line is drawn. A small inline editor pops up on the line (or in a side panel) to set:
-   - **Operator** — filtered by `field_A`'s type (slider → `>`, `<`, `=`, `≠`; radio/checkbox/select → `=`, `≠`, `contains`; text/email/etc → `=`, `≠`, `contains`).
-   - **Value** — typed/selected with the same `ValueInput` used today (option dropdown for radio/select, number for slider, etc).
-7. Multiple incoming lines into a field = multiple conditions on that field. A toggle on the target box switches the combinator (**ÉS / VAGY**) for all its incoming lines.
-8. Editing or deleting a line / box updates the underlying condition data.
-9. A "Mentés" indicator (same pattern as elsewhere) shows save status.
+---
 
-## Persistence
+## Changes by file
 
-Conditions are saved through the **existing** `setFieldCondition(fieldId, ConditionGroup)` API → no schema changes needed. Each target box's incoming lines are serialized as one flat `ConditionGroup`:
+### `src/form/editor/ConditionCanvas.tsx`
 
-```ts
-{
-  combinator: "and" | "or",
-  rules: [{ fieldId: <source>, operator, value }, ...]
-}
-```
-
-This means conditions created on the canvas are **the same conditions** shown in the existing per-field condition editor (and vice versa). The tab is "demo" only in UX terms — the data is real and shared.
-
-**Canvas layout** (box positions on the canvas) is local-only for this demo: stored in `localStorage` keyed by form id. A future iteration can persist it in a new table if desired.
-
-## Tech approach
-
-- New file `src/form/editor/ConditionCanvas.tsx` containing the whole canvas UI.
-- Use **plain absolute-positioned divs + an SVG overlay** for connectors (no new dependency). Boxes are draggable with native pointer events; connectors are SVG cubic Bézier paths between anchor points.
-- Reuse `ValueInput` logic from `ConditionEditor.tsx` — extract the `ValueInput` and operator-list helpers into a small shared module `src/form/editor/conditionInputs.tsx` so both editors share them (no behavior change to existing editor).
-- Wire the new tab in `src/form/EditorView.tsx`:
-  - Add `<TabsTrigger value="canvas">Vizuális feltételek (demo)</TabsTrigger>`.
-  - Render `<ConditionCanvas fields={editor.fields} onSetCondition={editor.setFieldCondition} formId={editor.form?.id} />`.
-- Canvas bootstraps from existing conditions: any field with a `condition` is auto-placed (cascaded layout) and its rules become incoming lines, so opening the tab on an existing form shows current conditions visually.
-
-### ASCII sketch
+**Layout restructure** — change the outer grid from `[240px_1fr_360px]` (palette · canvas · field-config) to a two-row layout:
 
 ```text
-+--------------------------------------------------------------+
-| Palette         |  Canvas (scroll/zoom)                      |
-| [field_A]       |                                            |
-| [field_B]       |   +--------+        +--------+             |
-| [field_C]       |   |field_A |        |field_C |             |
-| [field_D]       |   +---o----+        +---o----+             |
-|                 |       \                /                   |
-|                 |        \              /                    |
-|                 |         v            v                     |
-|                 |       +-o-----------o--+                   |
-|                 |       |   field_B      | [ÉS|VAGY]         |
-|                 |       +----------------+                   |
-|                 |                                            |
-|                 |  Selected line: A > 50  [op▼] [value]  [x] |
-+--------------------------------------------------------------+
+┌──────────────────────────────────────────────────────┐
+│  Top palette strip (compact horizontal field chips)  │
+├───────────────────────────────────────┬──────────────┤
+│  Edge inspector (always visible)      │              │
+│  Canvas toolbar (zoom etc.)           │  Field       │
+│  Canvas (full remaining width)        │  config      │
+│                                       │  panel       │
+└───────────────────────────────────────┴──────────────┘
 ```
 
-## Out of scope (for this demo iteration)
+- The top strip is a single full-width `flex flex-wrap gap-2` of small draggable chips. Each chip shows the field's *külső* label in normal weight and the *belső* name + type in a muted smaller line below — same compact style as the existing palette items, sized to behave as inline chips.
+- Empty-state message ("Minden mező a vásznon van.") still shown when nothing is left in the palette.
+- Below the strip: a 2-column grid `[minmax(0,1fr)_360px]` for canvas + field-config panel.
 
-- Nested condition groups (parentheses). The canvas flattens to a single AND/OR group per target. If a field already has a nested condition authored in the old editor, it's shown read-only with a note "Komplex feltétel — szerkeszd a Mező fülön".
-- Persisting box positions server-side.
-- Multi-select / box-group operations.
-- Undo/redo.
+**Per-box order number**:
 
-## Files
+- Extend the persisted localStorage shape from `BoxPos { x, y }` to `BoxPos { x, y, order?: number }`. Existing entries are forward-compatible (missing `order` treated as `undefined`).
+- Render a small editable number input on the left edge of each box (absolute-positioned, `-left-3`, ~28px wide), styled like a pill, with `data-no-drag` so dragging the number doesn't drag the box.
+- Allow blank input (clears the order). Order is purely metadata for the demo preview tab.
+- When the user adds a box for the first time, auto-assign order = (max existing order + 1) so newly placed boxes get a sensible default.
 
-- **New**: `src/form/editor/ConditionCanvas.tsx` (canvas, palette, boxes, connectors, line editor popover).
-- **New**: `src/form/editor/conditionInputs.tsx` (shared `ValueInput` + operator list helpers, extracted from `ConditionEditor.tsx`).
-- **Edit**: `src/form/editor/ConditionEditor.tsx` — import shared helpers (no UX change).
-- **Edit**: `src/form/EditorView.tsx` — add the new tab and mount `ConditionCanvas`.
+**Renaming/cleanup**:
+
+- Drop the left palette `<aside>` element entirely.
+- Move the canvas panel out of its column wrapper into the new grid.
+
+### `src/form/EditorView.tsx`
+
+- Add a new `<TabsTrigger value="demo-preview">Előnézet (demo)</TabsTrigger>` between the canvas tab and the existing preview tab.
+- Add a matching `<TabsContent value="demo-preview">` that renders a new `<DemoPreview>` component (defined inline in this file or in a small new file), passing `editor.fields`, `editor.form?.id`, and `editor.form?.thank_you_text`.
+- The demo-preview tab reads positions from the same `localStorage` key used by `ConditionCanvas` (`condition-canvas-positions:<formId>`) so it stays in sync with what the user laid out, no extra plumbing required.
+
+### `src/form/editor/DemoPreview.tsx` (new)
+
+A small wrapper that:
+
+1. Reads `condition-canvas-positions:<formId>` from localStorage to get `{ [fieldId]: { x, y, order? } }`.
+2. Filters `fields` to those that appear in the positions map.
+3. Sorts them by `order` ascending; fields without an `order` go to the end (stable by their insertion order).
+4. Builds a synthetic `FormSchema` with `groups: []`, `subGroups: []`, and the sorted fields *re-stamped* so they render linearly:
+   - `groupId: undefined`, `subGroupId: undefined`
+   - `location: index + 1` (so `filterPlacedSchema` keeps them and `buildRenderTree` orders them)
+   - `width: 100` (force one-per-row, ignore packing for clarity)
+   - Conditions are kept untouched, so visibility logic still works exactly like in the regular preview.
+5. Renders `<FormView schema={syntheticSchema} layout="horizontal" formId={formId} showDemoButton thankYouText={thankYouText} />`.
+6. Empty state: if no fields are on the canvas, show a hint asking the user to place fields on the canvas first.
+
+This intentionally ignores groupings as requested — focus is on order + conditions only.
+
+---
+
+## Technical notes
+
+- The order input is uncontrolled-ish (`<input type="number" value={...} onChange>`); on change we update the box's `order` in `positions` state, which auto-persists via the existing `useEffect`.
+- Because positions live in localStorage, the new demo tab needs to *re-read* on mount and on tab switch. Easiest: read on mount + listen to a custom `condition-canvas:positions-changed` event dispatched from `ConditionCanvas` after every save, or simply re-read on every render via `useSyncExternalStore` against a small in-module event emitter. Plan: add a tiny `positionsStore.ts` (subscribe/get/set) so both the canvas writer and the demo reader share state without prop drilling through `EditorView`. This avoids stale data when switching tabs.
+- No DB schema changes. No `editorApi`/`useEditorSchema` changes.
+- Conditions still persist via the existing `setFieldCondition` flow; the demo preview reads them straight from `editor.fields[].condition` like the normal preview does.
