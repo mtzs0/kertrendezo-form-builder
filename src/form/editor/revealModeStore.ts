@@ -23,9 +23,13 @@ function storageKey(formId: string | null | undefined) {
 function read(formId: string | null | undefined): boolean {
   const k = keyOf(formId);
   if (cache.has(k)) return cache.get(k)!;
-  let v = false;
+  // Default ON — sequential reveal is the canvas preview's default behavior.
+  // Only an explicit "0" in storage disables it.
+  let v = true;
   try {
-    v = localStorage.getItem(storageKey(formId)) === "1";
+    const raw = localStorage.getItem(storageKey(formId));
+    if (raw === "0") v = false;
+    else if (raw === "1") v = true;
   } catch {
     /* ignore */
   }

@@ -681,7 +681,7 @@ export function ConditionCanvas({
                 onCheckedChange={setRevealOneByOne}
                 aria-label="Mezők egyenkénti megjelenítése az előnézetben"
               />
-              <span>Egyenkénti megjelenítés</span>
+              <span>Sorrendi megjelenítés</span>
             </label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
