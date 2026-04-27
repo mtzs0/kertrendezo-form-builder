@@ -216,6 +216,12 @@ export interface FormSchema {
 /** A single repeater instance: child internalName → its value. */
 export type RepeaterInstance = Record<string, FieldValue>;
 
+/** Stored value of a measurement field. */
+export interface MeasurementValue {
+  amount: number | "";
+  unit: string;
+}
+
 export type FieldValue =
   | string
   | number
@@ -225,6 +231,7 @@ export type FieldValue =
   | File[]
   | Array<{ name: string; url: string }>
   | RepeaterInstance[]
+  | MeasurementValue
   | undefined;
 
 export type FormValues = Record<string, FieldValue>;
