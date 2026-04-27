@@ -159,6 +159,7 @@ export function ConditionCanvas({
   // grid-default coords over the saved positions and scramble the canvas
   // (and also wipe out arrows whose target/source ended up moved).
   const positionsLoaded = useCanvasPositionsLoaded(formId);
+  const [revealOneByOne, setRevealOneByOne] = useRevealOneByOne(formId);
 
   /**
    * Local helper that mirrors the previous `setPositions((prev) => …)` API
@@ -674,6 +675,14 @@ export function ConditionCanvas({
             Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz. Jobb klikk a vásznon új mezőhöz.
           </p>
           <div className="flex items-center gap-1">
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground select-none cursor-pointer mr-1 px-1.5 py-1 rounded-md hover:bg-accent">
+              <Switch
+                checked={revealOneByOne}
+                onCheckedChange={setRevealOneByOne}
+                aria-label="Mezők egyenkénti megjelenítése az előnézetben"
+              />
+              <span>Egyenkénti megjelenítés</span>
+            </label>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" size="sm" className="h-7 text-xs">
