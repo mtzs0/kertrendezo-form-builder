@@ -307,6 +307,13 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, d
           onChangeOptions={onChangeOptions}
         />
       )}
+
+      {field.type === "repeater" && (
+        <RepeaterConfig
+          field={field as RepeaterField}
+          onChange={(patch) => onChange(patch as Partial<FormField>)}
+        />
+      )}
     </div>
   );
 }
