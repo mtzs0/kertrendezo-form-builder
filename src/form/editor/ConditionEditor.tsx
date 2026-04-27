@@ -40,6 +40,7 @@ const OPERATOR_LABELS: Record<FieldCondition["operator"], string> = {
   greater_than: "nagyobb mint (>)",
   less_than: "kisebb mint (<)",
   contains: "tartalmazza",
+  answered: "megválaszolva",
 };
 
 function emptyCondition(fieldId: string): FieldCondition {
