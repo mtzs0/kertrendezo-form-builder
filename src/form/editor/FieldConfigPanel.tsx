@@ -54,6 +54,7 @@ const TYPE_LABELS: Record<FieldType, string> = {
   city: "Város",
   street: "Utca, házszám",
   email: "Email",
+  measurement: "Mértékegység",
   repeater: "Ismétlődő blokk",
 };
 
