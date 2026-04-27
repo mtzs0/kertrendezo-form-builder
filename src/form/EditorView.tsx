@@ -93,6 +93,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
             <TabsTrigger value="field">Mező</TabsTrigger>
             <TabsTrigger value="group">Csoport</TabsTrigger>
             <TabsTrigger value="canvas">Vizuális feltételek (demo)</TabsTrigger>
+            <TabsTrigger value="demo-preview">Előnézet (demo)</TabsTrigger>
             <TabsTrigger value="preview">Előnézet</TabsTrigger>
             <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
