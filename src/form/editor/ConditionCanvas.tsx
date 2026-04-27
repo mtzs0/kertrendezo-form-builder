@@ -503,7 +503,7 @@ export function ConditionCanvas({
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_360px] gap-4">
       {/* Palette */}
       <aside className="rounded-2xl border border-border bg-card kr-shadow-soft p-3 self-start max-h-[calc(100vh-12rem)] overflow-auto">
         <div className="px-1 pb-2">
