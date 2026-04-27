@@ -14,6 +14,7 @@ import { FieldPicker } from "./editor/FieldPicker";
 import { ConditionEditor } from "./editor/ConditionEditor";
 import { GroupsManager } from "./editor/GroupsManager";
 import { LayoutsManager } from "./editor/LayoutsManager";
+import { ConditionCanvas } from "./editor/ConditionCanvas";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
@@ -90,6 +91,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
             <TabsTrigger value="form">Űrlap</TabsTrigger>
             <TabsTrigger value="field">Mező</TabsTrigger>
             <TabsTrigger value="group">Csoport</TabsTrigger>
+            <TabsTrigger value="canvas">Vizuális feltételek (demo)</TabsTrigger>
             <TabsTrigger value="preview">Előnézet</TabsTrigger>
             <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
@@ -249,6 +251,18 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 onPatchSubGroup={editor.patchSubGroup}
                 onRemoveGroup={editor.removeGroup}
                 onRemoveSubGroup={editor.removeSubGroup}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="canvas" className="mt-4">
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <ConditionCanvas
+                fields={editor.fields}
+                formId={editor.form?.id ?? null}
+                onSetCondition={editor.setFieldCondition}
               />
             )}
           </TabsContent>
