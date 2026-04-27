@@ -170,7 +170,7 @@ function tokenize(input: string): Token[] {
         tokens.push({ type: "or", value: word, start, end: i });
       } else if (lower === "true" || lower === "false") {
         tokens.push({ type: "bool", value: lower, start, end: i });
-      } else if (lower === "is" || lower === "contains") {
+      } else if (lower === "is" || lower === "contains" || lower === "answered") {
         tokens.push({ type: "op", value: lower, start, end: i });
       } else {
         tokens.push({ type: "ident", value: word, start, end: i });
@@ -235,6 +235,10 @@ function parseCondition(ctx: ParseCtx): FieldCondition {
       `Ismeretlen művelet: ${opTok.value}`,
       opTok.start
     );
+  }
+  // "answered" takes no value — short-circuit before reading the value token.
+  if (operator === "answered") {
+    return { fieldId: field.id, operator, value: "" };
   }
   const valTok = consume(ctx);
   const value = parseValue(valTok);
@@ -344,6 +348,7 @@ function conditionToText(
 ): string {
   const f = fieldsById.get(c.fieldId);
   const name = f?.internalName ?? `unknown_${c.fieldId.slice(0, 6)}`;
+  if (c.operator === "answered") return `${name} answered`;
   return `${name} ${OP_TO_TEXT[c.operator]} ${valueToText(c.value)}`;
 }
 
