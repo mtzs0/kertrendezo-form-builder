@@ -490,7 +490,45 @@ export function ConditionCanvas({
     // We don't touch the field's condition — the user may want to keep it.
   };
 
-  // ------- Selected edge (for the bottom inspector) -------
+  // ------- Create a brand-new field from the canvas -------
+  // When the user creates a field from the canvas (via the "Új mező" button
+  // or the right-click context menu), we:
+  //   1. Call onAddField(type) — this saves the field and returns its id.
+  //   2. Place a box for it on the canvas at the requested world coords
+  //      (or canvas center, if the button was used).
+  //   3. Select it so the right-side FieldConfigPanel opens for editing.
+  const createFieldAt = useCallback(
+    async (type: FieldType, world?: { x: number; y: number }) => {
+      const id = await onAddField(type);
+      if (!id) return;
+      const target =
+        world ??
+        (() => {
+          // Fall back to the visible center of the canvas in world coords.
+          const r = canvasRef.current?.getBoundingClientRect();
+          if (!r) return { x: 200, y: 200 };
+          return toWorld(r.left + r.width / 2, r.top + r.height / 2);
+        })();
+      setPositions((prev) => ({
+        ...prev,
+        [id]: {
+          x: target.x - BOX_W / 2,
+          y: target.y - BOX_H / 2,
+          order: maxOrder(prev) + 1,
+        },
+      }));
+      setSelectedEdge(null);
+      // onAddField also selects the field via EditorView, but call it here
+      // too in case the parent doesn't.
+      onSelectField(id);
+    },
+    [onAddField, onSelectField]
+  );
+
+  // World coords captured when the user opens the right-click context menu,
+  // so we can place the new box exactly where they clicked.
+  const contextMenuWorldRef = useRef<{ x: number; y: number } | null>(null);
+
   const [selectedEdge, setSelectedEdge] = useState<
     { targetId: string; ruleIndex: number } | null
   >(null);
