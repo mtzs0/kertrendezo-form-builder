@@ -38,10 +38,11 @@ export function DemoPreview({ fields, formId, thankYouText }: Props) {
     return placed.map((p, i) => ({
       ...p.field,
       // Re-stamp so buildRenderTree treats them as linear top-level fields.
+      // Preserve the author-set width so 50%/33%/etc. fields can pack
+      // side-by-side in the demo preview, just like in the live form.
       groupId: undefined,
       subGroupId: undefined,
       location: i + 1,
-      width: 100 as const,
     })) as FormField[];
   }, [fields, positions]);
 
