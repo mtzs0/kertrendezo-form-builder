@@ -91,31 +91,8 @@ function isFlatGroup(g: ConditionGroup | undefined): boolean {
   return g.rules.every((r) => !("combinator" in r));
 }
 
-function lsKey(formId: string | null | undefined) {
-  return `condition-canvas-positions:${formId ?? "default"}`;
-}
-
-function loadPositions(formId: string | null | undefined): Record<string, BoxPos> {
-  try {
-    const raw = localStorage.getItem(lsKey(formId));
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function savePositions(
-  formId: string | null | undefined,
-  positions: Record<string, BoxPos>
-) {
-  try {
-    localStorage.setItem(lsKey(formId), JSON.stringify(positions));
-  } catch {
-    // ignore quota / serialization errors
-  }
-}
+// Position load/save now live in `./canvasPositionsStore` so the
+// Előnézet (demo) tab can subscribe to the same state.
 
 export function ConditionCanvas({
   fields,
