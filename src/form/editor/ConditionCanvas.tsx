@@ -199,6 +199,21 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  // ------- Zoom (ctrl+wheel) -------
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  const onCanvasWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    setZoom((z) => {
+      const next = z * (e.deltaY > 0 ? 0.9 : 1.1);
+      return Math.max(0.25, Math.min(2.5, next));
+    });
+  };
+
   // ------- Drag-from-palette / drag-existing-box -------
   const dragRef = useRef<{
     fieldId: string;
