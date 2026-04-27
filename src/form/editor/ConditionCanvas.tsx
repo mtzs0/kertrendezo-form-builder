@@ -54,6 +54,11 @@ import {
   ValueInput,
   operatorsForField,
 } from "./conditionInputs";
+import {
+  loadPositions,
+  savePositions,
+  type BoxPos,
+} from "./canvasPositionsStore";
 
 interface Props {
   fields: FormField[];
@@ -65,11 +70,6 @@ interface Props {
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   fieldConfigPanel: React.ReactNode;
-}
-
-interface BoxPos {
-  x: number;
-  y: number;
 }
 
 const BOX_W = 220;
