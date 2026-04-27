@@ -225,13 +225,20 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     if (!rect) return;
     const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
     const scrollTop = canvasRef.current?.scrollTop ?? 0;
+    const z = zoomRef.current;
     const x = Math.max(
       0,
-      Math.min(CANVAS_W - BOX_W, e.clientX - rect.left + scrollLeft - BOX_W / 2)
+      Math.min(
+        CANVAS_W - BOX_W,
+        (e.clientX - rect.left + scrollLeft) / z - BOX_W / 2
+      )
     );
     const y = Math.max(
       0,
-      Math.min(CANVAS_H - BOX_H, e.clientY - rect.top + scrollTop - BOX_H / 2)
+      Math.min(
+        CANVAS_H - BOX_H,
+        (e.clientY - rect.top + scrollTop) / z - BOX_H / 2
+      )
     );
     setPositions((prev) => ({ ...prev, [fieldId]: { x, y } }));
   };
@@ -251,8 +258,9 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     if (!rect) return;
     const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
     const scrollTop = canvasRef.current?.scrollTop ?? 0;
-    const startX = e.clientX - rect.left + scrollLeft;
-    const startY = e.clientY - rect.top + scrollTop;
+    const z = zoomRef.current;
+    const startX = (e.clientX - rect.left + scrollLeft) / z;
+    const startY = (e.clientY - rect.top + scrollTop) / z;
     const offsetX = startX - pos.x;
     const offsetY = startY - pos.y;
 
@@ -261,13 +269,20 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!r) return;
       const sl = canvasRef.current?.scrollLeft ?? 0;
       const st = canvasRef.current?.scrollTop ?? 0;
+      const zz = zoomRef.current;
       const nx = Math.max(
         0,
-        Math.min(CANVAS_W - BOX_W, ev.clientX - r.left + sl - offsetX)
+        Math.min(
+          CANVAS_W - BOX_W,
+          (ev.clientX - r.left + sl) / zz - offsetX
+        )
       );
       const ny = Math.max(
         0,
-        Math.min(CANVAS_H - BOX_H, ev.clientY - r.top + st - offsetY)
+        Math.min(
+          CANVAS_H - BOX_H,
+          (ev.clientY - r.top + st) / zz - offsetY
+        )
       );
       setPositions((prev) => ({ ...prev, [fieldId]: { x: nx, y: ny } }));
     };
@@ -298,9 +313,13 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!r) return;
       const sl = canvasRef.current?.scrollLeft ?? 0;
       const st = canvasRef.current?.scrollTop ?? 0;
+      const zz = zoomRef.current;
       setDrawing({
         sourceId,
-        cursor: { x: ev.clientX - r.left + sl, y: ev.clientY - r.top + st },
+        cursor: {
+          x: (ev.clientX - r.left + sl) / zz,
+          y: (ev.clientY - r.top + st) / zz,
+        },
       });
     };
     const up = (ev: PointerEvent) => {
@@ -314,11 +333,12 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!targetId || targetId === sourceId) return;
       addConditionEdge(targetId, sourceId);
     };
+    const z = zoomRef.current;
     setDrawing({
       sourceId,
       cursor: {
-        x: e.clientX - rect.left + (canvasRef.current?.scrollLeft ?? 0),
-        y: e.clientY - rect.top + (canvasRef.current?.scrollTop ?? 0),
+        x: (e.clientX - rect.left + (canvasRef.current?.scrollLeft ?? 0)) / z,
+        y: (e.clientY - rect.top + (canvasRef.current?.scrollTop ?? 0)) / z,
       },
     });
     window.addEventListener("pointermove", updateCursor);
