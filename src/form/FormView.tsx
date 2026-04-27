@@ -30,6 +30,11 @@ interface Props {
   showDemoButton?: boolean;
   /** Optional thank-you message shown after a successful submission. */
   thankYouText?: string | null;
+  /**
+   * Optional listener invoked whenever the internal `values` map changes.
+   * Used by the demo preview to drive its "reveal fields one-by-one" mode.
+   */
+  onValuesChange?: (values: FormValues) => void;
 }
 
 function randomString(len = 10) {
@@ -162,11 +167,17 @@ function buildDemoValues(schema: FormSchema): FormValues {
   return values;
 }
 
-export function FormView({ schema, layout, formId, showDemoButton, thankYouText }: Props) {
+export function FormView({ schema, layout, formId, showDemoButton, thankYouText, onValuesChange }: Props) {
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
+
+  // Notify parent of value changes so the demo preview can drive its
+  // "reveal one-by-one" mode based on which fields have been answered.
+  useEffect(() => {
+    onValuesChange?.(values);
+  }, [values, onValuesChange]);
 
   // Stepped mode is active when at least one top-level group is placed.
   // Groups become steps; their sub-groups (+ group-level fields as a pseudo
