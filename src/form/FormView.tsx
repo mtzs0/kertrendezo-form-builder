@@ -384,7 +384,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     item.kind === "field" ? item.field.width : (item as RenderGroup).width;
 
   function renderGroup(group: RenderGroup) {
-    const children = group.children;
+    const children = visibleGroupChildren(group);
     const renderChild = (child: RenderSubGroup | RenderGroupChild) => {
       if (child.kind === "field") return renderField(child.field);
       return renderSubGroup(child);
@@ -403,13 +403,14 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
     );
   }
   function renderSubGroup(sg: RenderSubGroup) {
+    const fields = visibleFields(sg.fields);
     return (
       <div className="rounded-xl border border-border/70 bg-secondary/40 p-4 md:p-5 space-y-4 h-full">
         <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {sg.label}
         </h4>
         {renderPacked(
-          sg.fields,
+          fields,
           (f) => f.width,
           (f) => renderField(f),
           (f) => f.id,
@@ -421,7 +422,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
   // ---- Stepped-mode active sub-step body ----
   function renderActiveSubStep() {
     if (!activeGroup || !activeSubId) return null;
-    const fields = collectFieldsForSubStep(activeGroup, activeSubId);
+    const fields = visibleFields(collectFieldsForSubStep(activeGroup, activeSubId));
     return (
       <div className="space-y-5">
         {renderPacked(
