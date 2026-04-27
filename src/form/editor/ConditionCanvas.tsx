@@ -661,7 +661,6 @@ export function ConditionCanvas({
                 pointerEvents: "none",
               }}
             >
-            >
               <defs>
                 <marker
                   id="arrowhead"
