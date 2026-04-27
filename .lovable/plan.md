@@ -1,109 +1,78 @@
-## Repeater field — multi-instance sub-forms
+## Goal
 
-A new field type that lets end-users dynamically create N "instances" (e.g. gardening areas), each with its own set of parameter values. The editor defines the child fields once; the user fills them in per instance through a modal.
+Add a new **"Vizuális feltételek (demo)"** tab to the editor where conditions can be authored on a large freeform canvas — dragging fields in as boxes and drawing connector lines between them to represent display conditions. The existing per-field condition workflow stays untouched.
 
-### Concept summary
+## How it works (end-user flow)
 
-- New `FieldType` value: `"repeater"`.
-- A repeater field owns its own list of **child fields** (text, slider, select, even nested repeaters).
-- Live form renders: instructions/note → list of saved instance cards → "Hozzáadás" (Add) button.
-- Clicking Add or a card opens a modal containing the child sub-form. Save → the instance is added/updated to the parent value array.
-- Submission shape: `values[repeaterFieldId] = [{ childInternalName: value, … }, …]`.
+1. Open editor → new tab **"Vizuális feltételek (demo)"** appears next to the existing tabs.
+2. Left side: a **field palette** listing all form fields (same source as the Mező/Űrlap tabs).
+3. Right side: a large **scrollable/zoomable canvas**.
+4. Drag a field from the palette onto the canvas → a **field box** appears at drop position showing the field's label, internal name and type icon.
+5. Each box has two anchor handles:
+   - **Top handle** = "this field's display depends on…"
+   - **Bottom handle** = "this field is a source for other conditions"
+6. Click + drag from `field_B`'s **top** to `field_A`'s **bottom** → a curved line is drawn. A small inline editor pops up on the line (or in a side panel) to set:
+   - **Operator** — filtered by `field_A`'s type (slider → `>`, `<`, `=`, `≠`; radio/checkbox/select → `=`, `≠`, `contains`; text/email/etc → `=`, `≠`, `contains`).
+   - **Value** — typed/selected with the same `ValueInput` used today (option dropdown for radio/select, number for slider, etc).
+7. Multiple incoming lines into a field = multiple conditions on that field. A toggle on the target box switches the combinator (**ÉS / VAGY**) for all its incoming lines.
+8. Editing or deleting a line / box updates the underlying condition data.
+9. A "Mentés" indicator (same pattern as elsewhere) shows save status.
 
-### Editor experience
+## Persistence
 
-In `FieldConfigPanel`, when `field.type === "repeater"`, a dedicated "Almezők" section appears with:
+Conditions are saved through the **existing** `setFieldCondition(fieldId, ConditionGroup)` API → no schema changes needed. Each target box's incoming lines are serialized as one flat `ConditionGroup`:
 
-- **Item label** ("Elem neve") — singular noun used in buttons/empty state, e.g. "Terület".
-- **Add-button label** — defaults to `Új ${itemLabel} hozzáadása`.
-- **Min / Max példány** numeric inputs. Required toggle implies min ≥ 1.
-- **Címke mező** — dropdown of the repeater's child fields; the chosen field's value becomes each card's title (falls back to `${itemLabel} #N`).
-- **Almezők lista** — a nested mini version of the existing `FieldPicker` + `FieldConfigPanel` UI:
-  - Add child field via the same type dropdown (all types allowed, including nested repeater).
-  - Click a child to edit it in an inline sub-panel (reuses `FieldConfigPanel` recursively, with `deleteLabel="Almező törlése"`).
-  - Reorder via existing `SortableItem` drag handles.
-  - Conditions on child fields evaluate against **the current modal's values only**, not the outer form.
-
-The repeater field itself is added like any other field via `FieldPicker` / `AddFieldMenu`, and can live globally, in a group, or in a sub-group (no placement restriction). It participates in the stepper just like any regular field.
-
-### Live form experience (preview + published)
-
-`FieldRenderer` gets a new branch for `type === "repeater"`:
-
-```text
-┌─────────────────────────────────────────┐
-│ Külső név (Pl. Területek)               │
-│ Megjegyzés / instructions               │
-│                                          │
-│ ┌─ Grass · 120 m² ──────────── [✎] [🗑] ┐│
-│ ┌─ Forest · 40 m² ─────────────[✎] [🗑] ┐│
-│                                          │
-│ [+ Új terület hozzáadása]                │
-└─────────────────────────────────────────┘
-```
-
-- Cards show the title-field value (or `${itemLabel} #N`) and a 1-line summary of 1–2 other filled values.
-- Edit pencil & delete trash on each card. Delete confirms inline (no extra dialog).
-- "Add" button is disabled at max; min violation shows a soft warning at submit/next step (consistent with existing soft-warn validation).
-- Modal/Drawer (uses existing `Dialog` component): renders the child sub-form using the same `FieldRenderer` + width-packed row layout as the main form. Footer: "Mégse" / "Mentés".
-- Modal validation: required child fields block save with inline messages (modal is a confirmed action, unlike step navigation).
-- Nested repeaters work the same way — a child repeater inside a modal opens *another* modal stacked on top.
-
-### Submission shape
-
-```json
+```ts
 {
-  "<repeaterFieldId>": [
-    { "tipus": "fu", "terulet_m2": 120, "megjegyzes": "..." },
-    { "tipus": "erdo", "terulet_m2": 40 }
-  ]
+  combinator: "and" | "or",
+  rules: [{ fieldId: <source>, operator, value }, ...]
 }
 ```
 
-Keys are the **internal names** of the child fields. Empty/undefined child values are omitted. Demo-fill generates 2 random instances per repeater.
+This means conditions created on the canvas are **the same conditions** shown in the existing per-field condition editor (and vice versa). The tab is "demo" only in UX terms — the data is real and shared.
 
-### Technical changes
+**Canvas layout** (box positions on the canvas) is local-only for this demo: stored in `localStorage` keyed by form id. A future iteration can persist it in a new table if desired.
 
-**1. Schema (`src/form/types.ts`)**
-- Add `"repeater"` to `FieldType`.
-- New `RepeaterField extends BaseField`:
-  ```ts
-  type: "repeater";
-  itemLabel?: string;          // "Terület"
-  addButtonLabel?: string;
-  minInstances?: number;
-  maxInstances?: number;
-  titleChildId?: string;       // child field id used for card title
-  children: FormField[];       // nested children, sorted by location
-  ```
-- Extend `FieldValue` to include `Array<Record<string, FieldValue>>`.
-- Children's `groupId`/`subGroupId` are unused (always undefined) — they live inside the repeater, not the form's group tree.
+## Tech approach
 
-**2. Persistence (Supabase)**
-- Add column `form_fields.parent_field_id UUID NULL` to allow rows to be children of a repeater. Existing fields keep `parent_field_id = NULL`.
-- Add columns for repeater config: `repeater_item_label TEXT`, `repeater_add_label TEXT`, `repeater_min INT`, `repeater_max INT`, `repeater_title_child_id UUID`.
-- Update `editorApi.ts` and `usePublishedForm.ts` to:
-  - Load child fields by `parent_field_id` and attach them to their repeater's `children` array (sorted by `position`).
-  - Save children with `parent_field_id` set; `form_id` still set so RLS policies keep working.
-- Submission JSON simply round-trips the array as-is (already `jsonb`).
+- New file `src/form/editor/ConditionCanvas.tsx` containing the whole canvas UI.
+- Use **plain absolute-positioned divs + an SVG overlay** for connectors (no new dependency). Boxes are draggable with native pointer events; connectors are SVG cubic Bézier paths between anchor points.
+- Reuse `ValueInput` logic from `ConditionEditor.tsx` — extract the `ValueInput` and operator-list helpers into a small shared module `src/form/editor/conditionInputs.tsx` so both editors share them (no behavior change to existing editor).
+- Wire the new tab in `src/form/EditorView.tsx`:
+  - Add `<TabsTrigger value="canvas">Vizuális feltételek (demo)</TabsTrigger>`.
+  - Render `<ConditionCanvas fields={editor.fields} onSetCondition={editor.setFieldCondition} formId={editor.form?.id} />`.
+- Canvas bootstraps from existing conditions: any field with a `condition` is auto-placed (cascaded layout) and its rules become incoming lines, so opening the tab on an existing form shows current conditions visually.
 
-**3. Editor UI**
-- `FieldConfigPanel.tsx`: add `RepeaterConfig` sub-component rendered when `field.type === "repeater"`. It internally uses a simplified picker + recursive `FieldConfigPanel` for the selected child.
-- `FieldPicker.tsx` / `AddFieldMenu`: add `{ value: "repeater", label: "Ismétlődő blokk" }` to `FIELD_TYPES`.
-- `StructureEditor.tsx`: a repeater field is placed like any other field (single block, no expansion of its children into the structure tree).
-- `OptionsEditor`-style nested editor for children stays inside the repeater config and never appears in the global structure / field picker lists.
+### ASCII sketch
 
-**4. Live rendering**
-- `FieldRenderer.tsx`: new `RepeaterRenderer` component handling list, modal, add/edit/delete, summary. Reuses `FieldRenderer` recursively for child fields inside the modal, with an isolated `values` state scoped to the modal.
-- `structure.ts` `isFieldVisible`: when evaluating a child field's condition inside a modal, pass the modal-scoped values, not the outer form values.
-- `FormView.tsx` demo-fill: generate `1 + floor(random*2)` instances of random child values per repeater.
-- Soft-warn collector: if `field.required` and array length < `max(minInstances ?? 1, 1)`, include in missing list.
+```text
++--------------------------------------------------------------+
+| Palette         |  Canvas (scroll/zoom)                      |
+| [field_A]       |                                            |
+| [field_B]       |   +--------+        +--------+             |
+| [field_C]       |   |field_A |        |field_C |             |
+| [field_D]       |   +---o----+        +---o----+             |
+|                 |       \                /                   |
+|                 |        \              /                    |
+|                 |         v            v                     |
+|                 |       +-o-----------o--+                   |
+|                 |       |   field_B      | [ÉS|VAGY]         |
+|                 |       +----------------+                   |
+|                 |                                            |
+|                 |  Selected line: A > 50  [op▼] [value]  [x] |
++--------------------------------------------------------------+
+```
 
-**5. Stepper compatibility**
-- No changes needed — repeater fields render in whichever group/sub-group they're placed in (or globally) and behave as a single field for layout/width/packing purposes.
+## Out of scope (for this demo iteration)
 
-### Out of scope (for now)
+- Nested condition groups (parentheses). The canvas flattens to a single AND/OR group per target. If a field already has a nested condition authored in the old editor, it's shown read-only with a note "Komplex feltétel — szerkeszd a Mező fülön".
+- Persisting box positions server-side.
+- Multi-select / box-group operations.
+- Undo/redo.
 
-- Drag-reordering saved instances on the live form (only add/edit/delete).
-- Per-instance conditions referencing values from other instances or the outer form.
-- Importing/exporting children from another repeater.
+## Files
+
+- **New**: `src/form/editor/ConditionCanvas.tsx` (canvas, palette, boxes, connectors, line editor popover).
+- **New**: `src/form/editor/conditionInputs.tsx` (shared `ValueInput` + operator list helpers, extracted from `ConditionEditor.tsx`).
+- **Edit**: `src/form/editor/ConditionEditor.tsx` — import shared helpers (no UX change).
+- **Edit**: `src/form/EditorView.tsx` — add the new tab and mount `ConditionCanvas`.
