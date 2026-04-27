@@ -258,6 +258,18 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             imageUrl: o.image_url ?? undefined,
           })),
       };
+    case "measurement":
+      return {
+        ...base,
+        type: "measurement",
+        options: opts
+          .slice()
+          .sort((a, b) => a.position - b.position)
+          .map((o) => ({
+            displayName: o.display_name,
+            dataName: o.data_name,
+          })),
+      };
     case "repeater": {
       const cfg = ((f as FieldRow & { repeater_config?: unknown }).repeater_config ?? null) as
         | (Partial<RepeaterField> & { children?: FormField[] })
