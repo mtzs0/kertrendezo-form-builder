@@ -844,18 +844,16 @@ export function ConditionCanvas({
                   )}
                 </div>
               );
-            })}
-
-            {placedFieldIds.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center text-sm text-muted-foreground">
-                  <MousePointer2 className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                  Húzz ide mezőket a bal oldali listából.
-                </div>
-              </div>
-            )}
-            </div>
           </div>
+
+          {placedFieldIds.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-center text-sm text-muted-foreground">
+                <MousePointer2 className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                Húzz ide mezőket a bal oldali listából.
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
