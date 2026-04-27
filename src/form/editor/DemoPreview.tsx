@@ -67,24 +67,30 @@ export function DemoPreview({ fields, formId, thankYouText }: Props) {
     })) as FormField[];
   }, [fields, positions]);
 
-  // In reveal-one-by-one mode, slice the ordered list down to all fields
-  // up to (and including) the first visible-and-unanswered one. Hidden
-  // (condition-failed) fields don't count toward the cap — they're just
-  // skipped, which mirrors what FormView does internally.
+  // In reveal-one-by-one mode, reveal fields sequentially but only gate
+  // on REQUIRED fields. Non-required fields are always revealed alongside
+  // the next required field in the sequence — the user may skip them
+  // without blocking subsequent reveals.
+  //
+  // Algorithm: walk the ordered list and include every field. Stop after
+  // including the first visible REQUIRED field that is still unanswered.
+  // This naturally pulls in any non-required fields that sit between the
+  // last answered required field and the next required one.
+  //
+  // Hidden (condition-failed) fields are skipped for the gating check
+  // but still added to the slice (FormView will render-null them).
   const visibleSchemaFields = useMemo(() => {
     if (!revealOneByOne) return orderedFields;
     const out: FormField[] = [];
     for (const f of orderedFields) {
       out.push(f);
-      // Resolve visibility against the field as it would appear in the
-      // schema (without group context, matching the slice we hand to
-      // FormView).
       if (!isFieldVisible(f, liveValues)) continue;
-      if (!isAnswered(f, liveValues)) {
-        // Stop here — this is the current "active" field. Anything after
-        // it stays hidden until the user fills it in.
-        break;
-      }
+      // Non-required fields never block — keep revealing.
+      if (!f.required) continue;
+      // Required + answered → keep revealing the next batch.
+      if (isAnswered(f, liveValues)) continue;
+      // Required + unanswered → this is the current gating field.
+      break;
     }
     return out;
   }, [orderedFields, revealOneByOne, liveValues]);
@@ -115,7 +121,7 @@ export function DemoPreview({ fields, formId, thankYouText }: Props) {
       {revealOneByOne && (
         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1 text-[11px] font-medium">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-          Egyenkénti megjelenítés bekapcsolva
+          Sorrendi megjelenítés (kötelező mezők szerint)
         </div>
       )}
       <FormView
