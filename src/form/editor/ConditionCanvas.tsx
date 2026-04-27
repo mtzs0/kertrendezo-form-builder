@@ -199,6 +199,28 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  // ------- Zoom (ctrl+wheel) -------
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  // Native wheel handler so we can call preventDefault (React's onWheel is passive).
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      setZoom((z) => {
+        const next = z * (e.deltaY > 0 ? 0.9 : 1.1);
+        return Math.max(0.25, Math.min(2.5, next));
+      });
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
+
   // ------- Drag-from-palette / drag-existing-box -------
   const dragRef = useRef<{
     fieldId: string;
@@ -225,13 +247,20 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     if (!rect) return;
     const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
     const scrollTop = canvasRef.current?.scrollTop ?? 0;
+    const z = zoomRef.current;
     const x = Math.max(
       0,
-      Math.min(CANVAS_W - BOX_W, e.clientX - rect.left + scrollLeft - BOX_W / 2)
+      Math.min(
+        CANVAS_W - BOX_W,
+        (e.clientX - rect.left + scrollLeft) / z - BOX_W / 2
+      )
     );
     const y = Math.max(
       0,
-      Math.min(CANVAS_H - BOX_H, e.clientY - rect.top + scrollTop - BOX_H / 2)
+      Math.min(
+        CANVAS_H - BOX_H,
+        (e.clientY - rect.top + scrollTop) / z - BOX_H / 2
+      )
     );
     setPositions((prev) => ({ ...prev, [fieldId]: { x, y } }));
   };
@@ -251,8 +280,9 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     if (!rect) return;
     const scrollLeft = canvasRef.current?.scrollLeft ?? 0;
     const scrollTop = canvasRef.current?.scrollTop ?? 0;
-    const startX = e.clientX - rect.left + scrollLeft;
-    const startY = e.clientY - rect.top + scrollTop;
+    const z = zoomRef.current;
+    const startX = (e.clientX - rect.left + scrollLeft) / z;
+    const startY = (e.clientY - rect.top + scrollTop) / z;
     const offsetX = startX - pos.x;
     const offsetY = startY - pos.y;
 
@@ -261,13 +291,20 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!r) return;
       const sl = canvasRef.current?.scrollLeft ?? 0;
       const st = canvasRef.current?.scrollTop ?? 0;
+      const zz = zoomRef.current;
       const nx = Math.max(
         0,
-        Math.min(CANVAS_W - BOX_W, ev.clientX - r.left + sl - offsetX)
+        Math.min(
+          CANVAS_W - BOX_W,
+          (ev.clientX - r.left + sl) / zz - offsetX
+        )
       );
       const ny = Math.max(
         0,
-        Math.min(CANVAS_H - BOX_H, ev.clientY - r.top + st - offsetY)
+        Math.min(
+          CANVAS_H - BOX_H,
+          (ev.clientY - r.top + st) / zz - offsetY
+        )
       );
       setPositions((prev) => ({ ...prev, [fieldId]: { x: nx, y: ny } }));
     };
@@ -298,9 +335,13 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!r) return;
       const sl = canvasRef.current?.scrollLeft ?? 0;
       const st = canvasRef.current?.scrollTop ?? 0;
+      const zz = zoomRef.current;
       setDrawing({
         sourceId,
-        cursor: { x: ev.clientX - r.left + sl, y: ev.clientY - r.top + st },
+        cursor: {
+          x: (ev.clientX - r.left + sl) / zz,
+          y: (ev.clientY - r.top + st) / zz,
+        },
       });
     };
     const up = (ev: PointerEvent) => {
@@ -314,11 +355,12 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       if (!targetId || targetId === sourceId) return;
       addConditionEdge(targetId, sourceId);
     };
+    const z = zoomRef.current;
     setDrawing({
       sourceId,
       cursor: {
-        x: e.clientX - rect.left + (canvasRef.current?.scrollLeft ?? 0),
-        y: e.clientY - rect.top + (canvasRef.current?.scrollTop ?? 0),
+        x: (e.clientX - rect.left + (canvasRef.current?.scrollLeft ?? 0)) / z,
+        y: (e.clientY - rect.top + (canvasRef.current?.scrollTop ?? 0)) / z,
       },
     });
     window.addEventListener("pointermove", updateCursor);
@@ -447,8 +489,10 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
     return `M ${a.x} ${a.y} C ${a.x} ${a.y + dy}, ${b.x} ${b.y - dy}, ${b.x} ${b.y}`;
   };
 
+
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4">
       {/* Palette */}
       <aside className="rounded-2xl border border-border bg-card kr-shadow-soft p-3 self-start max-h-[calc(100vh-12rem)] overflow-auto">
         <div className="px-1 pb-2">
@@ -483,51 +527,122 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
       </aside>
 
       {/* Canvas */}
-      <div className="space-y-3">
+      <div className="space-y-3 min-w-0">
+        {/* Selected edge inspector — always rendered to avoid layout shift */}
+        <div>
+          {selectedEdgeData ? (
+            <EdgeInspector
+              targetField={fieldById.get(selectedEdgeData.targetId)!}
+              sourceField={fieldById.get(selectedEdgeData.sourceId)!}
+              rule={selectedEdgeData.rule}
+              onChange={(patch) =>
+                updateRule(
+                  selectedEdgeData.targetId,
+                  selectedEdgeData.ruleIndex,
+                  patch
+                )
+              }
+              onRemove={() =>
+                removeRule(selectedEdgeData.targetId, selectedEdgeData.ruleIndex)
+              }
+              onClose={() => setSelectedEdge(null)}
+            />
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-muted/10 p-4 text-xs text-muted-foreground flex items-center justify-center min-h-[124px]">
+              Válassz egy összekötő vonalat a vásznon a feltétel szerkesztéséhez.
+            </div>
+          )}
+        </div>
+
         <div className="flex items-center justify-between gap-2 px-1">
           <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
             <Info className="h-3.5 w-3.5" />
-            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához.
+            Húzd a forrásmező alsó pontjából a célmező felső pontjába a feltétel létrehozásához. Ctrl + görgő a nagyításhoz.
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (
-                placedFieldIds.length > 0 &&
-                window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
-              ) {
-                setPositions({});
-                setSelectedEdge(null);
-              }
-            }}
-            className="text-xs"
-          >
-            Vászon ürítése
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom((z) => Math.max(0.25, z * 0.9))}
+              className="text-xs h-7 w-7 p-0"
+              title="Kicsinyítés"
+            >
+              −
+            </Button>
+            <span className="text-[11px] text-muted-foreground tabular-nums w-10 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom((z) => Math.min(2.5, z * 1.1))}
+              className="text-xs h-7 w-7 p-0"
+              title="Nagyítás"
+            >
+              +
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setZoom(1)}
+              className="text-xs h-7"
+              title="Visszaállítás"
+            >
+              100%
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (
+                  placedFieldIds.length > 0 &&
+                  window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
+                ) {
+                  setPositions({});
+                  setSelectedEdge(null);
+                }
+              }}
+              className="text-xs"
+            >
+              Vászon ürítése
+            </Button>
+          </div>
         </div>
 
         <div
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
-          className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft"
+          
+          className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft w-full"
           style={{
-            height: "calc(100vh - 16rem)",
+            height: "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
+            backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
           }}
         >
           <div
             className="relative"
-            style={{ width: CANVAS_W, height: CANVAS_H }}
+            style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom }}
             onClick={(e) => {
               // Click on empty canvas clears selection.
               if (e.target === e.currentTarget) setSelectedEdge(null);
             }}
           >
+            <div
+              className="absolute top-0 left-0"
+              style={{
+                width: CANVAS_W,
+                height: CANVAS_H,
+                transform: `scale(${zoom})`,
+                transformOrigin: "0 0",
+              }}
+            >
             {/* Connector layer */}
             <svg
               width={CANVAS_W}
@@ -727,28 +842,9 @@ export function ConditionCanvas({ fields, formId, onSetCondition }: Props) {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
-
-        {/* Selected edge inspector */}
-        {selectedEdgeData && (
-          <EdgeInspector
-            targetField={fieldById.get(selectedEdgeData.targetId)!}
-            sourceField={fieldById.get(selectedEdgeData.sourceId)!}
-            rule={selectedEdgeData.rule}
-            onChange={(patch) =>
-              updateRule(
-                selectedEdgeData.targetId,
-                selectedEdgeData.ruleIndex,
-                patch
-              )
-            }
-            onRemove={() =>
-              removeRule(selectedEdgeData.targetId, selectedEdgeData.ruleIndex)
-            }
-            onClose={() => setSelectedEdge(null)}
-          />
-        )}
       </div>
     </div>
   );
