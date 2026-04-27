@@ -529,6 +529,7 @@ export function ConditionCanvas({
   // so we can place the new box exactly where they clicked.
   const contextMenuWorldRef = useRef<{ x: number; y: number } | null>(null);
 
+  // ------- Selected edge (for the bottom inspector) -------
   const [selectedEdge, setSelectedEdge] = useState<
     { targetId: string; ruleIndex: number } | null
   >(null);
