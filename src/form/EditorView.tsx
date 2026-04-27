@@ -255,6 +255,18 @@ export function EditorView({ slug = "default", onExit }: Props) {
             )}
           </TabsContent>
 
+          <TabsContent value="canvas" className="mt-4">
+            {editor.loading ? (
+              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
+            ) : (
+              <ConditionCanvas
+                fields={editor.fields}
+                formId={editor.form?.id ?? null}
+                onSetCondition={editor.setFieldCondition}
+              />
+            )}
+          </TabsContent>
+
           <TabsContent value="preview" className="mt-4">
             <div className="rounded-2xl bg-card border border-border kr-shadow-soft p-5 md:p-8">
               {editor.loading ? (
