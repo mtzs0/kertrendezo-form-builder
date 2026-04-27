@@ -628,7 +628,6 @@ export function ConditionCanvas({
           ref={canvasRef}
           onDragOver={onCanvasDragOver}
           onDrop={onCanvasDrop}
-          
           className="relative rounded-2xl border border-border bg-muted/20 overflow-auto kr-shadow-soft w-full"
           style={{
             height: "calc(100vh - 24rem)",
