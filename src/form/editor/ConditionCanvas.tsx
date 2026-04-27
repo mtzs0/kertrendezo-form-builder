@@ -493,10 +493,8 @@ export function ConditionCanvas({
 
   // ------- Remove a box from the canvas -------
   const removeBox = (fieldId: string) => {
-    setPositions((prev) => {
-      const { [fieldId]: _, ...rest } = prev;
-      return rest;
-    });
+    // Goes straight through the store so the row is also deleted from the DB.
+    removePosition(formId, fieldId);
     // We don't touch the field's condition — the user may want to keep it.
   };
 
