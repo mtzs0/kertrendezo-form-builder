@@ -604,14 +604,11 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
           children: Array.isArray(merged.children) ? merged.children : [],
         };
       }
-        fp.placeholderNoteValue = op.placeholderNote?.value ?? null;
-        fp.placeholderNotePosition = op.placeholderNote?.position ?? null;
-      }
       const buf = fieldPatchBuf.current.get(id) ?? {};
       fieldPatchBuf.current.set(id, { ...buf, ...fp });
       scheduleFlush();
     },
-    [scheduleFlush]
+    [scheduleFlush, bundle]
   );
 
   const setFieldOptions = useCallback(
