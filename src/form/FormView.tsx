@@ -504,7 +504,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText 
       {isStepped
         ? renderActiveSubStep()
         : renderPacked(
-            tree,
+            visibleTopItems(tree),
             topWidth,
             renderTopItem,
             (it) => (it.kind === "field" ? it.field.id : it.id),
