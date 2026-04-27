@@ -74,6 +74,7 @@ import {
   removePosition,
   updatePositions,
   useCanvasPositions,
+  useCanvasPositionsLoaded,
   type BoxPos,
 } from "./canvasPositionsStore";
 
