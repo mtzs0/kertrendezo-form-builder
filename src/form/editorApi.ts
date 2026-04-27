@@ -376,6 +376,9 @@ export async function createField(
     insert.slider_max = 100;
     insert.slider_step = 1;
   }
+  if (type === "repeater") {
+    (insert as Record<string, unknown>).repeater_config = { children: [] };
+  }
   const { data, error } = await supabase.from("form_fields").insert(insert).select("*").single();
   if (error) throw error;
   return data as FieldRow;
