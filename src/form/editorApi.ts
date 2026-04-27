@@ -412,6 +412,11 @@ export interface FieldPatch {
   placeholderNoteValue?: string | null;
   placeholderNotePosition?: NotePosition | null;
   hideLabel?: boolean;
+  /**
+   * Full repeater config blob (children + settings) — written verbatim to the
+   * `repeater_config` JSONB column. `null` clears the column.
+   */
+  repeaterConfig?: Record<string, unknown> | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
