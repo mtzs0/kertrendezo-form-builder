@@ -62,6 +62,9 @@ interface Props {
     fieldId: string,
     condition: ConditionGroup | undefined
   ) => Promise<void> | void;
+  selectedFieldId: string | null;
+  onSelectField: (id: string | null) => void;
+  fieldConfigPanel: React.ReactNode;
 }
 
 interface BoxPos {
@@ -71,8 +74,6 @@ interface BoxPos {
 
 const BOX_W = 220;
 const BOX_H = 88;
-const CANVAS_W = 2400;
-const CANVAS_H = 1600;
 
 interface Edge {
   /** target field id (the field whose visibility is conditional) */
