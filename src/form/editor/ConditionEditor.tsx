@@ -776,7 +776,7 @@ function TextEditor({ group, allFields, onCommit }: TextEditorProps) {
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] text-muted-foreground">
-          Operátorok: <code>= != &gt; &lt; contains</code> · logika:{" "}
+          Operátorok: <code>= != &gt; &lt; contains answered</code> · logika:{" "}
           <code>&amp;&amp; ||</code> · csoportosítás: <code>( )</code>. Tab a
           javaslat elfogadásához.
         </p>
