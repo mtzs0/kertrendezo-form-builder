@@ -54,6 +54,11 @@ import {
   ValueInput,
   operatorsForField,
 } from "./conditionInputs";
+import {
+  loadPositions,
+  savePositions,
+  type BoxPos,
+} from "./canvasPositionsStore";
 
 interface Props {
   fields: FormField[];
@@ -65,11 +70,6 @@ interface Props {
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   fieldConfigPanel: React.ReactNode;
-}
-
-interface BoxPos {
-  x: number;
-  y: number;
 }
 
 const BOX_W = 220;
@@ -91,31 +91,8 @@ function isFlatGroup(g: ConditionGroup | undefined): boolean {
   return g.rules.every((r) => !("combinator" in r));
 }
 
-function lsKey(formId: string | null | undefined) {
-  return `condition-canvas-positions:${formId ?? "default"}`;
-}
-
-function loadPositions(formId: string | null | undefined): Record<string, BoxPos> {
-  try {
-    const raw = localStorage.getItem(lsKey(formId));
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function savePositions(
-  formId: string | null | undefined,
-  positions: Record<string, BoxPos>
-) {
-  try {
-    localStorage.setItem(lsKey(formId), JSON.stringify(positions));
-  } catch {
-    // ignore quota / serialization errors
-  }
-}
+// Position load/save now live in `./canvasPositionsStore` so the
+// Előnézet (demo) tab can subscribe to the same state.
 
 export function ConditionCanvas({
   fields,
@@ -141,6 +118,16 @@ export function ConditionCanvas({
     setPositions(loadPositions(formId));
   }, [formId]);
 
+  /** Returns max existing order on the canvas (0 when none). */
+  const maxOrder = (map: Record<string, BoxPos>) => {
+    let m = 0;
+    for (const k of Object.keys(map)) {
+      const o = map[k]?.order;
+      if (typeof o === "number" && o > m) m = o;
+    }
+    return m;
+  };
+
   // Auto-place any field that already has a condition (so the user sees
   // existing conditions when first opening the tab).
   useEffect(() => {
@@ -149,22 +136,27 @@ export function ConditionCanvas({
       let changed = false;
       const placedCount = Object.keys(next).length;
       let nextIndex = placedCount;
-      const placeAt = (i: number): BoxPos => {
+      let nextOrder = maxOrder(next);
+      const placeAt = (i: number, order: number): BoxPos => {
         const cols = 3;
         const col = i % cols;
         const row = Math.floor(i / cols);
-        return { x: 80 + col * (BOX_W + 80), y: 80 + row * (BOX_H + 80) };
+        return {
+          x: 80 + col * (BOX_W + 80),
+          y: 80 + row * (BOX_H + 80),
+          order,
+        };
       };
       for (const f of fields) {
         if (next[f.id]) continue;
         if (f.condition && f.condition.rules.length > 0) {
-          next[f.id] = placeAt(nextIndex++);
+          next[f.id] = placeAt(nextIndex++, ++nextOrder);
           changed = true;
           // Also place referenced source fields if missing.
           for (const r of f.condition.rules) {
             if ("combinator" in r) continue;
             if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
-              next[r.fieldId] = placeAt(nextIndex++);
+              next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
             }
           }
         }
@@ -307,7 +299,11 @@ export function ConditionCanvas({
     const w = toWorld(e.clientX, e.clientY);
     setPositions((prev) => ({
       ...prev,
-      [fieldId]: { x: w.x - BOX_W / 2, y: w.y - BOX_H / 2 },
+      [fieldId]: {
+        x: w.x - BOX_W / 2,
+        y: w.y - BOX_H / 2,
+        order: maxOrder(prev) + 1,
+      },
     }));
   };
 
@@ -332,7 +328,7 @@ export function ConditionCanvas({
       const w = toWorld(ev.clientX, ev.clientY);
       setPositions((prev) => ({
         ...prev,
-        [fieldId]: { x: w.x - offsetX, y: w.y - offsetY },
+        [fieldId]: { ...prev[fieldId], x: w.x - offsetX, y: w.y - offsetY },
       }));
     };
     const up = () => {
@@ -503,42 +499,44 @@ export function ConditionCanvas({
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)_360px] gap-4">
-      {/* Palette */}
-      <aside className="rounded-2xl border border-border bg-card kr-shadow-soft p-3 self-start max-h-[calc(100vh-12rem)] overflow-auto">
-        <div className="px-1 pb-2">
+    <div className="space-y-4">
+      {/* Top palette strip — compact horizontal chips */}
+      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-3">
+        <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
           <h3 className="text-sm font-semibold">Mezők</h3>
           <p className="text-[11px] text-muted-foreground">
             Húzd a vászonra a kívánt mezőket, majd kösd össze őket.
           </p>
         </div>
-        <div className="space-y-1.5">
-          {paletteFields.length === 0 && (
-            <p className="text-xs text-muted-foreground italic px-1 py-2">
+        <div className="flex flex-wrap gap-1.5">
+          {paletteFields.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic px-1 py-1.5">
               Minden mező a vásznon van.
             </p>
+          ) : (
+            paletteFields.map((f) => (
+              <div
+                key={f.id}
+                draggable
+                onDragStart={(e) => onPaletteDragStart(e, f.id)}
+                className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs cursor-grab active:cursor-grabbing hover:border-primary hover:bg-accent transition-colors max-w-[200px]"
+                title={`${f.label || f.internalName} (${f.type})`}
+              >
+                <div className="font-medium truncate leading-tight">
+                  {f.label || f.internalName}
+                </div>
+                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                  {f.internalName} · {f.type}
+                </div>
+              </div>
+            ))
           )}
-          {paletteFields.map((f) => (
-            <div
-              key={f.id}
-              draggable
-              onDragStart={(e) => onPaletteDragStart(e, f.id)}
-              className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs cursor-grab active:cursor-grabbing hover:border-primary hover:bg-accent transition-colors"
-              title={`${f.label || f.internalName} (${f.type})`}
-            >
-              <div className="font-medium truncate">
-                {f.label || f.internalName}
-              </div>
-              <div className="text-[10px] text-muted-foreground truncate">
-                {f.internalName} · {f.type}
-              </div>
-            </div>
-          ))}
         </div>
-      </aside>
+      </div>
 
-      {/* Canvas */}
-      <div className="space-y-3 min-w-0">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
+        {/* Canvas column */}
+        <div className="space-y-3 min-w-0">
         {/* Selected edge inspector — always rendered to avoid layout shift */}
         <div>
           {selectedEdgeData ? (
@@ -781,6 +779,29 @@ export function ConditionCanvas({
                     title="Bejövő feltételek"
                   />
 
+                  {/* Order number (drives demo preview ordering) */}
+                  <input
+                    type="number"
+                    data-no-drag
+                    value={pos.order ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const n = raw === "" ? undefined : Number(raw);
+                      setPositions((prev) => ({
+                        ...prev,
+                        [id]: {
+                          ...prev[id],
+                          order: typeof n === "number" && !Number.isNaN(n) ? n : undefined,
+                        },
+                      }));
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="#"
+                    title="Sorrend (kisebb szám előbb jelenik meg az Előnézet (demo) fülön)"
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 w-9 h-7 rounded-md border border-border bg-card text-[11px] text-center font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+
                   {/* Body */}
                   <div className="px-3 py-2 h-full flex flex-col justify-between">
                     <div className="min-w-0">
@@ -863,10 +884,11 @@ export function ConditionCanvas({
         </div>
       </div>
 
-      {/* Right-side: field config panel for the currently selected box */}
-      <aside className="lg:sticky lg:top-4 self-start max-h-[calc(100vh-6rem)] overflow-auto">
-        {fieldConfigPanel}
-      </aside>
+        {/* Right-side: field config panel for the currently selected box */}
+        <aside className="lg:sticky lg:top-4 self-start max-h-[calc(100vh-6rem)] overflow-auto">
+          {fieldConfigPanel}
+        </aside>
+      </div>
     </div>
   );
 }
