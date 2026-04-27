@@ -214,16 +214,21 @@ export function ConditionCanvas({
         };
       };
       for (const f of fields) {
-        if (next[f.id]) continue;
-        if (f.condition && f.condition.rules.length > 0) {
+        if (!f.condition || f.condition.rules.length === 0) continue;
+        // Place the target itself if missing.
+        if (!next[f.id]) {
           next[f.id] = placeAt(nextIndex++, ++nextOrder);
           changed = true;
-          // Also place referenced source fields if missing.
-          for (const r of f.condition.rules) {
-            if ("combinator" in r) continue;
-            if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
-              next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
-            }
+        }
+        // Always make sure referenced source fields have a position too —
+        // otherwise their arrows would be hidden. This must run even when
+        // the target is already placed (e.g. user just added a new rule
+        // referencing a field that hasn't been dropped on the canvas).
+        for (const r of f.condition.rules) {
+          if ("combinator" in r) continue;
+          if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
+            next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
+            changed = true;
           }
         }
       }
