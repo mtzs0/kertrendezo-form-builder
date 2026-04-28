@@ -1,74 +1,101 @@
 ## Goal
 
-Three refinements to the visual condition canvas demo:
+Bring the existing **groups + sub-groups** system into the visual condition canvas. Today the canvas is a flat dot-grid where each field-box lives at a free `(x, y)`. Groups/sub-groups exist in the schema but are invisible here. Users want to see and manage groupings directly on the canvas.
 
-1. Move the field palette from the left sidebar to a horizontal strip at the top of the tab — frees the canvas to span full width.
-2. Add a small per-box order-number input on the left side of every canvas box. The number drives field order in the new demo preview.
-3. Add a new **Előnézet (demo)** tab that renders the form using the canvas state: fields appear in `order`-number sequence (linear, no groups), with the same conditional-visibility rules already saved on each field.
+## UX design
 
----
-
-## Changes by file
-
-### `src/form/editor/ConditionCanvas.tsx`
-
-**Layout restructure** — change the outer grid from `[240px_1fr_360px]` (palette · canvas · field-config) to a two-row layout:
+Group = a **resizable rectangular frame** drawn on the canvas. Field-boxes that sit inside the frame's bounds belong to that group. Sub-groups are the same idea, drawn *inside* a group frame.
 
 ```text
-┌──────────────────────────────────────────────────────┐
-│  Top palette strip (compact horizontal field chips)  │
-├───────────────────────────────────────┬──────────────┤
-│  Edge inspector (always visible)      │              │
-│  Canvas toolbar (zoom etc.)           │  Field       │
-│  Canvas (full remaining width)        │  config      │
-│                                       │  panel       │
-└───────────────────────────────────────┴──────────────┘
+┌─ Group: "Kapcsolat" ──────────────── [⋮] ┐
+│                                          │
+│   ┌─ Subgroup: "Cím" ──────────────┐     │
+│   │   [field box]   [field box]     │    │
+│   └─────────────────────────────────┘    │
+│                                          │
+│   [field box]                            │
+└──────────────────────────────────────────┘
 ```
 
-- The top strip is a single full-width `flex flex-wrap gap-2` of small draggable chips. Each chip shows the field's *külső* label in normal weight and the *belső* name + type in a muted smaller line below — same compact style as the existing palette items, sized to behave as inline chips.
-- Empty-state message ("Minden mező a vásznon van.") still shown when nothing is left in the palette.
-- Below the strip: a 2-column grid `[minmax(0,1fr)_360px]` for canvas + field-config panel.
+Key behaviors:
 
-**Per-box order number**:
+- **Frame = container.** Dragging a field-box so its center lands inside a group frame sets `field.groupId` to that group (and `subGroupId` to a subgroup if its center is inside one). Dragging it out clears the assignment. This replaces having to set the group from a side panel.
+- **Frame is draggable & resizable.** Drag the title bar to move it (children move with it). Drag the bottom-right corner to resize. Position + size persist per form.
+- **Auto-fit option.** Each frame has a small "Igazítás a tartalomhoz" action in its menu that snaps the rectangle to tightly enclose its current children.
+- **Sub-groups must live inside a group frame.** Creating one outside an existing group frame is blocked with a toast. Resizing a parent never auto-shrinks below its sub-groups.
+- **Visual style.** Group = subtle dashed border with a colored title bar (using `--secondary` / accent), behind everything. Sub-group = lighter inner card with a smaller title bar. Field-boxes render *on top* with their existing chrome unchanged (handles, order pill).
+- **Z-order.** SVG arrows stay on top of frames but under field-boxes; frames sit at the back so they never block clicks on boxes.
+- **Palette.** Add a second palette strip row above the field strip listing groups + sub-groups not yet placed on the canvas. Drag one onto the canvas to drop a default-sized frame at the cursor.
+- **Toolbar.** Add an "Új csoport" button next to "Új mező" that creates a group via `editor.addGroup` and immediately drops a frame at the canvas center.
+- **Removal.** Right-click a frame → "Eltávolítás a vászonról" (keeps the group in the schema, just hides the frame) or "Törlés" (calls `editor.removeGroup` / `removeSubGroup`).
 
-- Extend the persisted localStorage shape from `BoxPos { x, y }` to `BoxPos { x, y, order?: number }`. Existing entries are forward-compatible (missing `order` treated as `undefined`).
-- Render a small editable number input on the left edge of each box (absolute-positioned, `-left-3`, ~28px wide), styled like a pill, with `data-no-drag` so dragging the number doesn't drag the box.
-- Allow blank input (clears the order). Order is purely metadata for the demo preview tab.
-- When the user adds a box for the first time, auto-assign order = (max existing order + 1) so newly placed boxes get a sensible default.
+### Linear demo preview interaction
 
-**Renaming/cleanup**:
-
-- Drop the left palette `<aside>` element entirely.
-- Move the canvas panel out of its column wrapper into the new grid.
-
-### `src/form/EditorView.tsx`
-
-- Add a new `<TabsTrigger value="demo-preview">Előnézet (demo)</TabsTrigger>` between the canvas tab and the existing preview tab.
-- Add a matching `<TabsContent value="demo-preview">` that renders a new `<DemoPreview>` component (defined inline in this file or in a small new file), passing `editor.fields`, `editor.form?.id`, and `editor.form?.thank_you_text`.
-- The demo-preview tab reads positions from the same `localStorage` key used by `ConditionCanvas` (`condition-canvas-positions:<formId>`) so it stays in sync with what the user laid out, no extra plumbing required.
-
-### `src/form/editor/DemoPreview.tsx` (new)
-
-A small wrapper that:
-
-1. Reads `condition-canvas-positions:<formId>` from localStorage to get `{ [fieldId]: { x, y, order? } }`.
-2. Filters `fields` to those that appear in the positions map.
-3. Sorts them by `order` ascending; fields without an `order` go to the end (stable by their insertion order).
-4. Builds a synthetic `FormSchema` with `groups: []`, `subGroups: []`, and the sorted fields *re-stamped* so they render linearly:
-   - `groupId: undefined`, `subGroupId: undefined`
-   - `location: index + 1` (so `filterPlacedSchema` keeps them and `buildRenderTree` orders them)
-   - `width: 100` (force one-per-row, ignore packing for clarity)
-   - Conditions are kept untouched, so visibility logic still works exactly like in the regular preview.
-5. Renders `<FormView schema={syntheticSchema} layout="horizontal" formId={formId} showDemoButton thankYouText={thankYouText} />`.
-6. Empty state: if no fields are on the canvas, show a hint asking the user to place fields on the canvas first.
-
-This intentionally ignores groupings as requested — focus is on order + conditions only.
-
----
+The Előnézet (demo) tab already ignores groupings on purpose. We keep that — the canvas grouping is purely a UX shortcut for assigning `groupId` / `subGroupId` and matches what the **Űrlap** tab renders.
 
 ## Technical notes
 
-- The order input is uncontrolled-ish (`<input type="number" value={...} onChange>`); on change we update the box's `order` in `positions` state, which auto-persists via the existing `useEffect`.
-- Because positions live in localStorage, the new demo tab needs to *re-read* on mount and on tab switch. Easiest: read on mount + listen to a custom `condition-canvas:positions-changed` event dispatched from `ConditionCanvas` after every save, or simply re-read on every render via `useSyncExternalStore` against a small in-module event emitter. Plan: add a tiny `positionsStore.ts` (subscribe/get/set) so both the canvas writer and the demo reader share state without prop drilling through `EditorView`. This avoids stale data when switching tabs.
-- No DB schema changes. No `editorApi`/`useEditorSchema` changes.
-- Conditions still persist via the existing `setFieldCondition` flow; the demo preview reads them straight from `editor.fields[].condition` like the normal preview does.
+### New persistence
+
+Add a sibling table `form_group_canvas_frames` (mirrors `form_field_canvas_positions`):
+
+```text
+id (uuid pk)
+form_id (uuid, fk forms.id, on delete cascade)
+group_id (uuid)        -- references groups OR sub_groups (kind disambiguates)
+kind ('group' | 'subgroup')
+x, y, w, h (numeric)
+collapsed (bool, default false)   -- reserved for future
+unique (form_id, group_id, kind)
+```
+
+Migration + RLS (same policy shape as `form_field_canvas_positions`).
+
+Add `src/form/groupCanvasFramesApi.ts` with `loadFrames(formId)`, `upsertFrame(...)`, `deleteFrame(...)`. Add `src/form/editor/groupFramesStore.ts` mirroring `canvasPositionsStore.ts` (in-memory cache, debounced upserts, `useGroupFrames(formId)` hook).
+
+### Containment logic
+
+Pure helper `resolveContainerFor(box, frames)` in a new `src/form/editor/canvasContainers.ts`:
+
+1. Compute box center `(cx, cy)`.
+2. Find all subgroup frames whose rectangle contains the center → pick the smallest (deepest).
+3. If no subgroup match, find all group frames whose rectangle contains it → pick the smallest.
+4. Return `{ groupId?, subGroupId? }`.
+
+Called from `ConditionCanvas`'s `onBoxPointerDown` `up` handler (after a real drag) and from `onCanvasDrop` (palette → canvas). The result is diffed against the field's current `groupId`/`subGroupId`; on change, call `editor.patchField(id, { groupId, subGroupId })` (already wired through `useEditorSchema.patchField`).
+
+### Frame interactions
+
+In `ConditionCanvas.tsx`:
+
+- New `frames` array merged from the store + auto-place frames for groups/sub-groups that have at least one already-placed child but no frame yet (compute bounding box of children + 24px padding).
+- Render frames in a `<div>` layer **inside the world layer, before** the SVG and the boxes layer (so z-order is: frames < arrows < boxes). Each frame is absolutely positioned with `left/top/width/height` from the store.
+- Title bar: draggable (pointer handlers same pattern as boxes). On drag, move all child field-boxes by the same `dx, dy` so their relative positions are preserved; persist via `updatePositions`.
+- Resize handle: bottom-right corner, pointer events update `w, h` in the frame store. Min size = 160×120. When resizing a group, clamp so it never becomes smaller than the union rect of its sub-groups.
+- Sub-group constraint check on creation: if user drops a subgroup frame outside any group, show a toast and revert.
+
+### Toolbar additions
+
+Add buttons + dropdown next to "Új mező":
+
+- **Új csoport** → `await editor.addGroup()`, then place a 360×220 frame at canvas center.
+- **Új al-csoport** (DropdownMenu listing existing placed groups) → `editor.addSubGroup(groupId)`, then place a 280×160 frame nested inside that group's frame.
+
+### Files to add
+
+- `supabase/migrations/<ts>_form_group_canvas_frames.sql`
+- `src/form/groupCanvasFramesApi.ts`
+- `src/form/editor/groupFramesStore.ts`
+- `src/form/editor/canvasContainers.ts`
+- `src/form/editor/CanvasGroupFrame.tsx` (presentational frame component)
+
+### Files to edit
+
+- `src/form/editor/ConditionCanvas.tsx` — render frames layer, hook drag/drop to containment resolver, add toolbar buttons, palette row for unplaced groups.
+- `src/integrations/supabase/types.ts` — regenerated for the new table (auto).
+
+### Out of scope
+
+- Nested sub-sub-groups (schema doesn't support them).
+- Editing group labels from the canvas — still done in the Csoportok tab. (Frame title shows the label read-only.)
+- Changing the linear Előnézet (demo) to honor groups — explicitly kept flat.
