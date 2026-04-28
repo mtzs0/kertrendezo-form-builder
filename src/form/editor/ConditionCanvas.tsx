@@ -910,6 +910,51 @@ export function ConditionCanvas({
             </DropdownMenu>
             <Button
               type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => void createGroupFrame()}
+              title="Új csoport hozzáadása a vászonhoz"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Új csoport
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={placedGroupIds.length === 0}
+                  title={
+                    placedGroupIds.length === 0
+                      ? "Először helyezz el egy csoportot a vásznon"
+                      : "Új al-csoport egy meglévő csoporton belül"
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Új al-csoport
+                  <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 max-h-[60vh] overflow-y-auto">
+                <DropdownMenuLabel>Szülő csoport</DropdownMenuLabel>
+                {placedGroupIds.map((gid) => {
+                  const g = groupById.get(gid);
+                  return (
+                    <DropdownMenuItem
+                      key={`new_subgroup_${gid}`}
+                      onClick={() => void createSubGroupFrame(gid)}
+                    >
+                      {g?.label || g?.internalName || "Csoport"}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => setZoom((z) => Math.max(0.25, z * 0.9))}
