@@ -400,19 +400,48 @@ export function ConditionCanvas({
     e.dataTransfer.dropEffect = "copy";
   };
 
+  /**
+   * Resolve containment for a field-box at a given (x,y) and patch the
+   * field's groupId/subGroupId if it changed (so the structure tab and the
+   * Űrlap tab pick it up).
+   */
+  const applyContainment = useCallback(
+    (fieldId: string, boxX: number, boxY: number) => {
+      const field = fieldById.get(fieldId);
+      if (!field) return;
+      const result = resolveContainerFor(
+        { x: boxX, y: boxY, w: BOX_W, h: BOX_H },
+        frames,
+        groups,
+        subGroups
+      );
+      const currentGroup = field.groupId ?? undefined;
+      const currentSub = field.subGroupId ?? undefined;
+      if (result.groupId === currentGroup && result.subGroupId === currentSub) return;
+      onPatchField(fieldId, {
+        groupId: result.groupId,
+        subGroupId: result.subGroupId,
+      });
+    },
+    [fieldById, frames, groups, subGroups, onPatchField]
+  );
+
   const onCanvasDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const fieldId = e.dataTransfer.getData("application/x-field-id");
     if (!fieldId || !fieldById.has(fieldId)) return;
     const w = toWorld(e.clientX, e.clientY);
+    const boxX = w.x - BOX_W / 2;
+    const boxY = w.y - BOX_H / 2;
     setPositions((prev) => ({
       ...prev,
       [fieldId]: {
-        x: w.x - BOX_W / 2,
-        y: w.y - BOX_H / 2,
+        x: boxX,
+        y: boxY,
         order: maxOrder(prev) + 1,
       },
     }));
+    applyContainment(fieldId, boxX, boxY);
   };
 
   // ------- Drag existing boxes around -------
