@@ -1037,6 +1037,73 @@ export function ConditionCanvas({
               height: 1,
             }}
           >
+            {/* Group / sub-group frames — rendered first so they sit behind arrows + boxes */}
+            {Object.entries(frames).map(([key, rect]) => {
+              const isSub = key.startsWith("subgroup:");
+              const id = key.slice(isSub ? 9 : 6);
+              const meta = isSub ? subGroupById.get(id) : groupById.get(id);
+              if (!meta) return null;
+              const label = meta.label || meta.internalName || (isSub ? "Al-csoport" : "Csoport");
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "absolute rounded-lg select-none",
+                    isSub
+                      ? "border border-dashed border-border bg-accent/20"
+                      : "border-2 border-dashed border-primary/40 bg-primary/5"
+                  )}
+                  style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+                >
+                  {/* Title bar (drag handle) */}
+                  <div
+                    onPointerDown={(e) => onFrameDragStart(e, isSub ? "subgroup" : "group", id)}
+                    className={cn(
+                      "absolute top-0 left-0 right-0 flex items-center justify-between gap-2 px-2 py-1 cursor-move rounded-t-md",
+                      isSub
+                        ? "bg-accent/60 text-accent-foreground"
+                        : "bg-primary/15 text-foreground"
+                    )}
+                    style={{ height: 26 }}
+                  >
+                    <span className="text-[11px] font-semibold uppercase tracking-wide truncate">
+                      {isSub ? "Al-csoport" : "Csoport"}: {label}
+                    </span>
+                    <button
+                      type="button"
+                      data-no-drag
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          window.confirm(
+                            `Eltávolítod a(z) „${label}" ${isSub ? "al-csoportot" : "csoportot"} a vászonról? A csoport maga nem törlődik.`
+                          )
+                        ) {
+                          removeFrame(formId, isSub ? "subgroup" : "group", id);
+                        }
+                      }}
+                      className="opacity-60 hover:opacity-100 hover:text-destructive transition"
+                      title="Csoport eltávolítása a vászonról"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  {/* Resize handle */}
+                  <div
+                    onPointerDown={(e) => onFrameResizeStart(e, isSub ? "subgroup" : "group", id)}
+                    data-no-drag
+                    className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, transparent 50%, hsl(var(--muted-foreground) / 0.6) 50%)",
+                      borderBottomRightRadius: 6,
+                    }}
+                    title="Átméretezés"
+                  />
+                </div>
+              );
+            })}
+
             {/* SVG overlay — large enough to fit any practical layout. */}
             <svg
               width={20000}
