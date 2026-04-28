@@ -264,6 +264,56 @@ export type Database = {
           },
         ]
       }
+      form_group_canvas_frames: {
+        Row: {
+          collapsed: boolean
+          created_at: string
+          form_id: string
+          group_id: string
+          h: number
+          id: string
+          kind: string
+          updated_at: string
+          w: number
+          x: number
+          y: number
+        }
+        Insert: {
+          collapsed?: boolean
+          created_at?: string
+          form_id: string
+          group_id: string
+          h?: number
+          id?: string
+          kind: string
+          updated_at?: string
+          w?: number
+          x?: number
+          y?: number
+        }
+        Update: {
+          collapsed?: boolean
+          created_at?: string
+          form_id?: string
+          group_id?: string
+          h?: number
+          id?: string
+          kind?: string
+          updated_at?: string
+          w?: number
+          x?: number
+          y?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "form_group_canvas_frames_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_groups: {
         Row: {
           created_at: string
