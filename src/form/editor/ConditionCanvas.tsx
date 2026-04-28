@@ -475,6 +475,11 @@ export function ConditionCanvas({
         // Treat as click → select field for the right-side panel.
         onSelectField(fieldId);
         setSelectedEdge(null);
+      } else {
+        // Drag finished — re-evaluate group containment based on the
+        // box's final position.
+        const cur = positions[fieldId];
+        if (cur) applyContainment(fieldId, cur.x, cur.y);
       }
     };
     window.addEventListener("pointermove", move);
