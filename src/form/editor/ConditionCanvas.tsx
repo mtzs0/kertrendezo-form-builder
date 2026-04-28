@@ -63,6 +63,8 @@ import type {
   FieldCondition,
   FieldType,
   FormField,
+  FormGroup,
+  FormSubGroup,
 } from "@/form/types";
 import {
   OPERATOR_LABELS,
@@ -71,26 +73,44 @@ import {
 } from "./conditionInputs";
 import {
   clearPositions,
+  getPositions,
   removePosition,
   updatePositions,
   useCanvasPositions,
   useCanvasPositionsLoaded,
   type BoxPos,
 } from "./canvasPositionsStore";
+import {
+  frameKey,
+  patchFrame,
+  removeFrame,
+  setFrame,
+  useGroupFrames,
+} from "./groupFramesStore";
+import { resolveContainerFor } from "./canvasContainers";
 import { useRevealOneByOne } from "./revealModeStore";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 interface Props {
   fields: FormField[];
+  groups: FormGroup[];
+  subGroups: FormSubGroup[];
   formId: string | null | undefined;
   onSetCondition: (
     fieldId: string,
     condition: ConditionGroup | undefined
   ) => Promise<void> | void;
+  /** Patches a field — used to assign groupId / subGroupId from frame containment. */
+  onPatchField: (id: string, patch: Partial<FormField>) => void;
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   /** Creates a new field (no group) and returns its id. */
   onAddField: (type: FieldType) => Promise<string>;
+  onAddGroup: () => Promise<string | undefined>;
+  onAddSubGroup: (groupId: string) => Promise<string | undefined>;
+  onRemoveGroup: (id: string) => Promise<void> | void;
+  onRemoveSubGroup: (id: string) => Promise<void> | void;
   fieldConfigPanel: React.ReactNode;
 }
 
@@ -138,11 +158,18 @@ function isFlatGroup(g: ConditionGroup | undefined): boolean {
 
 export function ConditionCanvas({
   fields,
+  groups,
+  subGroups,
   formId,
   onSetCondition,
+  onPatchField,
   selectedFieldId,
   onSelectField,
   onAddField,
+  onAddGroup,
+  onAddSubGroup,
+  onRemoveGroup,
+  onRemoveSubGroup,
   fieldConfigPanel,
 }: Props) {
   const fieldById = useMemo(() => {
@@ -159,7 +186,19 @@ export function ConditionCanvas({
   // grid-default coords over the saved positions and scramble the canvas
   // (and also wipe out arrows whose target/source ended up moved).
   const positionsLoaded = useCanvasPositionsLoaded(formId);
+  const frames = useGroupFrames(formId);
   const [revealOneByOne, setRevealOneByOne] = useRevealOneByOne(formId);
+
+  const groupById = useMemo(() => {
+    const m = new Map<string, FormGroup>();
+    for (const g of groups) m.set(g.id, g);
+    return m;
+  }, [groups]);
+  const subGroupById = useMemo(() => {
+    const m = new Map<string, FormSubGroup>();
+    for (const sg of subGroups) m.set(sg.id, sg);
+    return m;
+  }, [subGroups]);
 
   /**
    * Local helper that mirrors the previous `setPositions((prev) => …)` API
@@ -361,19 +400,48 @@ export function ConditionCanvas({
     e.dataTransfer.dropEffect = "copy";
   };
 
+  /**
+   * Resolve containment for a field-box at a given (x,y) and patch the
+   * field's groupId/subGroupId if it changed (so the structure tab and the
+   * Űrlap tab pick it up).
+   */
+  const applyContainment = useCallback(
+    (fieldId: string, boxX: number, boxY: number) => {
+      const field = fieldById.get(fieldId);
+      if (!field) return;
+      const result = resolveContainerFor(
+        { x: boxX, y: boxY, w: BOX_W, h: BOX_H },
+        frames,
+        groups,
+        subGroups
+      );
+      const currentGroup = field.groupId ?? undefined;
+      const currentSub = field.subGroupId ?? undefined;
+      if (result.groupId === currentGroup && result.subGroupId === currentSub) return;
+      onPatchField(fieldId, {
+        groupId: result.groupId,
+        subGroupId: result.subGroupId,
+      });
+    },
+    [fieldById, frames, groups, subGroups, onPatchField]
+  );
+
   const onCanvasDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const fieldId = e.dataTransfer.getData("application/x-field-id");
     if (!fieldId || !fieldById.has(fieldId)) return;
     const w = toWorld(e.clientX, e.clientY);
+    const boxX = w.x - BOX_W / 2;
+    const boxY = w.y - BOX_H / 2;
     setPositions((prev) => ({
       ...prev,
       [fieldId]: {
-        x: w.x - BOX_W / 2,
-        y: w.y - BOX_H / 2,
+        x: boxX,
+        y: boxY,
         order: maxOrder(prev) + 1,
       },
     }));
+    applyContainment(fieldId, boxX, boxY);
   };
 
   // ------- Drag existing boxes around -------
@@ -407,6 +475,11 @@ export function ConditionCanvas({
         // Treat as click → select field for the right-side panel.
         onSelectField(fieldId);
         setSelectedEdge(null);
+      } else {
+        // Drag finished — re-evaluate group containment based on the
+        // box's final position (read fresh from the store).
+        const cur = getPositions(formId)[fieldId];
+        if (cur) applyContainment(fieldId, cur.x, cur.y);
       }
     };
     window.addEventListener("pointermove", move);
@@ -558,6 +631,130 @@ export function ConditionCanvas({
       onSelectField(id);
     },
     [onAddField, onSelectField]
+  );
+
+  // ------- Frame helpers (group / sub-group rectangles on the canvas) -------
+
+  const placedGroupIds = useMemo(
+    () => Object.keys(frames).filter((k) => k.startsWith("group:")).map((k) => k.slice(6)),
+    [frames]
+  );
+
+  /** Returns the visible center of the canvas in world coords. */
+  const visualCenter = useCallback(() => {
+    const r = canvasRef.current?.getBoundingClientRect();
+    if (!r) return { x: 200, y: 200 };
+    return toWorld(r.left + r.width / 2, r.top + r.height / 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const createGroupFrame = useCallback(async () => {
+    const id = await onAddGroup();
+    if (!id) return;
+    const c = visualCenter();
+    const W = 420;
+    const H = 260;
+    setFrame(formId, "group", id, { x: c.x - W / 2, y: c.y - H / 2, w: W, h: H });
+    toast.success("Új csoport hozzáadva a vászonhoz.");
+  }, [onAddGroup, formId, visualCenter]);
+
+  const createSubGroupFrame = useCallback(
+    async (parentGroupId: string) => {
+      const id = await onAddSubGroup(parentGroupId);
+      if (!id) return;
+      const parent = frames[frameKey("group", parentGroupId)];
+      const W = 240;
+      const H = 160;
+      const x = parent ? parent.x + 20 : visualCenter().x - W / 2;
+      const y = parent ? parent.y + 60 : visualCenter().y - H / 2;
+      setFrame(formId, "subgroup", id, { x, y, w: W, h: H });
+      toast.success("Új al-csoport hozzáadva a vászonhoz.");
+    },
+    [onAddSubGroup, formId, frames, visualCenter]
+  );
+
+  // ------- Drag a frame (move) -------
+
+  const onFrameDragStart = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, kind: "group" | "subgroup", id: string) => {
+      if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const start = toWorld(e.clientX, e.clientY);
+      const original = frames[frameKey(kind, id)];
+      if (!original) return;
+      const offsetX = start.x - original.x;
+      const offsetY = start.y - original.y;
+      // Snapshot child positions/frames at drag start for relative move.
+      const childFieldIds: string[] =
+        kind === "group"
+          ? fields.filter((f) => f.groupId === id).map((f) => f.id)
+          : fields.filter((f) => f.subGroupId === id).map((f) => f.id);
+      const posSnap = getPositions(formId);
+      const childFieldDeltas = new Map<string, { dx: number; dy: number }>();
+      for (const fid of childFieldIds) {
+        const p = posSnap[fid];
+        if (p) childFieldDeltas.set(fid, { dx: p.x - original.x, dy: p.y - original.y });
+      }
+      const childSubFrames: Array<{ id: string; dx: number; dy: number }> = [];
+      if (kind === "group") {
+        for (const sg of subGroups) {
+          if (sg.groupId !== id) continue;
+          const sf = frames[frameKey("subgroup", sg.id)];
+          if (sf) childSubFrames.push({ id: sg.id, dx: sf.x - original.x, dy: sf.y - original.y });
+        }
+      }
+
+      const move = (ev: PointerEvent) => {
+        const w = toWorld(ev.clientX, ev.clientY);
+        const nx = w.x - offsetX;
+        const ny = w.y - offsetY;
+        patchFrame(formId, kind, id, { x: nx, y: ny });
+        if (childFieldDeltas.size > 0) {
+          updatePositions(formId, (prev) => {
+            const next = { ...prev };
+            childFieldDeltas.forEach((d, fid) => {
+              const cur = next[fid];
+              if (cur) next[fid] = { ...cur, x: nx + d.dx, y: ny + d.dy };
+            });
+            return next;
+          });
+        }
+        for (const cs of childSubFrames) {
+          patchFrame(formId, "subgroup", cs.id, { x: nx + cs.dx, y: ny + cs.dy });
+        }
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    },
+    [frames, fields, subGroups, formId]
+  );
+
+  const onFrameResizeStart = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, kind: "group" | "subgroup", id: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const start = toWorld(e.clientX, e.clientY);
+      const original = frames[frameKey(kind, id)];
+      if (!original) return;
+      const move = (ev: PointerEvent) => {
+        const w = toWorld(ev.clientX, ev.clientY);
+        const nw = Math.max(160, original.w + (w.x - start.x));
+        const nh = Math.max(120, original.h + (w.y - start.y));
+        patchFrame(formId, kind, id, { w: nw, h: nh });
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    },
+    [frames, formId]
   );
 
   // World coords captured when the user opens the right-click context menu,
@@ -712,6 +909,51 @@ export function ConditionCanvas({
             </DropdownMenu>
             <Button
               type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => void createGroupFrame()}
+              title="Új csoport hozzáadása a vászonhoz"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Új csoport
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={placedGroupIds.length === 0}
+                  title={
+                    placedGroupIds.length === 0
+                      ? "Először helyezz el egy csoportot a vásznon"
+                      : "Új al-csoport egy meglévő csoporton belül"
+                  }
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Új al-csoport
+                  <ChevronDown className="h-3 w-3 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64 max-h-[60vh] overflow-y-auto">
+                <DropdownMenuLabel>Szülő csoport</DropdownMenuLabel>
+                {placedGroupIds.map((gid) => {
+                  const g = groupById.get(gid);
+                  return (
+                    <DropdownMenuItem
+                      key={`new_subgroup_${gid}`}
+                      onClick={() => void createSubGroupFrame(gid)}
+                    >
+                      {g?.label || g?.internalName || "Csoport"}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => setZoom((z) => Math.max(0.25, z * 0.9))}
@@ -794,6 +1036,73 @@ export function ConditionCanvas({
               height: 1,
             }}
           >
+            {/* Group / sub-group frames — rendered first so they sit behind arrows + boxes */}
+            {Object.entries(frames).map(([key, rect]) => {
+              const isSub = key.startsWith("subgroup:");
+              const id = key.slice(isSub ? 9 : 6);
+              const meta = isSub ? subGroupById.get(id) : groupById.get(id);
+              if (!meta) return null;
+              const label = meta.label || meta.internalName || (isSub ? "Al-csoport" : "Csoport");
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    "absolute rounded-lg select-none",
+                    isSub
+                      ? "border border-dashed border-border bg-accent/20"
+                      : "border-2 border-dashed border-primary/40 bg-primary/5"
+                  )}
+                  style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+                >
+                  {/* Title bar (drag handle) */}
+                  <div
+                    onPointerDown={(e) => onFrameDragStart(e, isSub ? "subgroup" : "group", id)}
+                    className={cn(
+                      "absolute top-0 left-0 right-0 flex items-center justify-between gap-2 px-2 py-1 cursor-move rounded-t-md",
+                      isSub
+                        ? "bg-accent/60 text-accent-foreground"
+                        : "bg-primary/15 text-foreground"
+                    )}
+                    style={{ height: 26 }}
+                  >
+                    <span className="text-[11px] font-semibold uppercase tracking-wide truncate">
+                      {isSub ? "Al-csoport" : "Csoport"}: {label}
+                    </span>
+                    <button
+                      type="button"
+                      data-no-drag
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (
+                          window.confirm(
+                            `Eltávolítod a(z) „${label}" ${isSub ? "al-csoportot" : "csoportot"} a vászonról? A csoport maga nem törlődik.`
+                          )
+                        ) {
+                          removeFrame(formId, isSub ? "subgroup" : "group", id);
+                        }
+                      }}
+                      className="opacity-60 hover:opacity-100 hover:text-destructive transition"
+                      title="Csoport eltávolítása a vászonról"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                  {/* Resize handle */}
+                  <div
+                    onPointerDown={(e) => onFrameResizeStart(e, isSub ? "subgroup" : "group", id)}
+                    data-no-drag
+                    className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, transparent 50%, hsl(var(--muted-foreground) / 0.6) 50%)",
+                      borderBottomRightRadius: 6,
+                    }}
+                    title="Átméretezés"
+                  />
+                </div>
+              );
+            })}
+
             {/* SVG overlay — large enough to fit any practical layout. */}
             <svg
               width={20000}

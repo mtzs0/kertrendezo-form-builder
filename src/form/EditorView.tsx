@@ -264,8 +264,11 @@ export function EditorView({ slug = "default", onExit }: Props) {
               <div className="space-y-5">
                 <ConditionCanvas
                   fields={editor.fields}
+                  groups={editor.groups}
+                  subGroups={editor.subGroups}
                   formId={editor.form?.id ?? null}
                   onSetCondition={editor.setFieldCondition}
+                  onPatchField={editor.patchField}
                   selectedFieldId={selectedFieldId}
                   onSelectField={setSelectedFieldId}
                   onAddField={async (type) => {
@@ -273,6 +276,10 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     setSelectedFieldId(id);
                     return id;
                   }}
+                  onAddGroup={editor.addGroup}
+                  onAddSubGroup={editor.addSubGroup}
+                  onRemoveGroup={editor.removeGroup}
+                  onRemoveSubGroup={editor.removeSubGroup}
                   fieldConfigPanel={
                     <FieldConfigPanel
                       field={editor.fields.find((f) => f.id === selectedFieldId) ?? null}
