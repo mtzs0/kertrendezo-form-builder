@@ -73,6 +73,7 @@ import {
 } from "./conditionInputs";
 import {
   clearPositions,
+  getPositions,
   removePosition,
   updatePositions,
   useCanvasPositions,
@@ -477,8 +478,8 @@ export function ConditionCanvas({
         setSelectedEdge(null);
       } else {
         // Drag finished — re-evaluate group containment based on the
-        // box's final position.
-        const cur = positions[fieldId];
+        // box's final position (read fresh from the store).
+        const cur = getPositions(formId)[fieldId];
         if (cur) applyContainment(fieldId, cur.x, cur.y);
       }
     };
