@@ -65,7 +65,7 @@ export interface UseEditorSchemaResult {
   patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null }>) => void;
 
   // Group ops
-  addGroup: () => Promise<void>;
+  addGroup: () => Promise<string | undefined>;
   patchGroup: (id: string, patch: Partial<FormGroup>) => void;
   removeGroup: (id: string) => Promise<void>;
   reorderGroups: (orderedIds: string[]) => Promise<void>;
@@ -73,7 +73,7 @@ export interface UseEditorSchemaResult {
   nestGroup: (id: string, parentGroupId: string | null, location?: number) => Promise<void>;
 
   // Sub-group ops
-  addSubGroup: (groupId: string) => Promise<void>;
+  addSubGroup: (groupId: string) => Promise<string | undefined>;
   patchSubGroup: (id: string, patch: Partial<FormSubGroup>) => void;
   removeSubGroup: (id: string) => Promise<void>;
   reorderSubGroups: (groupId: string, orderedIds: string[]) => Promise<void>;
@@ -252,7 +252,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   );
 
   const addGroup = useCallback(async () => {
-    if (!form || !bundle) return;
+    if (!form || !bundle) return undefined;
     // New groups start as 'unplaced' (position = 0). User drags into structure.
     const row = await createGroup(form.id, 0);
     setBundle((b) =>
@@ -266,6 +266,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
           }
         : b
     );
+    return row.id as string;
   }, [form, bundle]);
 
   const patchGroup = useCallback(
@@ -419,7 +420,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
 
   const addSubGroup = useCallback(
     async (groupId: string) => {
-      if (!form || !bundle) return;
+      if (!form || !bundle) return undefined;
       // New sub-groups start as 'unplaced' (position = 0).
       const row = await createSubGroup(form.id, groupId, 0);
       setBundle((b) =>
@@ -439,6 +440,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             }
           : b
       );
+      return row.id as string;
     },
     [form, bundle]
   );
