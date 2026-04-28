@@ -16,8 +16,8 @@ interface Props {
   groups: FormGroup[];
   subGroups: FormSubGroup[];
   fields: FormField[];
-  onAddGroup: () => Promise<void> | void;
-  onAddSubGroup: (groupId: string) => Promise<void> | void;
+  onAddGroup: () => Promise<string | undefined> | void;
+  onAddSubGroup: (groupId: string) => Promise<string | undefined> | void;
   onPatchGroup: (id: string, patch: Partial<FormGroup>) => void;
   onPatchSubGroup: (id: string, patch: Partial<FormSubGroup>) => void;
   onRemoveGroup: (id: string) => Promise<void> | void;
