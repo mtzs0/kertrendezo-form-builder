@@ -634,6 +634,130 @@ export function ConditionCanvas({
     [onAddField, onSelectField]
   );
 
+  // ------- Frame helpers (group / sub-group rectangles on the canvas) -------
+
+  const placedGroupIds = useMemo(
+    () => Object.keys(frames).filter((k) => k.startsWith("group:")).map((k) => k.slice(6)),
+    [frames]
+  );
+
+  /** Returns the visible center of the canvas in world coords. */
+  const visualCenter = useCallback(() => {
+    const r = canvasRef.current?.getBoundingClientRect();
+    if (!r) return { x: 200, y: 200 };
+    return toWorld(r.left + r.width / 2, r.top + r.height / 2);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const createGroupFrame = useCallback(async () => {
+    const id = await onAddGroup();
+    if (!id) return;
+    const c = visualCenter();
+    const W = 420;
+    const H = 260;
+    setFrame(formId, "group", id, { x: c.x - W / 2, y: c.y - H / 2, w: W, h: H });
+    toast.success("Új csoport hozzáadva a vászonhoz.");
+  }, [onAddGroup, formId, visualCenter]);
+
+  const createSubGroupFrame = useCallback(
+    async (parentGroupId: string) => {
+      const id = await onAddSubGroup(parentGroupId);
+      if (!id) return;
+      const parent = frames[frameKey("group", parentGroupId)];
+      const W = 240;
+      const H = 160;
+      const x = parent ? parent.x + 20 : visualCenter().x - W / 2;
+      const y = parent ? parent.y + 60 : visualCenter().y - H / 2;
+      setFrame(formId, "subgroup", id, { x, y, w: W, h: H });
+      toast.success("Új al-csoport hozzáadva a vászonhoz.");
+    },
+    [onAddSubGroup, formId, frames, visualCenter]
+  );
+
+  // ------- Drag a frame (move) -------
+
+  const onFrameDragStart = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, kind: "group" | "subgroup", id: string) => {
+      if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const start = toWorld(e.clientX, e.clientY);
+      const original = frames[frameKey(kind, id)];
+      if (!original) return;
+      const offsetX = start.x - original.x;
+      const offsetY = start.y - original.y;
+      // Snapshot child positions/frames at drag start for relative move.
+      const childFieldIds: string[] =
+        kind === "group"
+          ? fields.filter((f) => f.groupId === id).map((f) => f.id)
+          : fields.filter((f) => f.subGroupId === id).map((f) => f.id);
+      const posSnap = getPositions(formId);
+      const childFieldDeltas = new Map<string, { dx: number; dy: number }>();
+      for (const fid of childFieldIds) {
+        const p = posSnap[fid];
+        if (p) childFieldDeltas.set(fid, { dx: p.x - original.x, dy: p.y - original.y });
+      }
+      const childSubFrames: Array<{ id: string; dx: number; dy: number }> = [];
+      if (kind === "group") {
+        for (const sg of subGroups) {
+          if (sg.groupId !== id) continue;
+          const sf = frames[frameKey("subgroup", sg.id)];
+          if (sf) childSubFrames.push({ id: sg.id, dx: sf.x - original.x, dy: sf.y - original.y });
+        }
+      }
+
+      const move = (ev: PointerEvent) => {
+        const w = toWorld(ev.clientX, ev.clientY);
+        const nx = w.x - offsetX;
+        const ny = w.y - offsetY;
+        patchFrame(formId, kind, id, { x: nx, y: ny });
+        if (childFieldDeltas.size > 0) {
+          updatePositions(formId, (prev) => {
+            const next = { ...prev };
+            childFieldDeltas.forEach((d, fid) => {
+              const cur = next[fid];
+              if (cur) next[fid] = { ...cur, x: nx + d.dx, y: ny + d.dy };
+            });
+            return next;
+          });
+        }
+        for (const cs of childSubFrames) {
+          patchFrame(formId, "subgroup", cs.id, { x: nx + cs.dx, y: ny + cs.dy });
+        }
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    },
+    [frames, fields, subGroups, formId]
+  );
+
+  const onFrameResizeStart = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, kind: "group" | "subgroup", id: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const start = toWorld(e.clientX, e.clientY);
+      const original = frames[frameKey(kind, id)];
+      if (!original) return;
+      const move = (ev: PointerEvent) => {
+        const w = toWorld(ev.clientX, ev.clientY);
+        const nw = Math.max(160, original.w + (w.x - start.x));
+        const nh = Math.max(120, original.h + (w.y - start.y));
+        patchFrame(formId, kind, id, { w: nw, h: nh });
+      };
+      const up = () => {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+    },
+    [frames, formId]
+  );
+
   // World coords captured when the user opens the right-click context menu,
   // so we can place the new box exactly where they clicked.
   const contextMenuWorldRef = useRef<{ x: number; y: number } | null>(null);
