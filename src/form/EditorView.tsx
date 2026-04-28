@@ -261,32 +261,45 @@ export function EditorView({ slug = "default", onExit }: Props) {
             {editor.loading ? (
               <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
             ) : (
-              <ConditionCanvas
-                fields={editor.fields}
-                formId={editor.form?.id ?? null}
-                onSetCondition={editor.setFieldCondition}
-                selectedFieldId={selectedFieldId}
-                onSelectField={setSelectedFieldId}
-                onAddField={async (type) => {
-                  const id = await editor.addField(type);
-                  setSelectedFieldId(id);
-                  return id;
-                }}
-                fieldConfigPanel={
-                  <FieldConfigPanel
-                    field={editor.fields.find((f) => f.id === selectedFieldId) ?? null}
-                    onChange={(patch) => {
-                      if (selectedFieldId) editor.patchField(selectedFieldId, patch);
-                    }}
-                    onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
-                    onDelete={async () => {
-                      if (!selectedFieldId) return;
-                      await editor.removeField(selectedFieldId);
-                      setSelectedFieldId(null);
-                    }}
+              <div className="space-y-5">
+                <ConditionCanvas
+                  fields={editor.fields}
+                  formId={editor.form?.id ?? null}
+                  onSetCondition={editor.setFieldCondition}
+                  selectedFieldId={selectedFieldId}
+                  onSelectField={setSelectedFieldId}
+                  onAddField={async (type) => {
+                    const id = await editor.addField(type);
+                    setSelectedFieldId(id);
+                    return id;
+                  }}
+                  fieldConfigPanel={
+                    <FieldConfigPanel
+                      field={editor.fields.find((f) => f.id === selectedFieldId) ?? null}
+                      onChange={(patch) => {
+                        if (selectedFieldId) editor.patchField(selectedFieldId, patch);
+                      }}
+                      onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
+                      onDelete={async () => {
+                        if (!selectedFieldId) return;
+                        await editor.removeField(selectedFieldId);
+                        setSelectedFieldId(null);
+                      }}
+                    />
+                  }
+                />
+                {editor.form && (
+                  <LayoutsManager
+                    formId={editor.form.id}
+                    groups={editor.groups}
+                    subGroups={editor.subGroups}
+                    fields={editor.fields}
+                    activeLayoutId={editor.activeLayoutId}
+                    onSetActiveLayout={editor.setActiveLayout}
+                    onReloadEditor={editor.reload}
                   />
-                }
-              />
+                )}
+              </div>
             )}
           </TabsContent>
 

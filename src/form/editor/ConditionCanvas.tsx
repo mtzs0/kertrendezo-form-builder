@@ -461,9 +461,14 @@ export function ConditionCanvas({
       const next: ConditionGroup = existing
         ? { ...existing, rules: [...existing.rules, newRule] }
         : { combinator: "and", rules: [newRule] };
+      const newRuleIndex = next.rules.length - 1;
       void onSetCondition(targetId, next);
+      // Auto-select the freshly-created edge so the condition editor
+      // opens for it immediately — saves the user a click.
+      onSelectField(null);
+      setSelectedEdge({ targetId, ruleIndex: newRuleIndex });
     },
-    [fieldById, onSetCondition]
+    [fieldById, onSetCondition, onSelectField]
   );
 
   const updateRule = useCallback(
