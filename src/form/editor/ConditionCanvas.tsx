@@ -186,7 +186,19 @@ export function ConditionCanvas({
   // grid-default coords over the saved positions and scramble the canvas
   // (and also wipe out arrows whose target/source ended up moved).
   const positionsLoaded = useCanvasPositionsLoaded(formId);
+  const frames = useGroupFrames(formId);
   const [revealOneByOne, setRevealOneByOne] = useRevealOneByOne(formId);
+
+  const groupById = useMemo(() => {
+    const m = new Map<string, FormGroup>();
+    for (const g of groups) m.set(g.id, g);
+    return m;
+  }, [groups]);
+  const subGroupById = useMemo(() => {
+    const m = new Map<string, FormSubGroup>();
+    for (const sg of subGroups) m.set(sg.id, sg);
+    return m;
+  }, [subGroups]);
 
   /**
    * Local helper that mirrors the previous `setPositions((prev) => …)` API
