@@ -63,6 +63,8 @@ import type {
   FieldCondition,
   FieldType,
   FormField,
+  FormGroup,
+  FormSubGroup,
 } from "@/form/types";
 import {
   OPERATOR_LABELS,
@@ -77,20 +79,38 @@ import {
   useCanvasPositionsLoaded,
   type BoxPos,
 } from "./canvasPositionsStore";
+import {
+  frameKey,
+  patchFrame,
+  removeFrame,
+  setFrame,
+  useGroupFrames,
+  type FrameRect,
+} from "./groupFramesStore";
+import { resolveContainerFor } from "./canvasContainers";
 import { useRevealOneByOne } from "./revealModeStore";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 interface Props {
   fields: FormField[];
+  groups: FormGroup[];
+  subGroups: FormSubGroup[];
   formId: string | null | undefined;
   onSetCondition: (
     fieldId: string,
     condition: ConditionGroup | undefined
   ) => Promise<void> | void;
+  /** Patches a field — used to assign groupId / subGroupId from frame containment. */
+  onPatchField: (id: string, patch: Partial<FormField>) => void;
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   /** Creates a new field (no group) and returns its id. */
   onAddField: (type: FieldType) => Promise<string>;
+  onAddGroup: () => Promise<string | undefined>;
+  onAddSubGroup: (groupId: string) => Promise<string | undefined>;
+  onRemoveGroup: (id: string) => Promise<void> | void;
+  onRemoveSubGroup: (id: string) => Promise<void> | void;
   fieldConfigPanel: React.ReactNode;
 }
 
@@ -138,11 +158,18 @@ function isFlatGroup(g: ConditionGroup | undefined): boolean {
 
 export function ConditionCanvas({
   fields,
+  groups,
+  subGroups,
   formId,
   onSetCondition,
+  onPatchField,
   selectedFieldId,
   onSelectField,
   onAddField,
+  onAddGroup,
+  onAddSubGroup,
+  onRemoveGroup,
+  onRemoveSubGroup,
   fieldConfigPanel,
 }: Props) {
   const fieldById = useMemo(() => {
