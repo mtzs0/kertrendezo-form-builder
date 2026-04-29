@@ -310,6 +310,8 @@ export async function updateGroup(
     width: WidthPercent | null;
     /** Set/clear the parent group (null = make top-level, string = nest under that group). */
     parentGroupId: string | null;
+    /** Hex color (or null to clear) used by the visual canvas frame. */
+    color: string | null;
   }>
 ) {
   const u: Record<string, unknown> = {};
@@ -318,6 +320,7 @@ export async function updateGroup(
   if (patch.position !== undefined) u.position = patch.position;
   if (patch.width !== undefined) u.width_percent = patch.width;
   if (patch.parentGroupId !== undefined) u.parent_group_id = patch.parentGroupId;
+  if (patch.color !== undefined) u.color = patch.color;
   if (Object.keys(u).length === 0) return;
   const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
