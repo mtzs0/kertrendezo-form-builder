@@ -640,6 +640,33 @@ export function ConditionCanvas({
     [frames]
   );
 
+  /**
+   * For each frame key, the number of placed field-boxes that are FULLY
+   * covered by it. Used to highlight a frame when it visually contains
+   * one or more fields (so the user sees that those fields will render
+   * inside the group on the demo preview).
+   */
+  const frameOccupancy = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [key, frame] of Object.entries(frames)) {
+      let n = 0;
+      for (const fid of Object.keys(positions)) {
+        const p = positions[fid];
+        if (!p) continue;
+        if (
+          p.x >= frame.x &&
+          p.y >= frame.y &&
+          p.x + BOX_W <= frame.x + frame.w &&
+          p.y + BOX_H <= frame.y + frame.h
+        ) {
+          n++;
+        }
+      }
+      out[key] = n;
+    }
+    return out;
+  }, [frames, positions]);
+
   /** Returns the visible center of the canvas in world coords. */
   const visualCenter = useCallback(() => {
     const r = canvasRef.current?.getBoundingClientRect();
