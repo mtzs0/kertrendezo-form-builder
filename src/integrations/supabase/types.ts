@@ -316,6 +316,7 @@ export type Database = {
       }
       form_groups: {
         Row: {
+          color: string | null
           created_at: string
           form_id: string
           id: string
@@ -327,6 +328,7 @@ export type Database = {
           width_percent: number | null
         }
         Insert: {
+          color?: string | null
           created_at?: string
           form_id: string
           id?: string
@@ -338,6 +340,7 @@ export type Database = {
           width_percent?: number | null
         }
         Update: {
+          color?: string | null
           created_at?: string
           form_id?: string
           id?: string
@@ -436,6 +439,7 @@ export type Database = {
       forms: {
         Row: {
           active_layout_id: string | null
+          canvas_reveal_one_by_one: boolean
           created_at: string
           description: string | null
           id: string
@@ -449,6 +453,7 @@ export type Database = {
         }
         Insert: {
           active_layout_id?: string | null
+          canvas_reveal_one_by_one?: boolean
           created_at?: string
           description?: string | null
           id?: string
@@ -462,6 +467,7 @@ export type Database = {
         }
         Update: {
           active_layout_id?: string | null
+          canvas_reveal_one_by_one?: boolean
           created_at?: string
           description?: string | null
           id?: string

@@ -16,10 +16,12 @@ export interface ContainerResult {
   subGroupId?: string;
 }
 
-const center = (r: BoxRect) => ({ cx: r.x + r.w / 2, cy: r.y + r.h / 2 });
-
-const contains = (frame: FrameRect, cx: number, cy: number) =>
-  cx >= frame.x && cx <= frame.x + frame.w && cy >= frame.y && cy <= frame.y + frame.h;
+/** True iff the frame fully covers the box (all four corners inside). */
+export const frameFullyContains = (frame: FrameRect, box: BoxRect) =>
+  box.x >= frame.x &&
+  box.y >= frame.y &&
+  box.x + box.w <= frame.x + frame.w &&
+  box.y + box.h <= frame.y + frame.h;
 
 const area = (f: FrameRect) => f.w * f.h;
 
@@ -37,14 +39,13 @@ export function resolveContainerFor(
   groups: FormGroup[],
   subGroups: FormSubGroup[]
 ): ContainerResult {
-  const { cx, cy } = center(box);
-
-  // Sub-groups first (deepest).
+  // Sub-groups first (deepest). A field is considered inside a frame ONLY
+  // when the frame fully covers the field's box.
   let bestSub: { sg: FormSubGroup; frame: FrameRect } | null = null;
   for (const sg of subGroups) {
     const f = frames[frameKey("subgroup", sg.id)];
     if (!f) continue;
-    if (!contains(f, cx, cy)) continue;
+    if (!frameFullyContains(f, box)) continue;
     if (!bestSub || area(f) < area(bestSub.frame)) bestSub = { sg, frame: f };
   }
   if (bestSub) {
@@ -56,7 +57,7 @@ export function resolveContainerFor(
   for (const g of groups) {
     const f = frames[frameKey("group", g.id)];
     if (!f) continue;
-    if (!contains(f, cx, cy)) continue;
+    if (!frameFullyContains(f, box)) continue;
     if (!bestG || area(f) < area(bestG.frame)) bestG = { g, frame: f };
   }
   if (bestG) return { groupId: bestG.g.id };

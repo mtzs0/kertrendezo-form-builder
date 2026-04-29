@@ -316,6 +316,8 @@ export function EditorView({ slug = "default", onExit }: Props) {
             ) : (
               <DemoPreview
                 fields={editor.fields}
+                groups={editor.groups}
+                subGroups={editor.subGroups}
                 formId={editor.form?.id ?? null}
                 thankYouText={editor.form?.thank_you_text ?? null}
               />

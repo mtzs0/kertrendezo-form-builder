@@ -192,6 +192,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             label: patch.label,
             position: patch.location,
             width: patch.width === undefined ? undefined : patch.width ?? null,
+            color: patch.color === undefined ? undefined : (patch.color ?? null),
           })
         ),
         ...subGroupEntries.map(([id, patch]) =>

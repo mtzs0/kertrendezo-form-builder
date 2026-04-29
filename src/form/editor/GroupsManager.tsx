@@ -9,8 +9,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ChevronDown, ChevronRight, Palette, Plus, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { FormField, FormGroup, FormSubGroup } from "@/form/types";
+
+const COLOR_PRESETS = [
+  "#ef4444", // red
+  "#f97316", // orange
+  "#eab308", // yellow
+  "#22c55e", // green
+  "#06b6d4", // cyan
+  "#3b82f6", // blue
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#64748b", // slate
+];
 
 interface Props {
   groups: FormGroup[];
@@ -162,6 +176,85 @@ export function GroupsManager({
                       {g.location > 0 ? "elhelyezve" : "elhelyezetlen"} ·{" "}
                       {fieldsInGroup(g.id)} mező
                     </span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          aria-label="Csoport színe"
+                          title="Csoport színe a vásznon"
+                        >
+                          {g.color ? (
+                            <span
+                              className="h-4 w-4 rounded-full border border-border"
+                              style={{ background: g.color }}
+                            />
+                          ) : (
+                            <Palette className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" className="w-56 p-3 space-y-3">
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">
+                            Előre definiált színek
+                          </Label>
+                          <div className="mt-1.5 grid grid-cols-9 gap-1.5">
+                            {COLOR_PRESETS.map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => onPatchGroup(g.id, { color: c })}
+                                className={cn(
+                                  "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+                                  g.color === c
+                                    ? "border-foreground ring-2 ring-foreground/40"
+                                    : "border-border"
+                                )}
+                                style={{ background: c }}
+                                aria-label={`Szín: ${c}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[11px] text-muted-foreground">
+                            Egyéni szín
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={g.color || "#3b82f6"}
+                              onChange={(e) => onPatchGroup(g.id, { color: e.target.value })}
+                              className="h-8 w-10 rounded border border-border bg-background cursor-pointer"
+                              aria-label="Egyéni szín választása"
+                            />
+                            <Input
+                              value={g.color || ""}
+                              onChange={(e) => {
+                                const v = e.target.value.trim();
+                                onPatchGroup(g.id, { color: v || undefined });
+                              }}
+                              placeholder="#rrggbb"
+                              className="h-8 text-sm flex-1"
+                            />
+                          </div>
+                        </div>
+                        {g.color && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-full h-7 text-xs"
+                            onClick={() => onPatchGroup(g.id, { color: undefined })}
+                          >
+                            Szín törlése
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
                     <Button
                       type="button"
                       variant="ghost"

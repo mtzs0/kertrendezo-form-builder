@@ -640,6 +640,33 @@ export function ConditionCanvas({
     [frames]
   );
 
+  /**
+   * For each frame key, the number of placed field-boxes that are FULLY
+   * covered by it. Used to highlight a frame when it visually contains
+   * one or more fields (so the user sees that those fields will render
+   * inside the group on the demo preview).
+   */
+  const frameOccupancy = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const [key, frame] of Object.entries(frames)) {
+      let n = 0;
+      for (const fid of Object.keys(positions)) {
+        const p = positions[fid];
+        if (!p) continue;
+        if (
+          p.x >= frame.x &&
+          p.y >= frame.y &&
+          p.x + BOX_W <= frame.x + frame.w &&
+          p.y + BOX_H <= frame.y + frame.h
+        ) {
+          n++;
+        }
+      }
+      out[key] = n;
+    }
+    return out;
+  }, [frames, positions]);
+
   /** Returns the visible center of the canvas in world coords. */
   const visualCenter = useCallback(() => {
     const r = canvasRef.current?.getBoundingClientRect();
@@ -1043,30 +1070,67 @@ export function ConditionCanvas({
               const meta = isSub ? subGroupById.get(id) : groupById.get(id);
               if (!meta) return null;
               const label = meta.label || meta.internalName || (isSub ? "Al-csoport" : "Csoport");
+              const occupants = frameOccupancy[key] ?? 0;
+              const occupied = occupants > 0;
+              // Color comes from the parent group for sub-groups, and
+              // from the group itself for groups. Falls back to design
+              // tokens when none is set.
+              const groupColor = isSub
+                ? groupById.get((meta as FormSubGroup).groupId)?.color
+                : (meta as FormGroup).color;
+              const hasColor = !!groupColor;
+              const frameStyle: CSSProperties = {
+                left: rect.x,
+                top: rect.y,
+                width: rect.w,
+                height: rect.h,
+              };
+              if (hasColor) {
+                frameStyle.borderColor = groupColor;
+                frameStyle.background = `${groupColor}1a`; // ~10% opacity
+                if (occupied) {
+                  frameStyle.boxShadow = `0 0 0 2px ${groupColor}55`;
+                }
+              }
+              const titleStyle: CSSProperties = hasColor
+                ? { height: 26, background: `${groupColor}33`, color: "inherit" }
+                : { height: 26 };
               return (
                 <div
                   key={key}
                   className={cn(
-                    "absolute rounded-lg select-none",
-                    isSub
-                      ? "border border-dashed border-border bg-accent/20"
-                      : "border-2 border-dashed border-primary/40 bg-primary/5"
+                    "absolute rounded-lg select-none transition-shadow",
+                    !hasColor &&
+                      (isSub
+                        ? "border border-dashed border-border bg-accent/20"
+                        : "border-2 border-dashed border-primary/40 bg-primary/5"),
+                    hasColor && "border-2 border-dashed",
+                    occupied && !hasColor && "ring-2 ring-primary/60 ring-offset-1 ring-offset-background"
                   )}
-                  style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+                  style={frameStyle}
                 >
                   {/* Title bar (drag handle) */}
                   <div
                     onPointerDown={(e) => onFrameDragStart(e, isSub ? "subgroup" : "group", id)}
                     className={cn(
                       "absolute top-0 left-0 right-0 flex items-center justify-between gap-2 px-2 py-1 cursor-move rounded-t-md",
-                      isSub
-                        ? "bg-accent/60 text-accent-foreground"
-                        : "bg-primary/15 text-foreground"
+                      !hasColor &&
+                        (isSub
+                          ? "bg-accent/60 text-accent-foreground"
+                          : "bg-primary/15 text-foreground")
                     )}
-                    style={{ height: 26 }}
+                    style={titleStyle}
                   >
                     <span className="text-[11px] font-semibold uppercase tracking-wide truncate">
                       {isSub ? "Al-csoport" : "Csoport"}: {label}
+                      {occupied && (
+                        <span
+                          className="ml-1.5 inline-flex items-center justify-center rounded-full bg-background/80 text-foreground px-1.5 py-0 text-[9px] font-bold normal-case tracking-normal"
+                          title={`${occupants} mező a csoporton belül`}
+                        >
+                          {occupants}
+                        </span>
+                      )}
                     </span>
                     <button
                       type="button"

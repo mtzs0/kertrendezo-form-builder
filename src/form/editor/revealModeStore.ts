@@ -1,63 +1,102 @@
-// Tiny pub/sub store for the "reveal fields one-by-one" toggle on the
+// Pub/sub store for the "reveal fields one-by-one" toggle on the
 // Vizuális feltételek (demo) canvas.
 //
-// Persisted to localStorage per form id. Demo-only — no DB row.
+// Persisted per form via the `forms.canvas_reveal_one_by_one` column in
+// Supabase. The toggle is loaded lazily on first read and writes are
+// debounced. While the value is loading, the default (true) is shown.
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const STORAGE_PREFIX = "kr_canvas_reveal_one_by_one_v1__";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sbAny = supabase as unknown as { from: (t: string) => any };
 
 type Listener = () => void;
 
-const cache = new Map<string, boolean>();
-const listeners = new Map<string, Set<Listener>>();
-
-function keyOf(formId: string | null | undefined) {
-  return formId ?? "__none__";
+interface FormState {
+  value: boolean;
+  loaded: boolean;
+  loading?: Promise<void>;
+  saveTimer?: ReturnType<typeof setTimeout>;
+  listeners: Set<Listener>;
 }
 
-function storageKey(formId: string | null | undefined) {
-  return `${STORAGE_PREFIX}${keyOf(formId)}`;
-}
+const states = new Map<string, FormState>();
 
-function read(formId: string | null | undefined): boolean {
+const keyOf = (formId: string | null | undefined) => formId ?? "__none__";
+
+function getState(formId: string | null | undefined): FormState {
   const k = keyOf(formId);
-  if (cache.has(k)) return cache.get(k)!;
-  // Default ON — sequential reveal is the canvas preview's default behavior.
-  // Only an explicit "0" in storage disables it.
-  let v = true;
-  try {
-    const raw = localStorage.getItem(storageKey(formId));
-    if (raw === "0") v = false;
-    else if (raw === "1") v = true;
-  } catch {
-    /* ignore */
+  let s = states.get(k);
+  if (!s) {
+    s = { value: true, loaded: false, listeners: new Set() };
+    states.set(k, s);
   }
-  cache.set(k, v);
-  return v;
+  return s;
 }
 
-function notify(formId: string | null | undefined) {
-  const set = listeners.get(keyOf(formId));
-  if (!set) return;
-  set.forEach((l) => l());
+const notify = (s: FormState) => s.listeners.forEach((l) => l());
+
+function ensureLoaded(formId: string | null | undefined): Promise<void> {
+  const s = getState(formId);
+  if (s.loaded) return Promise.resolve();
+  if (s.loading) return s.loading;
+  if (!formId) {
+    s.loaded = true;
+    return Promise.resolve();
+  }
+  s.loading = (async () => {
+    try {
+      const { data, error } = await sbAny
+        .from("forms")
+        .select("canvas_reveal_one_by_one")
+        .eq("id", formId)
+        .maybeSingle();
+      if (error) throw error;
+      if (data && typeof data.canvas_reveal_one_by_one === "boolean") {
+        s.value = data.canvas_reveal_one_by_one;
+      }
+      s.loaded = true;
+      notify(s);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to load reveal-mode toggle", e);
+      s.loaded = true;
+    } finally {
+      s.loading = undefined;
+    }
+  })();
+  return s.loading;
 }
 
-export function getRevealOneByOne(formId: string | null | undefined): boolean {
-  return read(formId);
+const SAVE_DEBOUNCE_MS = 300;
+
+function scheduleSave(s: FormState, formId: string) {
+  if (s.saveTimer) clearTimeout(s.saveTimer);
+  s.saveTimer = setTimeout(async () => {
+    s.saveTimer = undefined;
+    try {
+      const { error } = await sbAny
+        .from("forms")
+        .update({ canvas_reveal_one_by_one: s.value })
+        .eq("id", formId);
+      if (error) throw error;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error("Failed to save reveal-mode toggle", e);
+    }
+  }, SAVE_DEBOUNCE_MS);
 }
 
 export function setRevealOneByOne(
   formId: string | null | undefined,
   value: boolean
 ) {
-  cache.set(keyOf(formId), value);
-  try {
-    localStorage.setItem(storageKey(formId), value ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-  notify(formId);
+  const s = getState(formId);
+  s.value = value;
+  s.loaded = true;
+  notify(s);
+  if (formId) scheduleSave(s, formId);
 }
 
 export function useRevealOneByOne(
@@ -65,17 +104,13 @@ export function useRevealOneByOne(
 ): [boolean, (v: boolean) => void] {
   const [, force] = useState(0);
   useEffect(() => {
-    const k = keyOf(formId);
-    let set = listeners.get(k);
-    if (!set) {
-      set = new Set();
-      listeners.set(k, set);
-    }
+    const st = getState(formId);
     const l = () => force((n) => n + 1);
-    set.add(l);
+    st.listeners.add(l);
+    void ensureLoaded(formId).then(() => force((n) => n + 1));
     return () => {
-      set!.delete(l);
+      st.listeners.delete(l);
     };
   }, [formId]);
-  return [read(formId), (v: boolean) => setRevealOneByOne(formId, v)];
+  return [getState(formId).value, (v: boolean) => setRevealOneByOne(formId, v)];
 }
