@@ -16,11 +16,6 @@ export interface ContainerResult {
   subGroupId?: string;
 }
 
-const center = (r: BoxRect) => ({ cx: r.x + r.w / 2, cy: r.y + r.h / 2 });
-
-const contains = (frame: FrameRect, cx: number, cy: number) =>
-  cx >= frame.x && cx <= frame.x + frame.w && cy >= frame.y && cy <= frame.y + frame.h;
-
 /** True iff the frame fully covers the box (all four corners inside). */
 export const frameFullyContains = (frame: FrameRect, box: BoxRect) =>
   box.x >= frame.x &&
