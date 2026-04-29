@@ -136,6 +136,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       label: g.label,
       location: g.position,
       width: asWidth(g.width_percent),
+      color: ((g as unknown as { color?: string | null }).color ?? undefined) || undefined,
     }));
 
   // Sub-groups: rows in form_groups that have parent_group_id set.
