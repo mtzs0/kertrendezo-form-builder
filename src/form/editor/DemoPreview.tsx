@@ -1,36 +1,39 @@
-// Demo preview tab — renders the form in a linear order driven by the
-// per-box `order` numbers from the Vizuális feltételek (demo) canvas.
+// Demo preview tab — renders the form driven by the visual canvas.
 //
 // Behavior:
 //  - Only fields placed on the canvas are rendered.
 //  - Fields are sorted by their canvas `order` (ascending). Fields without
 //    an order go to the end, stable by their original schema order.
-//  - Groupings (groupId, subGroupId) are intentionally ignored — every
-//    field renders linearly.
-//  - Existing display conditions still apply (visibility logic untouched).
-//  - When the "Egyenkénti megjelenítés" toggle is ON in the canvas
-//    toolbar, fields are revealed one-by-one as the user fills them in:
-//    only the first not-yet-answered visible field is shown after the
-//    answered ones, with all later fields hidden until the user answers
-//    the current one.
+//  - When a field's box is fully contained inside a group (or sub-group)
+//    frame on the canvas, that field is rendered as part of the group.
+//    Such groups appear in the demo preview using the original tabbed
+//    step-by-step rendering driven by FormView (just like the Előnézet
+//    tab does for the live form).
+//  - Existing display conditions still apply.
+//  - When the "Egyenkénti megjelenítés" toggle is ON, fields are
+//    revealed one-by-one as the user fills them in: only the first
+//    not-yet-answered visible REQUIRED field gates further reveals.
+//    Non-required fields between two required ones are revealed
+//    together.
 
 import { useCallback, useMemo, useState } from "react";
 import { FormView } from "@/form/FormView";
 import { isFieldVisible } from "@/form/structure";
-import type { FormField, FormSchema, FormValues } from "@/form/types";
+import type { FormField, FormGroup, FormSchema, FormSubGroup, FormValues } from "@/form/types";
 import { useCanvasPositions } from "./canvasPositionsStore";
+import { useGroupFrames } from "./groupFramesStore";
 import { useRevealOneByOne } from "./revealModeStore";
 
 interface Props {
   fields: FormField[];
+  groups: FormGroup[];
+  subGroups: FormSubGroup[];
   formId: string | null | undefined;
   thankYouText: string | null | undefined;
 }
 
 /** Returns true if the user hasn't supplied any value for this field yet. */
 function isAnswered(field: FormField, values: FormValues): boolean {
-  // Label fields collect no value — treat as automatically "answered" so
-  // they don't block subsequent reveals.
   if (field.type === "label") return true;
   const v = values[field.id];
   if (v === undefined || v === null) return false;
@@ -39,12 +42,19 @@ function isAnswered(field: FormField, values: FormValues): boolean {
   return true;
 }
 
-export function DemoPreview({ fields, formId, thankYouText }: Props) {
+export function DemoPreview({ fields, groups, subGroups, formId, thankYouText }: Props) {
   const positions = useCanvasPositions(formId);
+  const frames = useGroupFrames(formId);
   const [revealOneByOne] = useRevealOneByOne(formId);
   const [liveValues, setLiveValues] = useState<FormValues>({});
 
-  const orderedFields = useMemo(() => {
+  /**
+   * Build the schema fed into FormView. Fields are ordered by their canvas
+   * `order` value; groups/sub-groups that contain at least one placed
+   * field get a positive `location` (so FormView treats them as steps).
+   * Other groups stay unplaced (location = 0) and are ignored.
+   */
+  const placedSchema = useMemo(() => {
     const placed: { field: FormField; order: number; idx: number }[] = [];
     fields.forEach((f, idx) => {
       const pos = positions[f.id];
@@ -56,54 +66,79 @@ export function DemoPreview({ fields, formId, thankYouText }: Props) {
       });
     });
     placed.sort((a, b) => a.order - b.order || a.idx - b.idx);
-    return placed.map((p, i) => ({
-      ...p.field,
-      // Re-stamp so buildRenderTree treats them as linear top-level fields.
-      // Preserve the author-set width so 50%/33%/etc. fields can pack
-      // side-by-side in the demo preview, just like in the live form.
-      groupId: undefined,
-      subGroupId: undefined,
-      location: i + 1,
-    })) as FormField[];
-  }, [fields, positions]);
 
-  // In reveal-one-by-one mode, reveal fields sequentially but only gate
-  // on REQUIRED fields. Non-required fields are always revealed alongside
-  // the next required field in the sequence — the user may skip them
-  // without blocking subsequent reveals.
-  //
-  // Algorithm: walk the ordered list and include every field. Stop after
-  // including the first visible REQUIRED field that is still unanswered.
-  // This naturally pulls in any non-required fields that sit between the
-  // last answered required field and the next required one.
-  //
-  // Hidden (condition-failed) fields are skipped for the gating check
-  // but still added to the slice (FormView will render-null them).
-  const visibleSchemaFields = useMemo(() => {
-    if (!revealOneByOne) return orderedFields;
-    const out: FormField[] = [];
+    // Track which groups/sub-groups actually contain placed fields.
+    const usedGroupIds = new Set<string>();
+    const usedSubGroupIds = new Set<string>();
+    const orderedFields: FormField[] = placed.map((p, i) => {
+      const f = p.field;
+      // Keep the field's groupId/subGroupId as already assigned by the
+      // canvas containment logic. Groups that aren't on the canvas have
+      // no frame, but if a field still references them we drop the link
+      // so it renders top-level (linear).
+      const frame = f.groupId ? frames[`group:${f.groupId}`] : undefined;
+      const subFrame = f.subGroupId ? frames[`subgroup:${f.subGroupId}`] : undefined;
+      const groupId = frame ? f.groupId : undefined;
+      const subGroupId = subFrame ? f.subGroupId : undefined;
+      if (groupId) usedGroupIds.add(groupId);
+      if (subGroupId) usedSubGroupIds.add(subGroupId);
+      return {
+        ...f,
+        groupId,
+        subGroupId,
+        // Re-stamp location so FormView's structure builder orders fields
+        // sensibly (top-level fields get monotonic locations; grouped
+        // fields are sorted within their group by the same numbering).
+        location: i + 1,
+      } as FormField;
+    });
+
+    // Synthesize groups/sub-groups with positive locations (in placement
+    // order) so FormView's `filterPlacedSchema` picks them up.
+    const groupOrder = new Map<string, number>();
+    const subOrder = new Map<string, number>();
+    let gn = 0;
+    let sn = 0;
     for (const f of orderedFields) {
+      if (f.groupId && !groupOrder.has(f.groupId)) groupOrder.set(f.groupId, ++gn);
+      if (f.subGroupId && !subOrder.has(f.subGroupId)) subOrder.set(f.subGroupId, ++sn);
+    }
+    const placedGroups: FormGroup[] = groups
+      .filter((g) => usedGroupIds.has(g.id))
+      .map((g) => ({ ...g, location: groupOrder.get(g.id) ?? 1 }));
+    const placedSubGroups: FormSubGroup[] = subGroups
+      .filter((sg) => usedSubGroupIds.has(sg.id))
+      .map((sg) => ({ ...sg, location: subOrder.get(sg.id) ?? 1 }));
+
+    return { fields: orderedFields, groups: placedGroups, subGroups: placedSubGroups };
+  }, [fields, groups, subGroups, positions, frames]);
+
+  // Reveal-one-by-one slicing applied to the linear (non-grouped) tail
+  // only. When grouping is in play, FormView's stepper already paces
+  // the user; we still slice within whatever fields are top-level.
+  const visibleSchemaFields = useMemo(() => {
+    if (!revealOneByOne) return placedSchema.fields;
+    const out: FormField[] = [];
+    for (const f of placedSchema.fields) {
       out.push(f);
+      if (f.groupId) continue; // grouped fields aren't gated linearly
       if (!isFieldVisible(f, liveValues)) continue;
-      // Non-required fields never block — keep revealing.
       if (!f.required) continue;
-      // Required + answered → keep revealing the next batch.
       if (isAnswered(f, liveValues)) continue;
-      // Required + unanswered → this is the current gating field.
       break;
     }
     return out;
-  }, [orderedFields, revealOneByOne, liveValues]);
+  }, [placedSchema.fields, revealOneByOne, liveValues]);
 
   const handleValuesChange = useCallback((vals: FormValues) => {
     setLiveValues(vals);
   }, []);
 
-  if (orderedFields.length === 0) {
+  if (placedSchema.fields.length === 0) {
     return (
       <div className="rounded-2xl bg-card border border-border kr-shadow-soft p-8 text-center text-sm text-muted-foreground">
         Helyezz mezőket a vászonra a <span className="font-medium">Vizuális feltételek (demo)</span>{" "}
-        fülön, hogy itt lineáris előnézetben megjelenjenek.
+        fülön, hogy itt megjelenjenek.
       </div>
     );
   }
@@ -111,8 +146,8 @@ export function DemoPreview({ fields, formId, thankYouText }: Props) {
   const schema: FormSchema = {
     title: "",
     description: "",
-    groups: [],
-    subGroups: [],
+    groups: placedSchema.groups,
+    subGroups: placedSchema.subGroups,
     fields: visibleSchemaFields,
   };
 
