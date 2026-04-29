@@ -194,6 +194,8 @@ export interface FormGroup {
   label: string;
   location: number;
   width?: WidthPercent;
+  /** Optional CSS color (hex) used for the group's rectangle on the visual canvas. */
+  color?: string;
 }
 
 export interface FormSubGroup {
