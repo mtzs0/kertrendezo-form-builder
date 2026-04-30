@@ -700,6 +700,32 @@ export function ConditionCanvas({
   }, [positions, frames, groups, subGroups, groupById, subGroupById]);
 
   /**
+   * Persist field containment whenever frames or positions change, so that
+   * moving/resizing a group frame over (or off of) a field updates the
+   * field's groupId/subGroupId. Without this, the visual highlight would
+   * desync from the actual data and the demo preview wouldn't render the
+   * field under the group's tab.
+   */
+  useEffect(() => {
+    for (const fid of Object.keys(positions)) {
+      const p = positions[fid];
+      const field = fieldById.get(fid);
+      if (!p || !field) continue;
+      const res = resolveContainerFor(
+        { x: p.x, y: p.y, w: BOX_W, h: BOX_H },
+        frames,
+        groups,
+        subGroups
+      );
+      const curG = field.groupId ?? undefined;
+      const curS = field.subGroupId ?? undefined;
+      if (res.groupId === curG && res.subGroupId === curS) continue;
+      onPatchField(fid, { groupId: res.groupId, subGroupId: res.subGroupId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frames, positions, groups, subGroups]);
+
+  /**
    * Auto-nest groups: if a top-level group's frame is fully covered by
    * another top-level group's frame, demote the inner one to a sub-group of
    * the outer. Conversely, if a sub-group's frame escapes its parent's
