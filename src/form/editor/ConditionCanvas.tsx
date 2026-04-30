@@ -172,6 +172,8 @@ export function ConditionCanvas({
   onAddSubGroup,
   onRemoveGroup,
   onRemoveSubGroup,
+  onPatchGroup,
+  onNestGroup,
   fieldConfigPanel,
 }: Props) {
   const fieldById = useMemo(() => {
