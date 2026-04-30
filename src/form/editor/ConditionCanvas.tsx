@@ -90,7 +90,7 @@ import {
   setFrame,
   useGroupFrames,
 } from "./groupFramesStore";
-import { resolveContainerFor } from "./canvasContainers";
+import { resolveContainerFor, frameFullyContains } from "./canvasContainers";
 import { useRevealOneByOne } from "./revealModeStore";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
