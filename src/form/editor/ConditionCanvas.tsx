@@ -1221,24 +1221,111 @@ export function ConditionCanvas({
                         </span>
                       )}
                     </span>
-                    <button
-                      type="button"
-                      data-no-drag
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          window.confirm(
-                            `Eltávolítod a(z) „${label}" ${isSub ? "al-csoportot" : "csoportot"} a vászonról? A csoport maga nem törlődik.`
-                          )
-                        ) {
-                          removeFrame(formId, isSub ? "subgroup" : "group", id);
-                        }
-                      }}
-                      className="opacity-60 hover:opacity-100 hover:text-destructive transition"
-                      title="Csoport eltávolítása a vászonról"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <div className="flex items-center gap-1" data-no-drag>
+                      {!isSub && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              data-no-drag
+                              onClick={(e) => e.stopPropagation()}
+                              className="opacity-60 hover:opacity-100 transition flex items-center justify-center"
+                              title="Csoport színe"
+                            >
+                              {groupColor ? (
+                                <span
+                                  className="h-3 w-3 rounded-full border border-border"
+                                  style={{ background: groupColor }}
+                                />
+                              ) : (
+                                <Palette className="h-3 w-3" />
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="w-56 p-3 space-y-3"
+                            data-no-drag
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="text-[11px] text-muted-foreground">
+                              Előre definiált színek
+                            </div>
+                            <div className="grid grid-cols-9 gap-1.5">
+                              {[
+                                "#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899","#64748b",
+                              ].map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => onPatchGroup(id, { color: c })}
+                                  className={cn(
+                                    "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+                                    groupColor === c
+                                      ? "border-foreground ring-2 ring-foreground/40"
+                                      : "border-border"
+                                  )}
+                                  style={{ background: c }}
+                                  aria-label={`Szín: ${c}`}
+                                />
+                              ))}
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="text-[11px] text-muted-foreground">
+                                Egyéni szín
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={groupColor || "#3b82f6"}
+                                  onChange={(e) => onPatchGroup(id, { color: e.target.value })}
+                                  className="h-8 w-10 rounded border border-border bg-background cursor-pointer"
+                                />
+                                <Input
+                                  value={groupColor || ""}
+                                  onChange={(e) => {
+                                    const v = e.target.value.trim();
+                                    onPatchGroup(id, { color: v || undefined });
+                                  }}
+                                  placeholder="#rrggbb"
+                                  className="h-8 text-sm flex-1"
+                                />
+                              </div>
+                            </div>
+                            {groupColor && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="w-full h-7 text-xs"
+                                onClick={() => onPatchGroup(id, { color: undefined })}
+                              >
+                                Szín törlése
+                              </Button>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                      <button
+                        type="button"
+                        data-no-drag
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              `Eltávolítod a(z) „${label}" ${isSub ? "al-csoportot" : "csoportot"} a vászonról? A csoport maga nem törlődik.`
+                            )
+                          ) {
+                            removeFrame(formId, isSub ? "subgroup" : "group", id);
+                          }
+                        }}
+                        className="opacity-60 hover:opacity-100 hover:text-destructive transition"
+                        title="Csoport eltávolítása a vászonról"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                   {/* Resize handle */}
                   <div
