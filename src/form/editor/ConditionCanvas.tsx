@@ -1363,12 +1363,18 @@ export function ConditionCanvas({
                 cond && flat
                   ? cond.rules.filter((r) => !("combinator" in r)).length
                   : 0;
+              const containerColor = fieldContainerColor[id];
               const style: CSSProperties = {
                 left: pos.x,
                 top: pos.y,
                 width: BOX_W,
                 height: BOX_H,
               };
+              if (containerColor && selectedFieldId !== id) {
+                style.borderColor = containerColor;
+                style.borderWidth = 2;
+                style.boxShadow = `0 0 0 2px ${containerColor}33`;
+              }
               return (
                 <div
                   key={id}
@@ -1378,7 +1384,7 @@ export function ConditionCanvas({
                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
                     selectedFieldId === id
                       ? "border-primary ring-2 ring-primary/30"
-                      : "border-border"
+                      : !containerColor && "border-border"
                   )}
                   style={style}
                 >
