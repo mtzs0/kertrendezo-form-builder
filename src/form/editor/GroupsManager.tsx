@@ -9,22 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, ChevronRight, Palette, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FormField, FormGroup, FormSubGroup } from "@/form/types";
-
-const COLOR_PRESETS = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#eab308", // yellow
-  "#22c55e", // green
-  "#06b6d4", // cyan
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#64748b", // slate
-];
 
 interface Props {
   groups: FormGroup[];
