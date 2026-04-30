@@ -111,6 +111,8 @@ interface Props {
   onAddSubGroup: (groupId: string) => Promise<string | undefined>;
   onRemoveGroup: (id: string) => Promise<void> | void;
   onRemoveSubGroup: (id: string) => Promise<void> | void;
+  onPatchGroup: (id: string, patch: Partial<FormGroup>) => void;
+  onNestGroup: (id: string, parentGroupId: string | null, location?: number) => Promise<void>;
   fieldConfigPanel: React.ReactNode;
 }
 
