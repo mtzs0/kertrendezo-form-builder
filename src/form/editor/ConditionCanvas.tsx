@@ -89,6 +89,7 @@ import {
   removeFrame,
   setFrame,
   useGroupFrames,
+  type FrameRect,
 } from "./groupFramesStore";
 import { resolveContainerFor, frameFullyContains } from "./canvasContainers";
 import { useRevealOneByOne } from "./revealModeStore";
