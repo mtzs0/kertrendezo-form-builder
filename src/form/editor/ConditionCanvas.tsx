@@ -43,7 +43,10 @@ import {
   MousePointer2,
   Info,
   ChevronDown,
+  Palette,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,8 +89,9 @@ import {
   removeFrame,
   setFrame,
   useGroupFrames,
+  type FrameRect,
 } from "./groupFramesStore";
-import { resolveContainerFor } from "./canvasContainers";
+import { resolveContainerFor, frameFullyContains } from "./canvasContainers";
 import { useRevealOneByOne } from "./revealModeStore";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -111,6 +115,8 @@ interface Props {
   onAddSubGroup: (groupId: string) => Promise<string | undefined>;
   onRemoveGroup: (id: string) => Promise<void> | void;
   onRemoveSubGroup: (id: string) => Promise<void> | void;
+  onPatchGroup: (id: string, patch: Partial<FormGroup>) => void;
+  onNestGroup: (id: string, parentGroupId: string | null, location?: number) => Promise<void>;
   fieldConfigPanel: React.ReactNode;
 }
 
@@ -170,6 +176,8 @@ export function ConditionCanvas({
   onAddSubGroup,
   onRemoveGroup,
   onRemoveSubGroup,
+  onPatchGroup,
+  onNestGroup,
   fieldConfigPanel,
 }: Props) {
   const fieldById = useMemo(() => {
@@ -667,6 +675,87 @@ export function ConditionCanvas({
     return out;
   }, [frames, positions]);
 
+  /**
+   * For each placed field, the color of the deepest containing group/sub-group
+   * (sub-group color falls back to its parent group's color). Used to tint
+   * the field-box border so the user can see which group it belongs to.
+   */
+  const fieldContainerColor = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const fid of Object.keys(positions)) {
+      const p = positions[fid];
+      if (!p) continue;
+      const box = { x: p.x, y: p.y, w: BOX_W, h: BOX_H };
+      const res = resolveContainerFor(box, frames, groups, subGroups);
+      let color: string | undefined;
+      if (res.subGroupId) {
+        const sg = subGroupById.get(res.subGroupId);
+        if (sg) color = groupById.get(sg.groupId)?.color;
+      } else if (res.groupId) {
+        color = groupById.get(res.groupId)?.color;
+      }
+      if (color) out[fid] = color;
+    }
+    return out;
+  }, [positions, frames, groups, subGroups, groupById, subGroupById]);
+
+  /**
+   * Auto-nest groups: if a top-level group's frame is fully covered by
+   * another top-level group's frame, demote the inner one to a sub-group of
+   * the outer. Conversely, if a sub-group's frame escapes its parent's
+   * frame entirely (not contained anywhere), promote it back to top-level.
+   *
+   * Runs whenever frames or groups change. Guarded by `nestingPendingRef`
+   * to avoid re-firing while the previous mutation is still propagating.
+   */
+  const nestingPendingRef = useRef(false);
+  useEffect(() => {
+    if (nestingPendingRef.current) return;
+    // Only consider group frames (not sub-group frames) for auto-nesting.
+    type GF = { id: string; frame: FrameRect };
+    const groupFrames: GF[] = [];
+    for (const g of groups) {
+      const f = frames[frameKey("group", g.id)];
+      if (f) groupFrames.push({ id: g.id, frame: f });
+    }
+    // Find the smallest enclosing group-frame for each group-frame, if any.
+    const containerOf: Record<string, string | null> = {};
+    for (const a of groupFrames) {
+      let best: GF | null = null;
+      for (const b of groupFrames) {
+        if (a.id === b.id) continue;
+        if (!frameFullyContains(b.frame, a.frame)) continue;
+        if (!best || best.frame.w * best.frame.h > b.frame.w * b.frame.h) best = b;
+      }
+      containerOf[a.id] = best?.id ?? null;
+    }
+    // Demote: any group with a containing group → make it a sub-group of that group.
+    for (const g of groups) {
+      const parent = containerOf[g.id];
+      if (parent) {
+        nestingPendingRef.current = true;
+        void onNestGroup(g.id, parent).finally(() => {
+          nestingPendingRef.current = false;
+        });
+        return;
+      }
+    }
+    // Promote: any sub-group whose own frame is NOT fully contained in its
+    // parent group's frame should be promoted back to top-level.
+    for (const sg of subGroups) {
+      const sf = frames[frameKey("subgroup", sg.id)];
+      const pf = frames[frameKey("group", sg.groupId)];
+      if (!sf || !pf) continue;
+      if (frameFullyContains(pf, sf)) continue;
+      nestingPendingRef.current = true;
+      void onNestGroup(sg.id, null).finally(() => {
+        nestingPendingRef.current = false;
+      });
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frames, groups, subGroups]);
+
   /** Returns the visible center of the canvas in world coords. */
   const visualCenter = useCallback(() => {
     const r = canvasRef.current?.getBoundingClientRect();
@@ -1132,24 +1221,111 @@ export function ConditionCanvas({
                         </span>
                       )}
                     </span>
-                    <button
-                      type="button"
-                      data-no-drag
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          window.confirm(
-                            `Eltávolítod a(z) „${label}" ${isSub ? "al-csoportot" : "csoportot"} a vászonról? A csoport maga nem törlődik.`
-                          )
-                        ) {
-                          removeFrame(formId, isSub ? "subgroup" : "group", id);
-                        }
-                      }}
-                      className="opacity-60 hover:opacity-100 hover:text-destructive transition"
-                      title="Csoport eltávolítása a vászonról"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
+                    <div className="flex items-center gap-1" data-no-drag>
+                      {!isSub && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              data-no-drag
+                              onClick={(e) => e.stopPropagation()}
+                              className="opacity-60 hover:opacity-100 transition flex items-center justify-center"
+                              title="Csoport színe"
+                            >
+                              {groupColor ? (
+                                <span
+                                  className="h-3 w-3 rounded-full border border-border"
+                                  style={{ background: groupColor }}
+                                />
+                              ) : (
+                                <Palette className="h-3 w-3" />
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="w-56 p-3 space-y-3"
+                            data-no-drag
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="text-[11px] text-muted-foreground">
+                              Előre definiált színek
+                            </div>
+                            <div className="grid grid-cols-9 gap-1.5">
+                              {[
+                                "#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#3b82f6","#8b5cf6","#ec4899","#64748b",
+                              ].map((c) => (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => onPatchGroup(id, { color: c })}
+                                  className={cn(
+                                    "h-5 w-5 rounded-full border transition-transform hover:scale-110",
+                                    groupColor === c
+                                      ? "border-foreground ring-2 ring-foreground/40"
+                                      : "border-border"
+                                  )}
+                                  style={{ background: c }}
+                                  aria-label={`Szín: ${c}`}
+                                />
+                              ))}
+                            </div>
+                            <div className="space-y-1.5">
+                              <div className="text-[11px] text-muted-foreground">
+                                Egyéni szín
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={groupColor || "#3b82f6"}
+                                  onChange={(e) => onPatchGroup(id, { color: e.target.value })}
+                                  className="h-8 w-10 rounded border border-border bg-background cursor-pointer"
+                                />
+                                <Input
+                                  value={groupColor || ""}
+                                  onChange={(e) => {
+                                    const v = e.target.value.trim();
+                                    onPatchGroup(id, { color: v || undefined });
+                                  }}
+                                  placeholder="#rrggbb"
+                                  className="h-8 text-sm flex-1"
+                                />
+                              </div>
+                            </div>
+                            {groupColor && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="w-full h-7 text-xs"
+                                onClick={() => onPatchGroup(id, { color: undefined })}
+                              >
+                                Szín törlése
+                              </Button>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                      <button
+                        type="button"
+                        data-no-drag
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              `Eltávolítod a(z) „${label}" ${isSub ? "al-csoportot" : "csoportot"} a vászonról? A csoport maga nem törlődik.`
+                            )
+                          ) {
+                            removeFrame(formId, isSub ? "subgroup" : "group", id);
+                          }
+                        }}
+                        className="opacity-60 hover:opacity-100 hover:text-destructive transition"
+                        title="Csoport eltávolítása a vászonról"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
                   {/* Resize handle */}
                   <div
@@ -1274,12 +1450,18 @@ export function ConditionCanvas({
                 cond && flat
                   ? cond.rules.filter((r) => !("combinator" in r)).length
                   : 0;
+              const containerColor = fieldContainerColor[id];
               const style: CSSProperties = {
                 left: pos.x,
                 top: pos.y,
                 width: BOX_W,
                 height: BOX_H,
               };
+              if (containerColor && selectedFieldId !== id) {
+                style.borderColor = containerColor;
+                style.borderWidth = 2;
+                style.boxShadow = `0 0 0 2px ${containerColor}33`;
+              }
               return (
                 <div
                   key={id}
@@ -1289,7 +1471,7 @@ export function ConditionCanvas({
                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
                     selectedFieldId === id
                       ? "border-primary ring-2 ring-primary/30"
-                      : "border-border"
+                      : !containerColor && "border-border"
                   )}
                   style={style}
                 >
