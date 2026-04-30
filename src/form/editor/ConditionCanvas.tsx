@@ -674,6 +674,87 @@ export function ConditionCanvas({
     return out;
   }, [frames, positions]);
 
+  /**
+   * For each placed field, the color of the deepest containing group/sub-group
+   * (sub-group color falls back to its parent group's color). Used to tint
+   * the field-box border so the user can see which group it belongs to.
+   */
+  const fieldContainerColor = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const fid of Object.keys(positions)) {
+      const p = positions[fid];
+      if (!p) continue;
+      const box = { x: p.x, y: p.y, w: BOX_W, h: BOX_H };
+      const res = resolveContainerFor(box, frames, groups, subGroups);
+      let color: string | undefined;
+      if (res.subGroupId) {
+        const sg = subGroupById.get(res.subGroupId);
+        if (sg) color = groupById.get(sg.groupId)?.color;
+      } else if (res.groupId) {
+        color = groupById.get(res.groupId)?.color;
+      }
+      if (color) out[fid] = color;
+    }
+    return out;
+  }, [positions, frames, groups, subGroups, groupById, subGroupById]);
+
+  /**
+   * Auto-nest groups: if a top-level group's frame is fully covered by
+   * another top-level group's frame, demote the inner one to a sub-group of
+   * the outer. Conversely, if a sub-group's frame escapes its parent's
+   * frame entirely (not contained anywhere), promote it back to top-level.
+   *
+   * Runs whenever frames or groups change. Guarded by `nestingPendingRef`
+   * to avoid re-firing while the previous mutation is still propagating.
+   */
+  const nestingPendingRef = useRef(false);
+  useEffect(() => {
+    if (nestingPendingRef.current) return;
+    // Only consider group frames (not sub-group frames) for auto-nesting.
+    type GF = { id: string; frame: FrameRect };
+    const groupFrames: GF[] = [];
+    for (const g of groups) {
+      const f = frames[frameKey("group", g.id)];
+      if (f) groupFrames.push({ id: g.id, frame: f });
+    }
+    // Find the smallest enclosing group-frame for each group-frame, if any.
+    const containerOf: Record<string, string | null> = {};
+    for (const a of groupFrames) {
+      let best: GF | null = null;
+      for (const b of groupFrames) {
+        if (a.id === b.id) continue;
+        if (!frameFullyContains(b.frame, a.frame)) continue;
+        if (!best || best.frame.w * best.frame.h > b.frame.w * b.frame.h) best = b;
+      }
+      containerOf[a.id] = best?.id ?? null;
+    }
+    // Demote: any group with a containing group → make it a sub-group of that group.
+    for (const g of groups) {
+      const parent = containerOf[g.id];
+      if (parent) {
+        nestingPendingRef.current = true;
+        void onNestGroup(g.id, parent).finally(() => {
+          nestingPendingRef.current = false;
+        });
+        return;
+      }
+    }
+    // Promote: any sub-group whose own frame is NOT fully contained in its
+    // parent group's frame should be promoted back to top-level.
+    for (const sg of subGroups) {
+      const sf = frames[frameKey("subgroup", sg.id)];
+      const pf = frames[frameKey("group", sg.groupId)];
+      if (!sf || !pf) continue;
+      if (frameFullyContains(pf, sf)) continue;
+      nestingPendingRef.current = true;
+      void onNestGroup(sg.id, null).finally(() => {
+        nestingPendingRef.current = false;
+      });
+      return;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frames, groups, subGroups]);
+
   /** Returns the visible center of the canvas in world coords. */
   const visualCenter = useCallback(() => {
     const r = canvasRef.current?.getBoundingClientRect();
