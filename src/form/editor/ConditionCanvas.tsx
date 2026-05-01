@@ -939,6 +939,26 @@ export function ConditionCanvas({
   const [selectedEdge, setSelectedEdge] = useState<
     { targetId: string; ruleIndex: number } | null
   >(null);
+  // A pending selection requested before the underlying edge exists in
+  // the derived `edges` list (the parent's condition state updates
+  // asynchronously after `onSetCondition`). Promoted to `selectedEdge`
+  // by the effect below as soon as the edge appears.
+  const [pendingEdgeSelection, setPendingEdgeSelection] = useState<
+    { targetId: string; ruleIndex: number } | null
+  >(null);
+
+  useEffect(() => {
+    if (!pendingEdgeSelection) return;
+    const found = edges.find(
+      (e) =>
+        e.targetId === pendingEdgeSelection.targetId &&
+        e.ruleIndex === pendingEdgeSelection.ruleIndex
+    );
+    if (found) {
+      setSelectedEdge(pendingEdgeSelection);
+      setPendingEdgeSelection(null);
+    }
+  }, [edges, pendingEdgeSelection]);
 
   // Clear selection if the edge no longer exists.
   useEffect(() => {
