@@ -1,5 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { FormField, FormGroup, FormSubGroup } from "./types";
+import {
+  ensurePositionsLoaded,
+  getPositions,
+} from "./editor/canvasPositionsStore";
+import {
+  ensureFramesLoaded,
+  getFrames,
+  setFrame as setFrameInStore,
+  removeFrame as removeFrameInStore,
+  frameKey,
+} from "./editor/groupFramesStore";
+import { upsertManyCanvasPositions, deleteCanvasPosition } from "./canvasPositionsApi";
+import type { FrameKind } from "./groupCanvasFramesApi";
 
 // `form_layouts` was added after the last Supabase types regeneration, so we
 // access it via an untyped client view to keep TS happy.
@@ -27,6 +40,23 @@ export interface LayoutSnapshot {
     position: number;
     groupId: string | null;
     subGroupId: string | null;
+  }>;
+  /** Visual canvas xy + numbering for each placed field. */
+  canvasPositions?: Array<{
+    fieldId: string;
+    x: number;
+    y: number;
+    order: number | null;
+  }>;
+  /** Visual canvas frames for groups / sub-groups. */
+  canvasFrames?: Array<{
+    groupId: string;
+    kind: FrameKind;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    collapsed: boolean;
   }>;
 }
 
@@ -70,12 +100,52 @@ export async function listLayouts(formId: string): Promise<FormLayout[]> {
   return ((data as LayoutRow[]) ?? []).map(rowToLayout);
 }
 
-/** Build a snapshot from the current in-memory editor state. */
-export function buildSnapshot(
+/**
+ * Build a snapshot from the current in-memory editor state. Also captures
+ * the visual canvas xy positions + numbering for each field, and the
+ * group/sub-group frame rectangles, so that loading a snapshot fully
+ * restores the canvas layout (not just the structural ordering).
+ */
+export async function buildSnapshot(
+  formId: string,
   groups: FormGroup[],
   subGroups: FormSubGroup[],
   fields: FormField[]
-): LayoutSnapshot {
+): Promise<LayoutSnapshot> {
+  // Make sure the canvas stores have hydrated from the DB before snapshotting.
+  await Promise.all([ensurePositionsLoaded(formId), ensureFramesLoaded(formId)]);
+  const positions = getPositions(formId);
+  const frames = getFrames(formId);
+
+  const canvasPositions: NonNullable<LayoutSnapshot["canvasPositions"]> = [];
+  for (const fid of Object.keys(positions)) {
+    const p = positions[fid];
+    if (!p) continue;
+    canvasPositions.push({
+      fieldId: fid,
+      x: p.x,
+      y: p.y,
+      order: p.order ?? null,
+    });
+  }
+
+  const canvasFrames: NonNullable<LayoutSnapshot["canvasFrames"]> = [];
+  for (const key of Object.keys(frames)) {
+    const f = frames[key];
+    if (!f) continue;
+    const isSub = key.startsWith("subgroup:");
+    const id = key.slice(isSub ? 9 : 6);
+    canvasFrames.push({
+      groupId: id,
+      kind: isSub ? "subgroup" : "group",
+      x: f.x,
+      y: f.y,
+      w: f.w,
+      h: f.h,
+      collapsed: !!f.collapsed,
+    });
+  }
+
   return {
     version: 1,
     groups: groups.map((g) => ({ id: g.id, position: g.location ?? 0 })),
@@ -90,6 +160,8 @@ export function buildSnapshot(
       groupId: f.groupId ?? null,
       subGroupId: f.subGroupId ?? null,
     })),
+    canvasPositions,
+    canvasFrames,
   };
 }
 
@@ -278,4 +350,54 @@ export async function applyLayout(
         .eq("id", u.id)
     ),
   ]);
+
+  // ----- Restore the visual canvas (positions + frames) -----
+  // We replace the live state for this form: any field/group not present in
+  // the snapshot is removed from the canvas; everything in the snapshot is
+  // upserted (overwriting existing rows).
+  await Promise.all([ensurePositionsLoaded(formId), ensureFramesLoaded(formId)]);
+
+  // Field positions
+  const snapPos = snapshot.canvasPositions ?? [];
+  const snapPosIds = new Set(snapPos.map((p) => p.fieldId));
+  const currentPositions = getPositions(formId);
+  // Delete positions the snapshot doesn't reference.
+  await Promise.all(
+    Object.keys(currentPositions)
+      .filter((fid) => !snapPosIds.has(fid))
+      .map((fid) => deleteCanvasPosition(fid).catch(() => undefined))
+  );
+  // Bulk upsert the snapshot's positions.
+  if (snapPos.length > 0) {
+    await upsertManyCanvasPositions(
+      snapPos.map((p) => ({
+        field_id: p.fieldId,
+        x: p.x,
+        y: p.y,
+        order_index: p.order,
+      }))
+    );
+  }
+
+  // Frames (groups + sub-groups)
+  const snapFrames = snapshot.canvasFrames ?? [];
+  const snapFrameKeys = new Set(snapFrames.map((f) => frameKey(f.kind, f.groupId)));
+  const currentFrames = getFrames(formId);
+  // Remove frames not in snapshot.
+  for (const key of Object.keys(currentFrames)) {
+    if (snapFrameKeys.has(key)) continue;
+    const isSub = key.startsWith("subgroup:");
+    const id = key.slice(isSub ? 9 : 6);
+    removeFrameInStore(formId, isSub ? "subgroup" : "group", id);
+  }
+  // Apply snapshot frames (this also persists via the store's debounced upsert).
+  for (const f of snapFrames) {
+    setFrameInStore(formId, f.kind, f.groupId, {
+      x: f.x,
+      y: f.y,
+      w: f.w,
+      h: f.h,
+      collapsed: f.collapsed,
+    });
+  }
 }
