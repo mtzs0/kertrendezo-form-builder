@@ -1,5 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { FormField, FormGroup, FormSubGroup } from "./types";
+import {
+  ensurePositionsLoaded,
+  getPositions,
+} from "./editor/canvasPositionsStore";
+import {
+  ensureFramesLoaded,
+  getFrames,
+  setFrame as setFrameInStore,
+  removeFrame as removeFrameInStore,
+  frameKey,
+} from "./editor/groupFramesStore";
+import { upsertManyCanvasPositions, deleteCanvasPosition } from "./canvasPositionsApi";
+import type { FrameKind } from "./groupCanvasFramesApi";
 
 // `form_layouts` was added after the last Supabase types regeneration, so we
 // access it via an untyped client view to keep TS happy.
@@ -27,6 +40,23 @@ export interface LayoutSnapshot {
     position: number;
     groupId: string | null;
     subGroupId: string | null;
+  }>;
+  /** Visual canvas xy + numbering for each placed field. */
+  canvasPositions?: Array<{
+    fieldId: string;
+    x: number;
+    y: number;
+    order: number | null;
+  }>;
+  /** Visual canvas frames for groups / sub-groups. */
+  canvasFrames?: Array<{
+    groupId: string;
+    kind: FrameKind;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    collapsed: boolean;
   }>;
 }
 
