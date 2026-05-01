@@ -1132,11 +1132,18 @@ export function ConditionCanvas({
               variant="ghost"
               size="sm"
               onClick={() => {
+                const placedFrameKeys = Object.keys(frames);
                 if (
-                  placedFieldIds.length > 0 &&
-                  window.confirm("Biztosan eltávolítod az összes mezőt a vászonról? A feltételek megmaradnak.")
+                  (placedFieldIds.length > 0 || placedFrameKeys.length > 0) &&
+                  window.confirm("Biztosan eltávolítod az összes mezőt és csoportot a vászonról? A feltételek és a csoportok megmaradnak.")
                 ) {
                   clearPositions(formId);
+                  // Also remove every group/sub-group frame from the canvas.
+                  for (const key of placedFrameKeys) {
+                    const isSub = key.startsWith("subgroup:");
+                    const id = key.slice(isSub ? 9 : 6);
+                    removeFrame(formId, isSub ? "subgroup" : "group", id);
+                  }
                   setSelectedEdge(null);
                 }
               }}
