@@ -1013,6 +1013,79 @@ export function ConditionCanvas({
         </div>
       </div>
 
+      {/* Groups palette — drag any existing group/sub-group back onto the canvas. */}
+      {(() => {
+        const paletteGroups = groups.filter((g) => !frames[frameKey("group", g.id)]);
+        const paletteSubGroups = subGroups.filter(
+          (sg) => !frames[frameKey("subgroup", sg.id)]
+        );
+        if (paletteGroups.length === 0 && paletteSubGroups.length === 0) return null;
+        return (
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-3">
+            <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
+              <h3 className="text-sm font-semibold">Csoportok</h3>
+              <p className="text-[11px] text-muted-foreground">
+                Húzd a vászonra a kívánt csoportot.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {paletteGroups.map((g) => (
+                <div
+                  key={`pg_${g.id}`}
+                  draggable
+                  onDragStart={(e) => onGroupPaletteDragStart(e, "group", g.id)}
+                  className="rounded-md border-2 border-dashed border-primary/40 bg-primary/5 px-2.5 py-1.5 text-xs cursor-grab active:cursor-grabbing hover:border-primary hover:bg-primary/10 transition-colors max-w-[220px]"
+                  style={
+                    g.color
+                      ? {
+                          borderColor: g.color,
+                          background: `${g.color}1a`,
+                        }
+                      : undefined
+                  }
+                  title={g.label || g.internalName}
+                >
+                  <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight">
+                    Csoport
+                  </div>
+                  <div className="font-medium truncate leading-tight">
+                    {g.label || g.internalName}
+                  </div>
+                </div>
+              ))}
+              {paletteSubGroups.map((sg) => {
+                const parent = groupById.get(sg.groupId);
+                const color = parent?.color;
+                return (
+                  <div
+                    key={`psg_${sg.id}`}
+                    draggable
+                    onDragStart={(e) => onGroupPaletteDragStart(e, "subgroup", sg.id)}
+                    className="rounded-md border border-dashed border-border bg-accent/20 px-2.5 py-1.5 text-xs cursor-grab active:cursor-grabbing hover:border-primary hover:bg-accent transition-colors max-w-[220px]"
+                    style={
+                      color
+                        ? {
+                            borderColor: color,
+                            background: `${color}1a`,
+                          }
+                        : undefined
+                    }
+                    title={`${sg.label || sg.internalName} (${parent?.label || parent?.internalName || ""})`}
+                  >
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground leading-tight">
+                      Al-csoport
+                    </div>
+                    <div className="font-medium truncate leading-tight">
+                      {sg.label || sg.internalName}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-4">
         {/* Canvas column */}
         <div className="space-y-3 min-w-0">
