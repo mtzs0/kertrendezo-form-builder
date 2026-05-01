@@ -100,12 +100,52 @@ export async function listLayouts(formId: string): Promise<FormLayout[]> {
   return ((data as LayoutRow[]) ?? []).map(rowToLayout);
 }
 
-/** Build a snapshot from the current in-memory editor state. */
-export function buildSnapshot(
+/**
+ * Build a snapshot from the current in-memory editor state. Also captures
+ * the visual canvas xy positions + numbering for each field, and the
+ * group/sub-group frame rectangles, so that loading a snapshot fully
+ * restores the canvas layout (not just the structural ordering).
+ */
+export async function buildSnapshot(
+  formId: string,
   groups: FormGroup[],
   subGroups: FormSubGroup[],
   fields: FormField[]
-): LayoutSnapshot {
+): Promise<LayoutSnapshot> {
+  // Make sure the canvas stores have hydrated from the DB before snapshotting.
+  await Promise.all([ensurePositionsLoaded(formId), ensureFramesLoaded(formId)]);
+  const positions = getPositions(formId);
+  const frames = getFrames(formId);
+
+  const canvasPositions: NonNullable<LayoutSnapshot["canvasPositions"]> = [];
+  for (const fid of Object.keys(positions)) {
+    const p = positions[fid];
+    if (!p) continue;
+    canvasPositions.push({
+      fieldId: fid,
+      x: p.x,
+      y: p.y,
+      order: p.order ?? null,
+    });
+  }
+
+  const canvasFrames: NonNullable<LayoutSnapshot["canvasFrames"]> = [];
+  for (const key of Object.keys(frames)) {
+    const f = frames[key];
+    if (!f) continue;
+    const isSub = key.startsWith("subgroup:");
+    const id = key.slice(isSub ? 9 : 6);
+    canvasFrames.push({
+      groupId: id,
+      kind: isSub ? "subgroup" : "group",
+      x: f.x,
+      y: f.y,
+      w: f.w,
+      h: f.h,
+      collapsed: !!f.collapsed,
+    });
+  }
+
   return {
     version: 1,
     groups: groups.map((g) => ({ id: g.id, position: g.location ?? 0 })),
@@ -120,6 +160,8 @@ export function buildSnapshot(
       groupId: f.groupId ?? null,
       subGroupId: f.subGroupId ?? null,
     })),
+    canvasPositions,
+    canvasFrames,
   };
 }
 
