@@ -403,6 +403,16 @@ export function ConditionCanvas({
     e.dataTransfer.effectAllowed = "copy";
   };
 
+  const onGroupPaletteDragStart = (
+    e: React.DragEvent,
+    kind: "group" | "subgroup",
+    id: string
+  ) => {
+    e.dataTransfer.setData("application/x-group-id", id);
+    e.dataTransfer.setData("application/x-group-kind", kind);
+    e.dataTransfer.effectAllowed = "copy";
+  };
+
   const onCanvasDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
@@ -437,8 +447,27 @@ export function ConditionCanvas({
   const onCanvasDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const fieldId = e.dataTransfer.getData("application/x-field-id");
-    if (!fieldId || !fieldById.has(fieldId)) return;
+    const groupId = e.dataTransfer.getData("application/x-group-id");
+    const groupKind = e.dataTransfer.getData("application/x-group-kind") as
+      | "group"
+      | "subgroup"
+      | "";
     const w = toWorld(e.clientX, e.clientY);
+
+    if (groupId && groupKind) {
+      // Pulling an existing group/sub-group back onto the canvas.
+      const W = groupKind === "group" ? 420 : 240;
+      const H = groupKind === "group" ? 260 : 160;
+      setFrame(formId, groupKind, groupId, {
+        x: w.x - W / 2,
+        y: w.y - H / 2,
+        w: W,
+        h: H,
+      });
+      return;
+    }
+
+    if (!fieldId || !fieldById.has(fieldId)) return;
     const boxX = w.x - BOX_W / 2;
     const boxY = w.y - BOX_H / 2;
     setPositions((prev) => ({
