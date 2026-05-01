@@ -350,4 +350,55 @@ export async function applyLayout(
         .eq("id", u.id)
     ),
   ]);
+
+  // ----- Restore the visual canvas (positions + frames) -----
+  // We replace the live state for this form: any field/group not present in
+  // the snapshot is removed from the canvas; everything in the snapshot is
+  // upserted (overwriting existing rows).
+  await Promise.all([ensurePositionsLoaded(formId), ensureFramesLoaded(formId)]);
+
+  // Field positions
+  const snapPos = snapshot.canvasPositions ?? [];
+  const snapPosIds = new Set(snapPos.map((p) => p.fieldId));
+  const currentPositions = getPositions(formId);
+  // Delete positions the snapshot doesn't reference.
+  await Promise.all(
+    Object.keys(currentPositions)
+      .filter((fid) => !snapPosIds.has(fid))
+      .map((fid) => deleteCanvasPosition(fid).catch(() => undefined))
+  );
+  // Bulk upsert the snapshot's positions.
+  if (snapPos.length > 0) {
+    await upsertManyCanvasPositions(
+      snapPos.map((p) => ({
+        field_id: p.fieldId,
+        x: p.x,
+        y: p.y,
+        order_index: p.order,
+      }))
+    );
+  }
+
+  // Frames (groups + sub-groups)
+  const snapFrames = snapshot.canvasFrames ?? [];
+  const snapFrameKeys = new Set(snapFrames.map((f) => frameKey(f.kind, f.groupId)));
+  const currentFrames = getFrames(formId);
+  // Remove frames not in snapshot.
+  for (const key of Object.keys(currentFrames)) {
+    if (snapFrameKeys.has(key)) continue;
+    const isSub = key.startsWith("subgroup:");
+    const id = key.slice(isSub ? 9 : 6);
+    removeFrameInStore(formId, isSub ? "subgroup" : "group", id);
+  }
+  // Apply snapshot frames (this also persists via the store's debounced upsert).
+  for (const f of snapFrames) {
+    setFrameInStore(formId, f.kind, f.groupId, {
+      x: f.x,
+      y: f.y,
+      w: f.w,
+      h: f.h,
+      collapsed: f.collapsed,
+    });
+  }
+}
 }
