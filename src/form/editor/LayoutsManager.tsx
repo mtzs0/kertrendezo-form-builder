@@ -69,7 +69,7 @@ export function LayoutsManager({
     setSavingNew(true);
     setError(null);
     try {
-      const snap = buildSnapshot(groups, subGroups, fields);
+      const snap = await buildSnapshot(formId, groups, subGroups, fields);
       await createLayout(formId, name, snap);
       setNewName("");
       await refresh();
@@ -85,7 +85,7 @@ export function LayoutsManager({
     setBusyId(layout.id);
     setError(null);
     try {
-      const snap = buildSnapshot(groups, subGroups, fields);
+      const snap = await buildSnapshot(formId, groups, subGroups, fields);
       await updateLayoutSnapshot(layout.id, snap);
       // If this layout is currently active, refresh the active snapshot too.
       if (activeLayoutId === layout.id) {
