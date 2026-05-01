@@ -574,9 +574,12 @@ export function ConditionCanvas({
       const newRuleIndex = next.rules.length - 1;
       void onSetCondition(targetId, next);
       // Auto-select the freshly-created edge so the condition editor
-      // opens for it immediately — saves the user a click.
+      // opens for it immediately — saves the user a click. We mark it
+      // as "pending" because the edge derives from the parent's bundle
+      // state which updates asynchronously; an effect below promotes
+      // the pending selection once the edge actually exists.
       onSelectField(null);
-      setSelectedEdge({ targetId, ruleIndex: newRuleIndex });
+      setPendingEdgeSelection({ targetId, ruleIndex: newRuleIndex });
     },
     [fieldById, onSetCondition, onSelectField]
   );
