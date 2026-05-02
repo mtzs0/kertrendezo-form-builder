@@ -1004,7 +1004,13 @@ export function ConditionCanvas({
 
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        "space-y-4",
+        isFullscreen &&
+          "fixed inset-0 z-50 bg-background p-4 overflow-auto"
+      )}
+    >
       {/* Top palette strip — compact horizontal chips */}
       <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-3">
         <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
