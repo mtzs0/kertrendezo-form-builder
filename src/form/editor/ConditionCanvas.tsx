@@ -1316,7 +1316,7 @@ export function ConditionCanvas({
           }}
           className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
           style={{
-            height: "calc(100vh - 24rem)",
+            height: isFullscreen ? "calc(100vh - 12rem)" : "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
             backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
