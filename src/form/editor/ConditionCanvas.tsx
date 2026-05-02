@@ -1012,13 +1012,7 @@ export function ConditionCanvas({
 
 
   return (
-    <div
-      className={cn(
-        "space-y-4",
-        isFullscreen &&
-          "fixed inset-0 z-50 bg-background p-4 overflow-auto"
-      )}
-    >
+    <div className="space-y-4">
       {/* Top palette strip — compact horizontal chips */}
       <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-3">
         <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
@@ -1322,9 +1316,14 @@ export function ConditionCanvas({
             // "Új mező hozzáadása" can place the new box exactly here.
             contextMenuWorldRef.current = toWorld(e.clientX, e.clientY);
           }}
-          className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
+          className={cn(
+            "relative border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing",
+            isFullscreen
+              ? "fixed inset-0 z-50 rounded-none"
+              : "rounded-2xl"
+          )}
           style={{
-            height: isFullscreen ? "calc(100vh - 12rem)" : "calc(100vh - 24rem)",
+            height: isFullscreen ? "100vh" : "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
             backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
