@@ -87,14 +87,14 @@ export function EditorView({ slug = "default", onExit }: Props) {
           </div>
         )}
 
-        <Tabs defaultValue="form" className="w-full">
+        <Tabs defaultValue="demo-preview" className="w-full">
           <TabsList>
-            <TabsTrigger value="form">Űrlap</TabsTrigger>
+            <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
             <TabsTrigger value="field">Mező</TabsTrigger>
             <TabsTrigger value="group">Csoport</TabsTrigger>
             <TabsTrigger value="canvas">Vizuális feltételek (demo)</TabsTrigger>
-            <TabsTrigger value="demo-preview">Előnézet (demo)</TabsTrigger>
-            <TabsTrigger value="preview">Előnézet</TabsTrigger>
+            <TabsTrigger value="demo-preview">Előnézet</TabsTrigger>
+            <TabsTrigger value="preview">Előnézet (régi)</TabsTrigger>
             <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
 
