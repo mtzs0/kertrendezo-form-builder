@@ -1330,6 +1330,23 @@ export function ConditionCanvas({
             backgroundPosition: `${pan.x}px ${pan.y}px`,
           }}
         >
+          {isFullscreen && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsFullscreen(false);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="absolute top-3 right-3 z-50 h-8 text-xs shadow-md"
+              title="Teljes képernyő kilépés (Esc)"
+            >
+              <Minimize2 className="h-3.5 w-3.5 mr-1" />
+              Kilépés
+            </Button>
+          )}
           {/* World layer: panned + scaled. Children use world coords. */}
           <div
             className="absolute top-0 left-0"
