@@ -1265,6 +1265,20 @@ export function ConditionCanvas({
               type="button"
               variant="ghost"
               size="sm"
+              onClick={() => setIsFullscreen((v) => !v)}
+              className="text-xs h-7 w-7 p-0"
+              title={isFullscreen ? "Teljes képernyő kilépés" : "Teljes képernyő"}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 const placedFrameKeys = Object.keys(frames);
                 if (
