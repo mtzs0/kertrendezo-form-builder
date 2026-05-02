@@ -44,6 +44,8 @@ import {
   Info,
   ChevronDown,
   Palette,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -317,6 +319,15 @@ export function ConditionCanvas({
 
   // ------- Zoom (ctrl+wheel) + Pan -------
   const [zoom, setZoom] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
   const zoomRef = useRef(zoom);
   useEffect(() => {
     zoomRef.current = zoom;
@@ -1001,7 +1012,13 @@ export function ConditionCanvas({
 
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        "space-y-4",
+        isFullscreen &&
+          "fixed inset-0 z-50 bg-background p-4 overflow-auto"
+      )}
+    >
       {/* Top palette strip — compact horizontal chips */}
       <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-3">
         <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
@@ -1256,6 +1273,20 @@ export function ConditionCanvas({
               type="button"
               variant="ghost"
               size="sm"
+              onClick={() => setIsFullscreen((v) => !v)}
+              className="text-xs h-7 w-7 p-0"
+              title={isFullscreen ? "Teljes képernyő kilépés" : "Teljes képernyő"}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 const placedFrameKeys = Object.keys(frames);
                 if (
@@ -1293,7 +1324,7 @@ export function ConditionCanvas({
           }}
           className="relative rounded-2xl border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing"
           style={{
-            height: "calc(100vh - 24rem)",
+            height: isFullscreen ? "calc(100vh - 12rem)" : "calc(100vh - 24rem)",
             backgroundImage:
               "radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px)",
             backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
