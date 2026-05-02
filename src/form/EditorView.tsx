@@ -89,11 +89,11 @@ export function EditorView({ slug = "default", onExit }: Props) {
 
         <Tabs defaultValue="demo-preview" className="w-full">
           <TabsList>
-            <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
             <TabsTrigger value="field">Mező</TabsTrigger>
             <TabsTrigger value="group">Csoport</TabsTrigger>
-            <TabsTrigger value="canvas">Vizuális feltételek (demo)</TabsTrigger>
+            <TabsTrigger value="canvas">Vizuális feltételek</TabsTrigger>
             <TabsTrigger value="demo-preview">Előnézet</TabsTrigger>
+            <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
             <TabsTrigger value="preview">Előnézet (régi)</TabsTrigger>
             <TabsTrigger value="settings">Beállítások</TabsTrigger>
           </TabsList>
