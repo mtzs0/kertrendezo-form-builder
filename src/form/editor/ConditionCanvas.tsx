@@ -44,6 +44,8 @@ import {
   Info,
   ChevronDown,
   Palette,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
