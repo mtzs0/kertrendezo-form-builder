@@ -319,6 +319,7 @@ export function ConditionCanvas({
 
   // ------- Zoom (ctrl+wheel) + Pan -------
   const [zoom, setZoom] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const zoomRef = useRef(zoom);
   useEffect(() => {
     zoomRef.current = zoom;
