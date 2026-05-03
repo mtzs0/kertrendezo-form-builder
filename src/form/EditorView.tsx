@@ -281,6 +281,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   onRemoveGroup={editor.removeGroup}
                   onRemoveSubGroup={editor.removeSubGroup}
                   onPatchGroup={editor.patchGroup}
+                  onPatchSubGroup={editor.patchSubGroup}
                   onNestGroup={editor.nestGroup}
                   fieldConfigPanel={
                     <FieldConfigPanel
