@@ -118,6 +118,7 @@ interface Props {
   onRemoveGroup: (id: string) => Promise<void> | void;
   onRemoveSubGroup: (id: string) => Promise<void> | void;
   onPatchGroup: (id: string, patch: Partial<FormGroup>) => void;
+  onPatchSubGroup: (id: string, patch: Partial<FormSubGroup>) => void;
   onNestGroup: (id: string, parentGroupId: string | null, location?: number) => Promise<void>;
   fieldConfigPanel: React.ReactNode;
 }
@@ -179,6 +180,7 @@ export function ConditionCanvas({
   onRemoveGroup,
   onRemoveSubGroup,
   onPatchGroup,
+  onPatchSubGroup,
   onNestGroup,
   fieldConfigPanel,
 }: Props) {
@@ -320,6 +322,9 @@ export function ConditionCanvas({
   // ------- Zoom (ctrl+wheel) + Pan -------
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  /** key (group:<id> | subgroup:<id>) currently being inline-renamed via the canvas title bar. */
+  const [editingFrameKey, setEditingFrameKey] = useState<string | null>(null);
+  const [editingFrameDraft, setEditingFrameDraft] = useState("");
   useEffect(() => {
     if (!isFullscreen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1415,11 +1420,50 @@ export function ConditionCanvas({
                     )}
                     style={titleStyle}
                   >
-                    <span className="text-[11px] font-semibold uppercase tracking-wide truncate">
-                      {isSub ? "Al-csoport" : "Csoport"}: {label}
-                      {occupied && (
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-wide truncate flex items-center gap-1.5 flex-1 min-w-0"
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setEditingFrameKey(key);
+                        setEditingFrameDraft(meta.label || meta.internalName || "");
+                      }}
+                      title="Dupla kattintás az átnevezéshez"
+                    >
+                      <span className="shrink-0">{isSub ? "Al-csoport" : "Csoport"}:</span>
+                      {editingFrameKey === key ? (
+                        <input
+                          autoFocus
+                          data-no-drag
+                          value={editingFrameDraft}
+                          onChange={(e) => setEditingFrameDraft(e.target.value)}
+                          onFocus={(e) => e.currentTarget.select()}
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onBlur={() => {
+                            const next = editingFrameDraft.trim();
+                            if (next && next !== (meta.label || "")) {
+                              if (isSub) onPatchSubGroup(id, { label: next });
+                              else onPatchGroup(id, { label: next });
+                            }
+                            setEditingFrameKey(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              (e.currentTarget as HTMLInputElement).blur();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setEditingFrameKey(null);
+                            }
+                          }}
+                          className="flex-1 min-w-0 px-1 py-0 text-[11px] font-semibold uppercase tracking-wide bg-background/80 text-foreground border border-border rounded outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      ) : (
+                        <span className="truncate">{label}</span>
+                      )}
+                      {occupied && editingFrameKey !== key && (
                         <span
-                          className="ml-1.5 inline-flex items-center justify-center rounded-full bg-background/80 text-foreground px-1.5 py-0 text-[9px] font-bold normal-case tracking-normal"
+                          className="ml-1 inline-flex items-center justify-center rounded-full bg-background/80 text-foreground px-1.5 py-0 text-[9px] font-bold normal-case tracking-normal"
                           title={`${occupants} mező a csoporton belül`}
                         >
                           {occupants}
