@@ -1317,10 +1317,10 @@ export function ConditionCanvas({
             contextMenuWorldRef.current = toWorld(e.clientX, e.clientY);
           }}
           className={cn(
-            "relative border border-border bg-muted/20 overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing",
+            "relative border border-border overflow-hidden kr-shadow-soft w-full cursor-grab active:cursor-grabbing",
             isFullscreen
-              ? "fixed inset-0 z-50 rounded-none"
-              : "rounded-2xl"
+              ? "fixed inset-0 z-50 rounded-none bg-background"
+              : "rounded-2xl bg-muted/20"
           )}
           style={{
             height: isFullscreen ? "100vh" : "calc(100vh - 24rem)",
