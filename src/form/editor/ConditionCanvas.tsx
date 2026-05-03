@@ -118,6 +118,7 @@ interface Props {
   onRemoveGroup: (id: string) => Promise<void> | void;
   onRemoveSubGroup: (id: string) => Promise<void> | void;
   onPatchGroup: (id: string, patch: Partial<FormGroup>) => void;
+  onPatchSubGroup: (id: string, patch: Partial<FormSubGroup>) => void;
   onNestGroup: (id: string, parentGroupId: string | null, location?: number) => Promise<void>;
   fieldConfigPanel: React.ReactNode;
 }
