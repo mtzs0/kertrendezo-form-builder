@@ -322,6 +322,9 @@ export function ConditionCanvas({
   // ------- Zoom (ctrl+wheel) + Pan -------
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  /** key (group:<id> | subgroup:<id>) currently being inline-renamed via the canvas title bar. */
+  const [editingFrameKey, setEditingFrameKey] = useState<string | null>(null);
+  const [editingFrameDraft, setEditingFrameDraft] = useState("");
   useEffect(() => {
     if (!isFullscreen) return;
     const onKey = (e: KeyboardEvent) => {
