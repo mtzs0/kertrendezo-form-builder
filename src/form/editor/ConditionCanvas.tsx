@@ -180,6 +180,7 @@ export function ConditionCanvas({
   onRemoveGroup,
   onRemoveSubGroup,
   onPatchGroup,
+  onPatchSubGroup,
   onNestGroup,
   fieldConfigPanel,
 }: Props) {
