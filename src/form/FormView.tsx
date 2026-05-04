@@ -532,7 +532,13 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const isLastSubInGroup = subInfo
     ? activeSubIdxInGroup === subInfo.ids.length - 1
     : true;
-  const isFinalStep = isStepped && isLastGroup && isLastSubInGroup;
+  // Only treat this as the final step if the user has actually navigated
+  // through every group (maxGroupIdx caught up to the last group). This
+  // prevents accidental submission when a newly-revealed group appears
+  // after answering a conditional field on what was momentarily the last group.
+  const reachedLastGroup = maxGroupIdx >= groupSteps.length - 1;
+  const isFinalStep =
+    isStepped && isLastGroup && isLastSubInGroup && reachedLastGroup;
 
   const goNext = () => {
     if (!isStepped || !activeGroup || !subInfo) return;
