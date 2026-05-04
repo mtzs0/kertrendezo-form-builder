@@ -1723,16 +1723,15 @@ export function ConditionCanvas({
               </defs>
 
               {edges.map((edge) => {
-                const a = bottomAnchor(edge.sourceId);
-                const b = topAnchor(edge.targetId);
+                const a = bottomAnchor(edge.source);
+                const b = topAnchor(edge.target);
                 if (!a || !b) return null;
                 const isSel =
                   selectedEdge &&
-                  selectedEdge.targetId === edge.targetId &&
+                  sameEndpoint(selectedEdge.target, edge.target) &&
                   selectedEdge.ruleIndex === edge.ruleIndex;
                 return (
-                  <g key={`${edge.targetId}-${edge.ruleIndex}`}>
-                    {/* Wide invisible hit-line */}
+                  <g key={`${endpointKey(edge.target)}-${edge.ruleIndex}`}>
                     <path
                       d={pathBetween(a, b)}
                       stroke="transparent"
@@ -1741,7 +1740,7 @@ export function ConditionCanvas({
                       style={{ pointerEvents: "stroke", cursor: "pointer" }}
                       onClick={() =>
                         setSelectedEdge({
-                          targetId: edge.targetId,
+                          target: edge.target,
                           ruleIndex: edge.ruleIndex,
                         })
                       }
@@ -1767,7 +1766,7 @@ export function ConditionCanvas({
               {/* In-progress connector (while dragging) */}
               {drawing &&
                 (() => {
-                  const a = bottomAnchor(drawing.sourceId);
+                  const a = bottomAnchor(drawing.source);
                   if (!a) return null;
                   return (
                     <path
