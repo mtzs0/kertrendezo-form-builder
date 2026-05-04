@@ -9,8 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
-import type { FormField, FormGroup, FormSubGroup } from "@/form/types";
+import { ChevronDown, ChevronRight, Plus, Trash2, Filter } from "lucide-react";
+import type { ConditionGroup, FormField, FormGroup, FormSubGroup } from "@/form/types";
+import { ConditionEditor } from "./ConditionEditor";
 
 interface Props {
   groups: FormGroup[];
@@ -22,6 +23,7 @@ interface Props {
   onPatchSubGroup: (id: string, patch: Partial<FormSubGroup>) => void;
   onRemoveGroup: (id: string) => Promise<void> | void;
   onRemoveSubGroup: (id: string) => Promise<void> | void;
+  onSetGroupCondition: (groupId: string, condition: ConditionGroup | undefined) => Promise<void> | void;
 }
 
 function slugify(s: string) {
