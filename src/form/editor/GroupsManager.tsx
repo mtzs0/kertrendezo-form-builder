@@ -82,8 +82,8 @@ export function GroupsManager({
           <div>
             <h3 className="text-lg font-semibold">Csoportok</h3>
             <p className="text-sm text-muted-foreground">
-              Hozz létre csoportokat és al-csoportokat. Az elhelyezésük (sorrend
-              és szélesség) az „Űrlap" fülön történik.
+              Hozz létre csoportokat és al-csoportokat. A „Sorrend" mező határozza
+              meg a megjelenítés sorrendjét (kisebb szám előbb).
             </p>
           </div>
           <Button type="button" size="sm" onClick={() => onAddGroup()}>
