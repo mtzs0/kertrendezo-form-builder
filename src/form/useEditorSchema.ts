@@ -22,6 +22,7 @@ import {
   type FieldPatch,
 } from "./editorApi";
 import { loadConditions, saveFieldCondition } from "./conditionApi";
+import { saveGroupCondition } from "./editorApi";
 import {
   applySnapshotToBundle,
   getActiveLayoutId,
