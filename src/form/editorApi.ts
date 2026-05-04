@@ -125,7 +125,21 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
     if (r.error) throw r.error;
   }
 
-  const allGroupRows = (allGroupsRes.data ?? []) as GroupRow[];
+  const allGroupRows = (allGroupsRes.data ?? []) as Array<
+    GroupRow & { condition_combinator?: string | null; condition_rules?: unknown }
+  >;
+
+  const rowToCondition = (
+    r: { condition_combinator?: string | null; condition_rules?: unknown }
+  ): import("./types").ConditionGroup | undefined => {
+    const rules = Array.isArray(r.condition_rules) ? r.condition_rules : [];
+    if (!rules.length) return undefined;
+    const combinator = r.condition_combinator === "or" ? "or" : "and";
+    return {
+      combinator,
+      rules: rules as import("./types").ConditionGroup["rules"],
+    };
+  };
 
   // Top-level groups: parent_group_id is null/undefined.
   const groups: FormGroup[] = allGroupRows
@@ -137,6 +151,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       location: g.position,
       width: asWidth(g.width_percent),
       color: ((g as unknown as { color?: string | null }).color ?? undefined) || undefined,
+      condition: rowToCondition(g),
     }));
 
   // Sub-groups: rows in form_groups that have parent_group_id set.
@@ -149,6 +164,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       label: s.label,
       location: s.position,
       width: asWidth(s.width_percent),
+      condition: rowToCondition(s),
     }));
 
   const optionsByField = new Map<string, OptionRow[]>();
