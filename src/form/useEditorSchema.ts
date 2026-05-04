@@ -91,6 +91,8 @@ export interface UseEditorSchemaResult {
   setFieldOptions: (fieldId: string, options: FieldOption[]) => Promise<void>;
   /** Save a field's display condition (or remove it when undefined). */
   setFieldCondition: (fieldId: string, condition: ConditionGroup | undefined) => Promise<void>;
+  /** Save a group's (or sub-group's) display condition (or remove it when undefined). */
+  setGroupCondition: (groupId: string, condition: ConditionGroup | undefined) => Promise<void>;
 }
 
 /**
