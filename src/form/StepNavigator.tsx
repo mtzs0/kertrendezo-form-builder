@@ -95,7 +95,7 @@ export function StepNavigator({
               aria-hidden
             />
             <div className="absolute inset-0 flex items-end px-3 md:px-6 pb-3 gap-2 overflow-x-auto">
-              {subs.map((subId, idx) => {
+              {subs.map((subId) => {
                 const isActive = subId === activeSubId;
                 const label = activeGroup.subLabels[subId] ?? "—";
                 return (
