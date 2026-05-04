@@ -671,6 +671,35 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     []
   );
 
+  const setGroupCondition = useCallback(
+    async (groupId: string, condition: ConditionGroup | undefined) => {
+      // Optimistic local update — the same id may be a top-level group or a sub-group.
+      setBundle((b) =>
+        b
+          ? {
+              ...b,
+              groups: b.groups.map((g) =>
+                g.id === groupId ? { ...g, condition } : g
+              ),
+              subGroups: b.subGroups.map((sg) =>
+                sg.id === groupId ? { ...sg, condition } : sg
+              ),
+            }
+          : b
+      );
+      setSaveStatus("saving");
+      try {
+        await saveGroupCondition(groupId, condition);
+        setSaveStatus("saved");
+        window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+      } catch (e) {
+        console.error("Save group condition failed", e);
+        setSaveStatus("error");
+      }
+    },
+    []
+  );
+
   const removeField = useCallback(async (id: string) => {
     await deleteField(id);
     setBundle((b) => (b ? { ...b, fields: b.fields.filter((f) => f.id !== id) } : b));
