@@ -224,6 +224,8 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       let pseudoAdded = false;
       for (const child of g.children) {
         if (child.kind === "subgroup") {
+          const meta = subGroupById.get(child.id);
+          if (meta && !isGroupVisible(meta, values, seenGroupIds)) continue;
           ids.push(child.id);
           labels[child.id] = child.label;
         } else if (!pseudoAdded) {
@@ -235,7 +237,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       out[g.id] = { ids, labels };
     }
     return out;
-  }, [groupSteps]);
+  }, [groupSteps, subGroupById, values, seenGroupIds]);
 
   // Active step state.
   const [activeGroupIdx, setActiveGroupIdx] = useState(0);
