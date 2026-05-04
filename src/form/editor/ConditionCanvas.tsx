@@ -1805,7 +1805,7 @@ export function ConditionCanvas({
               return (
                 <div
                   key={id}
-                  data-target-id={id}
+                  data-endpoint-target={`field:${id}`}
                   onPointerDown={(e) => onBoxPointerDown(e, id)}
                   className={cn(
                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
