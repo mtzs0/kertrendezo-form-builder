@@ -98,23 +98,17 @@ export function StepNavigator({
             <div className="absolute inset-0 flex items-end px-3 md:px-6 pb-3 gap-2 overflow-x-auto">
               {subs.map((subId, idx) => {
                 const isActive = subId === activeSubId;
-                const isUnlocked = idx <= maxSubIdx;
                 const label = activeGroup.subLabels[subId] ?? "—";
                 return (
                   <button
                     key={subId}
                     type="button"
-                    disabled={!isUnlocked}
-                    onClick={() =>
-                      isUnlocked && onJumpSub(activeGroupIndex, subId)
-                    }
+                    onClick={() => onJumpSub(activeGroupIndex, subId)}
                     className={cn(
-                      "px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border",
+                      "px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer",
                       isActive
                         ? "bg-card text-primary border-transparent shadow-md"
-                        : isUnlocked
-                          ? "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10"
-                          : "bg-transparent text-primary-foreground/50 border-dashed border-primary-foreground/30 cursor-not-allowed",
+                        : "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10",
                     )}
                     aria-current={isActive ? "step" : undefined}
                   >
