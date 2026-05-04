@@ -7,6 +7,7 @@ import {
   buildRenderTree,
   filterPlacedSchema,
   isFieldVisible,
+  isGroupVisible,
   packByWidth,
   type RenderGroup,
   type RenderGroupChild,
