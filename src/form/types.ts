@@ -213,6 +213,8 @@ export interface FormGroup {
   width?: WidthPercent;
   /** Optional CSS color (hex) used for the group's rectangle on the visual canvas. */
   color?: string;
+  /** Optional display condition. If undefined, always shown. */
+  condition?: ConditionGroup;
 }
 
 export interface FormSubGroup {
@@ -222,6 +224,16 @@ export interface FormSubGroup {
   label: string;
   location: number;
   width?: WidthPercent;
+  /** Optional display condition. If undefined, always shown. */
+  condition?: ConditionGroup;
+}
+
+/** Type guards for the condition rule union. */
+export function isGroupSeenRule(r: ConditionRule): r is GroupSeenCondition {
+  return (r as { kind?: string }).kind === "group_seen";
+}
+export function isFieldRule(r: ConditionRule): r is FieldCondition {
+  return !("combinator" in r) && !isGroupSeenRule(r);
 }
 
 export interface FormSchema {
