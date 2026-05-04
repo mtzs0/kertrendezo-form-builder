@@ -1077,13 +1077,23 @@ export function ConditionCanvas({
     : null;
 
   // ------- Handle anchor coordinates -------
-  const topAnchor = (id: string) => {
-    const p = positions[id];
-    return p ? { x: p.x + BOX_W / 2, y: p.y } : null;
+  const topAnchor = (e: Endpoint) => {
+    if (e.kind === "field") {
+      const p = positions[e.id];
+      return p ? { x: p.x + BOX_W / 2, y: p.y } : null;
+    }
+    const fk = e.kind === "group" ? `group:${e.id}` : `subgroup:${e.id}`;
+    const f = frames[fk];
+    return f ? { x: f.x + f.w / 2, y: f.y } : null;
   };
-  const bottomAnchor = (id: string) => {
-    const p = positions[id];
-    return p ? { x: p.x + BOX_W / 2, y: p.y + BOX_H } : null;
+  const bottomAnchor = (e: Endpoint) => {
+    if (e.kind === "field") {
+      const p = positions[e.id];
+      return p ? { x: p.x + BOX_W / 2, y: p.y + BOX_H } : null;
+    }
+    const fk = e.kind === "group" ? `group:${e.id}` : `subgroup:${e.id}`;
+    const f = frames[fk];
+    return f ? { x: f.x + f.w / 2, y: f.y + f.h } : null;
   };
 
   // Bezier path between two points (vertical S-curve).
