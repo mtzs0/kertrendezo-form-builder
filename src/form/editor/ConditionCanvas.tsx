@@ -457,26 +457,50 @@ export function ConditionCanvas({
     if (e.target !== e.currentTarget) return;
     if (e.button !== 0) return;
     e.preventDefault();
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    const startPan = { ...panRef.current };
     const startWorld = toWorld(e.clientX, e.clientY);
-    // Empty-area drag = lasso multi-select for fields. Panning is still
-    // available via wheel (plain wheel = vertical pan, shift+wheel = horizontal).
-    setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
-    if (!e.shiftKey) {
-      onSelectField(null);
-      setMultiSelectedFieldIds(new Set());
+    // Ctrl/Cmd held = lasso multi-select for fields. Otherwise = pan.
+    const isLasso = e.ctrlKey || e.metaKey;
+    if (isLasso) {
+      setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
+      if (!e.shiftKey) {
+        onSelectField(null);
+        setMultiSelectedFieldIds(new Set());
+      }
     }
     const initialMulti = new Set(multiSelectedFieldIds);
     const move = (ev: PointerEvent) => {
-      const cur = toWorld(ev.clientX, ev.clientY);
-      const x = Math.min(startWorld.x, cur.x);
-      const y = Math.min(startWorld.y, cur.y);
-      const w = Math.abs(cur.x - startWorld.x);
-      const h = Math.abs(cur.y - startWorld.y);
-      setLassoRect({ x, y, w, h });
+      if (isLasso) {
+        const cur = toWorld(ev.clientX, ev.clientY);
+        const x = Math.min(startWorld.x, cur.x);
+        const y = Math.min(startWorld.y, cur.y);
+        const w = Math.abs(cur.x - startWorld.x);
+        const h = Math.abs(cur.y - startWorld.y);
+        setLassoRect({ x, y, w, h });
+      } else {
+        setPan({
+          x: startPan.x + (ev.clientX - startClientX),
+          y: startPan.y + (ev.clientY - startClientY),
+        });
+      }
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      if (!isLasso) {
+        // Plain click on empty area = clear selection.
+        if (
+          Math.abs(ev.clientX - startClientX) < 3 &&
+          Math.abs(ev.clientY - startClientY) < 3
+        ) {
+          onSelectField(null);
+          setMultiSelectedFieldIds(new Set());
+          setSelectedEdge(null);
+        }
+        return;
+      }
       const cur = toWorld(ev.clientX, ev.clientY);
       const x = Math.min(startWorld.x, cur.x);
       const y = Math.min(startWorld.y, cur.y);
