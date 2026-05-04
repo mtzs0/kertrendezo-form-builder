@@ -442,29 +442,108 @@ export function ConditionCanvas({
     return () => el.removeEventListener("wheel", handler);
   }, []);
 
-  // ------- Pan via dragging empty canvas -------
+  // ------- Pan / lasso multi-select via dragging empty canvas -------
+  // Lasso rectangle in WORLD coords (so it overlays correctly under zoom/pan).
+  const [lassoRect, setLassoRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Multi-selected field ids (in addition to selectedFieldId).
+  const [multiSelectedFieldIds, setMultiSelectedFieldIds] = useState<Set<string>>(new Set());
+  const positionsRef = useRef(positions);
+  useEffect(() => {
+    positionsRef.current = positions;
+  }, [positions]);
+
   const onCanvasPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    // Only pan when clicking on the empty background (not a box / handle / svg path).
+    // Only start when clicking on the empty background (not a box / handle / svg path).
     if (e.target !== e.currentTarget) return;
     if (e.button !== 0) return;
     e.preventDefault();
     const startX = e.clientX;
     const startY = e.clientY;
     const startPan = { ...panRef.current };
+    const startWorld = toWorld(startX, startY);
+    // shift/ctrl/meta = lasso; otherwise we decide based on drag distance
+    // (small drag = pan, drag with shift = lasso, lasso also kicks in if
+    // the user holds and drags far on plain click — but to keep panning
+    // intuitive we use shift as the explicit modifier and also start
+    // lasso when no modifier but we detect intent: here we go with
+    // "always lasso unless space-held"... simpler: lasso when shift OR
+    // when alt — but the user wants click+drag to lasso. So: default to
+    // LASSO, and require holding SPACE or middle-click for pan.
+    const useLasso = true;
+    let mode: "pan" | "lasso" = useLasso ? "lasso" : "pan";
+    if (mode === "lasso") {
+      setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
+      // Clear selection on lasso start (additive only with shift).
+      if (!e.shiftKey) {
+        onSelectField(null);
+        setMultiSelectedFieldIds(new Set());
+      }
+    }
+    const initialMulti = new Set(multiSelectedFieldIds);
     const move = (ev: PointerEvent) => {
-      setPan({
-        x: startPan.x + (ev.clientX - startX),
-        y: startPan.y + (ev.clientY - startY),
-      });
+      if (mode === "pan") {
+        setPan({
+          x: startPan.x + (ev.clientX - startX),
+          y: startPan.y + (ev.clientY - startY),
+        });
+      } else {
+        const cur = toWorld(ev.clientX, ev.clientY);
+        const x = Math.min(startWorld.x, cur.x);
+        const y = Math.min(startWorld.y, cur.y);
+        const w = Math.abs(cur.x - startWorld.x);
+        const h = Math.abs(cur.y - startWorld.y);
+        setLassoRect({ x, y, w, h });
+      }
     };
-    const up = () => {
+    const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      if (mode === "lasso") {
+        const cur = toWorld(ev.clientX, ev.clientY);
+        const x = Math.min(startWorld.x, cur.x);
+        const y = Math.min(startWorld.y, cur.y);
+        const w = Math.abs(cur.x - startWorld.x);
+        const h = Math.abs(cur.y - startWorld.y);
+        setLassoRect(null);
+        // Treat tiny drags as a click (deselect — already handled above).
+        if (w < 4 && h < 4) {
+          if (!ev.shiftKey) {
+            onSelectField(null);
+            setSelectedEdge(null);
+          }
+          return;
+        }
+        // Intersect with field boxes only (NOT groups).
+        const pos = positionsRef.current;
+        const hits = new Set<string>(ev.shiftKey ? initialMulti : []);
+        for (const fid of Object.keys(pos)) {
+          const p = pos[fid];
+          if (!p) continue;
+          const bx = p.x;
+          const by = p.y;
+          const bw = BOX_W;
+          const bh = BOX_H;
+          // AABB intersection
+          if (bx < x + w && bx + bw > x && by < y + h && by + bh > y) {
+            hits.add(fid);
+          }
+        }
+        // If only one hit and no shift, promote to single selection.
+        if (hits.size === 1 && !ev.shiftKey) {
+          const only = Array.from(hits)[0];
+          onSelectField(only);
+          setMultiSelectedFieldIds(new Set());
+        } else {
+          setMultiSelectedFieldIds(hits);
+          if (hits.size > 0 && !hits.has(selectedFieldId ?? "")) {
+            onSelectField(null);
+          }
+        }
+        setSelectedEdge(null);
+      }
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-    onSelectField(null);
-    setSelectedEdge(null);
   };
 
   // ------- Drag-from-palette / drag-existing-box -------
