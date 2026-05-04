@@ -511,7 +511,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 
   // ---- Stepped-mode active sub-step body ----
   function renderActiveSubStep() {
-    if (!activeGroup || !activeSubId) return null;
+    if (!activeGroup) return null;
     const fields = visibleFields(collectFieldsForSubStep(activeGroup, activeSubId));
     return (
       <div className="space-y-5">
