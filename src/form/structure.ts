@@ -2,10 +2,13 @@ import type {
   ConditionGroup,
   FieldCondition,
   FormField,
+  FormGroup,
   FormSchema,
+  FormSubGroup,
   FormValues,
   WidthPercent,
 } from "./types";
+import { isGroupSeenRule } from "./types";
 
 /** Sort by location ascending (stable). */
 const byLocation = <T extends { location: number }>(a: T, b: T) =>
@@ -164,20 +167,40 @@ function evalCondition(c: FieldCondition, values: FormValues): boolean {
 
 export function evalConditionGroup(
   group: ConditionGroup,
-  values: FormValues
+  values: FormValues,
+  seenGroupIds: Set<string> = new Set()
 ): boolean {
   if (!group.rules.length) return true;
-  const results = group.rules.map((r) =>
-    "combinator" in r ? evalConditionGroup(r, values) : evalCondition(r, values)
-  );
+  const results = group.rules.map((r) => {
+    if ("combinator" in r) return evalConditionGroup(r, values, seenGroupIds);
+    if (isGroupSeenRule(r)) {
+      const has = seenGroupIds.has(r.groupId);
+      return r.seen ? has : !has;
+    }
+    return evalCondition(r as FieldCondition, values);
+  });
   return group.combinator === "and"
     ? results.every(Boolean)
     : results.some(Boolean);
 }
 
-export function isFieldVisible(field: FormField, values: FormValues): boolean {
+export function isFieldVisible(
+  field: FormField,
+  values: FormValues,
+  seenGroupIds: Set<string> = new Set()
+): boolean {
   if (!field.condition) return true;
-  return evalConditionGroup(field.condition, values);
+  return evalConditionGroup(field.condition, values, seenGroupIds);
+}
+
+/** True iff the group/sub-group has no condition or the condition evaluates true. */
+export function isGroupVisible(
+  group: FormGroup | FormSubGroup,
+  values: FormValues,
+  seenGroupIds: Set<string> = new Set()
+): boolean {
+  if (!group.condition) return true;
+  return evalConditionGroup(group.condition, values, seenGroupIds);
 }
 
 // ---------- Width-based row packing ----------

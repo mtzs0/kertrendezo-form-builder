@@ -22,6 +22,7 @@ import {
   type FieldPatch,
 } from "./editorApi";
 import { loadConditions, saveFieldCondition } from "./conditionApi";
+import { saveGroupCondition } from "./editorApi";
 import {
   applySnapshotToBundle,
   getActiveLayoutId,
@@ -90,6 +91,8 @@ export interface UseEditorSchemaResult {
   setFieldOptions: (fieldId: string, options: FieldOption[]) => Promise<void>;
   /** Save a field's display condition (or remove it when undefined). */
   setFieldCondition: (fieldId: string, condition: ConditionGroup | undefined) => Promise<void>;
+  /** Save a group's (or sub-group's) display condition (or remove it when undefined). */
+  setGroupCondition: (groupId: string, condition: ConditionGroup | undefined) => Promise<void>;
 }
 
 /**
@@ -668,6 +671,35 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     []
   );
 
+  const setGroupCondition = useCallback(
+    async (groupId: string, condition: ConditionGroup | undefined) => {
+      // Optimistic local update — the same id may be a top-level group or a sub-group.
+      setBundle((b) =>
+        b
+          ? {
+              ...b,
+              groups: b.groups.map((g) =>
+                g.id === groupId ? { ...g, condition } : g
+              ),
+              subGroups: b.subGroups.map((sg) =>
+                sg.id === groupId ? { ...sg, condition } : sg
+              ),
+            }
+          : b
+      );
+      setSaveStatus("saving");
+      try {
+        await saveGroupCondition(groupId, condition);
+        setSaveStatus("saved");
+        window.setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
+      } catch (e) {
+        console.error("Save group condition failed", e);
+        setSaveStatus("error");
+      }
+    },
+    []
+  );
+
   const removeField = useCallback(async (id: string) => {
     await deleteField(id);
     setBundle((b) => (b ? { ...b, fields: b.fields.filter((f) => f.id !== id) } : b));
@@ -787,5 +819,6 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     reorderFields,
     setFieldOptions,
     setFieldCondition,
+    setGroupCondition,
   };
 }

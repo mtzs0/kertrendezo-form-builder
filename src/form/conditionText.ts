@@ -29,6 +29,7 @@
 
 import type {
   ConditionGroup,
+  ConditionRule,
   FieldCondition,
   FormField,
 } from "./types";
@@ -262,7 +263,7 @@ function parseAtom(ctx: ParseCtx): ConditionGroup | FieldCondition {
 
 function parseAnd(ctx: ParseCtx): ConditionGroup {
   const first = parseAtom(ctx);
-  const rules: Array<FieldCondition | ConditionGroup> = [first];
+  const rules: Array<ConditionRule> = [first];
   while (peek(ctx)?.type === "and") {
     consume(ctx);
     rules.push(parseAtom(ctx));
@@ -276,7 +277,7 @@ function parseAnd(ctx: ParseCtx): ConditionGroup {
 
 function parseOr(ctx: ParseCtx): ConditionGroup {
   const first = parseAnd(ctx);
-  const rules: Array<FieldCondition | ConditionGroup> = [unwrapSingle(first)];
+  const rules: Array<ConditionRule> = [unwrapSingle(first)];
   while (peek(ctx)?.type === "or") {
     consume(ctx);
     rules.push(unwrapSingle(parseAnd(ctx)));
@@ -288,7 +289,7 @@ function parseOr(ctx: ParseCtx): ConditionGroup {
 }
 
 /** If a group contains a single rule, unwrap it to keep the tree shallow. */
-function unwrapSingle(g: ConditionGroup): ConditionGroup | FieldCondition {
+function unwrapSingle(g: ConditionGroup): ConditionRule {
   if (g.rules.length === 1) {
     const only = g.rules[0];
     return only;
@@ -368,7 +369,13 @@ function groupToText(
       }
       return inner;
     }
-    return conditionToText(r, fieldsById);
+    if ((r as { kind?: string }).kind === "group_seen") {
+      // Group-seen rules have no text representation in this mini-language.
+      // Render as a placeholder so the round-trip text stays informative.
+      const gs = r as { groupId: string; seen: boolean };
+      return `group_${gs.groupId.slice(0, 6)} ${gs.seen ? "seen" : "not_seen"}`;
+    }
+    return conditionToText(r as FieldCondition, fieldsById);
   });
   const text = parts.join(sep);
   if (
