@@ -457,10 +457,7 @@ export function ConditionCanvas({
     if (e.target !== e.currentTarget) return;
     if (e.button !== 0) return;
     e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startPan = { ...panRef.current };
-    const startWorld = toWorld(startX, startY);
+    const startWorld = toWorld(e.clientX, e.clientY);
     // Empty-area drag = lasso multi-select for fields. Panning is still
     // available via wheel (plain wheel = vertical pan, shift+wheel = horizontal).
     setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
