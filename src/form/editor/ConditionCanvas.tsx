@@ -280,8 +280,10 @@ export function ConditionCanvas({
         // referencing a field that hasn't been dropped on the canvas).
         for (const r of f.condition.rules) {
           if ("combinator" in r) continue;
-          if (!next[r.fieldId] && fieldById.has(r.fieldId)) {
-            next[r.fieldId] = placeAt(nextIndex++, ++nextOrder);
+          if ((r as { kind?: string }).kind === "group_seen") continue;
+          const fr = r as FieldCondition;
+          if (!next[fr.fieldId] && fieldById.has(fr.fieldId)) {
+            next[fr.fieldId] = placeAt(nextIndex++, ++nextOrder);
             changed = true;
           }
         }
