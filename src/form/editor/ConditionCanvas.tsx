@@ -1862,7 +1862,7 @@ export function ConditionCanvas({
                           data-no-drag
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleCombinator(id);
+                            toggleCombinator({ kind: "field", id });
                           }}
                           className={cn(
                             "text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 border transition-colors",
