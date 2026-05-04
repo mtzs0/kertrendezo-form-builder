@@ -442,29 +442,85 @@ export function ConditionCanvas({
     return () => el.removeEventListener("wheel", handler);
   }, []);
 
-  // ------- Pan via dragging empty canvas -------
+  // ------- Pan / lasso multi-select via dragging empty canvas -------
+  // Lasso rectangle in WORLD coords (so it overlays correctly under zoom/pan).
+  const [lassoRect, setLassoRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Multi-selected field ids (in addition to selectedFieldId).
+  const [multiSelectedFieldIds, setMultiSelectedFieldIds] = useState<Set<string>>(new Set());
+  const positionsRef = useRef(positions);
+  useEffect(() => {
+    positionsRef.current = positions;
+  }, [positions]);
+
   const onCanvasPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    // Only pan when clicking on the empty background (not a box / handle / svg path).
+    // Only start when clicking on the empty background (not a box / handle / svg path).
     if (e.target !== e.currentTarget) return;
     if (e.button !== 0) return;
     e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startPan = { ...panRef.current };
+    const startWorld = toWorld(e.clientX, e.clientY);
+    // Empty-area drag = lasso multi-select for fields. Panning is still
+    // available via wheel (plain wheel = vertical pan, shift+wheel = horizontal).
+    setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
+    if (!e.shiftKey) {
+      onSelectField(null);
+      setMultiSelectedFieldIds(new Set());
+    }
+    const initialMulti = new Set(multiSelectedFieldIds);
     const move = (ev: PointerEvent) => {
-      setPan({
-        x: startPan.x + (ev.clientX - startX),
-        y: startPan.y + (ev.clientY - startY),
-      });
+      const cur = toWorld(ev.clientX, ev.clientY);
+      const x = Math.min(startWorld.x, cur.x);
+      const y = Math.min(startWorld.y, cur.y);
+      const w = Math.abs(cur.x - startWorld.x);
+      const h = Math.abs(cur.y - startWorld.y);
+      setLassoRect({ x, y, w, h });
     };
-    const up = () => {
+    const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      const cur = toWorld(ev.clientX, ev.clientY);
+      const x = Math.min(startWorld.x, cur.x);
+      const y = Math.min(startWorld.y, cur.y);
+      const w = Math.abs(cur.x - startWorld.x);
+      const h = Math.abs(cur.y - startWorld.y);
+      setLassoRect(null);
+      // Treat tiny drags as a click (deselect — already handled above).
+      if (w < 4 && h < 4) {
+        if (!ev.shiftKey) {
+          onSelectField(null);
+          setSelectedEdge(null);
+        }
+        return;
+      }
+      // Intersect with field boxes only (NOT groups).
+      const pos = positionsRef.current;
+      const hits = new Set<string>(ev.shiftKey ? initialMulti : []);
+      for (const fid of Object.keys(pos)) {
+        const p = pos[fid];
+        if (!p) continue;
+        const bx = p.x;
+        const by = p.y;
+        const bw = BOX_W;
+        const bh = BOX_H;
+        // AABB intersection
+        if (bx < x + w && bx + bw > x && by < y + h && by + bh > y) {
+          hits.add(fid);
+        }
+      }
+      // If only one hit and no shift, promote to single selection.
+      if (hits.size === 1 && !ev.shiftKey) {
+        const only = Array.from(hits)[0];
+        onSelectField(only);
+        setMultiSelectedFieldIds(new Set());
+      } else {
+        setMultiSelectedFieldIds(hits);
+        if (hits.size > 0 && !hits.has(selectedFieldId ?? "")) {
+          onSelectField(null);
+        }
+      }
+      setSelectedEdge(null);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-    onSelectField(null);
-    setSelectedEdge(null);
   };
 
   // ------- Drag-from-palette / drag-existing-box -------
@@ -581,6 +637,7 @@ export function ConditionCanvas({
       if (!moved) {
         // Treat as click → select field for the right-side panel.
         onSelectField(fieldId);
+        setMultiSelectedFieldIds(new Set());
         setSelectedEdge(null);
       } else {
         // Drag finished — re-evaluate group containment based on the
@@ -1454,6 +1511,18 @@ export function ConditionCanvas({
               height: 1,
             }}
           >
+            {/* Lasso selection rectangle (world coords) */}
+            {lassoRect && (
+              <div
+                className="absolute pointer-events-none rounded-sm border border-primary bg-primary/10"
+                style={{
+                  left: lassoRect.x,
+                  top: lassoRect.y,
+                  width: lassoRect.w,
+                  height: lassoRect.h,
+                }}
+              />
+            )}
             {/* Group / sub-group frames — rendered first so they sit behind arrows + boxes */}
             {Object.entries(frames).map(([key, rect]) => {
               const isSub = key.startsWith("subgroup:");
@@ -1550,7 +1619,7 @@ export function ConditionCanvas({
                               setEditingFrameKey(null);
                             }
                           }}
-                          className="flex-1 min-w-0 px-1 py-0 text-[11px] font-semibold uppercase tracking-wide bg-background/80 text-foreground border border-border rounded outline-none focus:ring-1 focus:ring-primary"
+                          className="flex-1 min-w-0 px-1 py-0 text-[11px] font-semibold normal-case tracking-normal bg-background/80 text-foreground border border-border rounded outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
                         <span className="truncate">{label}</span>
@@ -1832,6 +1901,8 @@ export function ConditionCanvas({
                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
                     selectedFieldId === id
                       ? "border-primary ring-2 ring-primary/30"
+                      : multiSelectedFieldIds.has(id)
+                      ? "border-primary ring-2 ring-primary/40"
                       : !containerColor && "border-border"
                   )}
                   style={style}
