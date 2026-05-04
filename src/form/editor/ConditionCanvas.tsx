@@ -178,6 +178,7 @@ export function ConditionCanvas({
   subGroups,
   formId,
   onSetCondition,
+  onSetGroupCondition,
   onPatchField,
   selectedFieldId,
   onSelectField,
