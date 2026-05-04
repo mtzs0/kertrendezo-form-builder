@@ -1911,6 +1911,8 @@ export function ConditionCanvas({
                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
                     selectedFieldId === id
                       ? "border-primary ring-2 ring-primary/30"
+                      : multiSelectedFieldIds.has(id)
+                      ? "border-primary ring-2 ring-primary/40"
                       : !containerColor && "border-border"
                   )}
                   style={style}
