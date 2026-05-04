@@ -252,73 +252,115 @@ export function GroupsManager({
                         {sgs.map((sg) => (
                           <div
                             key={sg.id}
-                            className="flex items-start gap-2 rounded-md border border-border bg-card p-2"
+                            className="rounded-md border border-border bg-card"
                           >
-                            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <div className="space-y-1">
-                                <Label className="text-[11px] text-muted-foreground">
-                                  Külső név
-                                </Label>
-                                <Input
-                                  value={sg.label}
-                                  onChange={(e) => {
-                                    const label = e.target.value;
-                                    const auto =
-                                      !sg.internalName ||
-                                      sg.internalName === slugify(sg.label);
-                                    onPatchSubGroup(sg.id, {
-                                      label,
-                                      ...(auto
-                                        ? {
-                                            internalName:
-                                              slugify(label) || sg.internalName,
-                                          }
-                                        : {}),
-                                    });
-                                  }}
-                                  placeholder="Pl. Cím adatok"
-                                  className="h-8 text-sm"
-                                />
+                            <div className="flex items-start gap-2 p-2">
+                              <div className="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_1fr_80px] gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-[11px] text-muted-foreground">
+                                    Külső név
+                                  </Label>
+                                  <Input
+                                    value={sg.label}
+                                    onChange={(e) => {
+                                      const label = e.target.value;
+                                      const auto =
+                                        !sg.internalName ||
+                                        sg.internalName === slugify(sg.label);
+                                      onPatchSubGroup(sg.id, {
+                                        label,
+                                        ...(auto
+                                          ? {
+                                              internalName:
+                                                slugify(label) || sg.internalName,
+                                            }
+                                          : {}),
+                                      });
+                                    }}
+                                    placeholder="Pl. Cím adatok"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[11px] text-muted-foreground">
+                                    Belső név
+                                  </Label>
+                                  <Input
+                                    value={sg.internalName}
+                                    onChange={(e) =>
+                                      onPatchSubGroup(sg.id, {
+                                        internalName: slugify(e.target.value),
+                                      })
+                                    }
+                                    placeholder="cim_adatok"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-[11px] text-muted-foreground">
+                                    Sorrend
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    value={sg.location ?? 0}
+                                    onChange={(e) => {
+                                      const n = Number(e.target.value);
+                                      onPatchSubGroup(sg.id, {
+                                        location: Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0,
+                                      });
+                                    }}
+                                    placeholder="1"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
                               </div>
-                              <div className="space-y-1">
-                                <Label className="text-[11px] text-muted-foreground">
-                                  Belső név
-                                </Label>
-                                <Input
-                                  value={sg.internalName}
-                                  onChange={(e) =>
-                                    onPatchSubGroup(sg.id, {
-                                      internalName: slugify(e.target.value),
-                                    })
-                                  }
-                                  placeholder="cim_adatok"
-                                  className="h-8 text-sm"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1 pt-5">
-                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                                {sg.location > 0 ? "elhelyezve" : "elhelyezetlen"} ·{" "}
-                                {fieldsInSubGroup(sg.id)} mező
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => {
-                                  if (
-                                    confirm(
-                                      `Biztos törlöd a(z) „${sg.label || sg.internalName}" al-csoportot?`
+                              <div className="flex items-center gap-1 pt-5">
+                                <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                  {sg.location > 0 ? "elhelyezve" : "elhelyezetlen"} ·{" "}
+                                  {fieldsInSubGroup(sg.id)} mező
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant={sg.condition && sg.condition.rules.length > 0 ? "default" : "ghost"}
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => setConditionFor((c) => (c === sg.id ? null : sg.id))}
+                                  aria-label="Feltétel"
+                                  title="Megjelenítési feltétel"
+                                >
+                                  <Filter className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => {
+                                    if (
+                                      confirm(
+                                        `Biztos törlöd a(z) „${sg.label || sg.internalName}" al-csoportot?`
+                                      )
                                     )
-                                  )
-                                    onRemoveSubGroup(sg.id);
-                                }}
-                                aria-label="Al-csoport törlése"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
+                                      onRemoveSubGroup(sg.id);
+                                  }}
+                                  aria-label="Al-csoport törlése"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </div>
+                            {conditionFor === sg.id && (
+                              <div className="border-t border-border px-3 py-3 bg-background/60">
+                                <ConditionEditor
+                                  currentFieldId={sg.id}
+                                  currentFieldLabel={`Al-csoport: ${sg.label || sg.internalName}`}
+                                  allFields={fields}
+                                  value={sg.condition}
+                                  onChange={(next) => onSetGroupCondition(sg.id, next)}
+                                />
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
