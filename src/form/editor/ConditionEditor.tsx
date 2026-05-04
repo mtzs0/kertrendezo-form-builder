@@ -256,9 +256,24 @@ function RuleList({ group, otherFields, onChange }: RuleListProps) {
               onChange={(next) => updateRule(i, next)}
               onAddSibling={() => addUnderRow(i)}
             />
+          ) : (rule as { kind?: string }).kind === "group_seen" ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/40 p-2.5 text-xs text-muted-foreground flex items-center justify-between gap-2">
+              <span>
+                Csoport-feltétel ({(rule as { seen: boolean }).seen ? "látott" : "nem látott"}). Szerkeszd a Vizuális feltételek fülön.
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateRule(i, null)}
+                className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           ) : (
             <ConditionRow
-              condition={rule}
+              condition={rule as FieldCondition}
               otherFields={otherFields}
               onChange={(next) => updateRule(i, next)}
               onRemove={() => updateRule(i, null)}
