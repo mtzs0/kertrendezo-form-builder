@@ -461,39 +461,21 @@ export function ConditionCanvas({
     const startY = e.clientY;
     const startPan = { ...panRef.current };
     const startWorld = toWorld(startX, startY);
-    // shift/ctrl/meta = lasso; otherwise we decide based on drag distance
-    // (small drag = pan, drag with shift = lasso, lasso also kicks in if
-    // the user holds and drags far on plain click — but to keep panning
-    // intuitive we use shift as the explicit modifier and also start
-    // lasso when no modifier but we detect intent: here we go with
-    // "always lasso unless space-held"... simpler: lasso when shift OR
-    // when alt — but the user wants click+drag to lasso. So: default to
-    // LASSO, and require holding SPACE or middle-click for pan.
-    const useLasso = true;
-    let mode: "pan" | "lasso" = useLasso ? "lasso" : "pan";
-    if (mode === "lasso") {
-      setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
-      // Clear selection on lasso start (additive only with shift).
-      if (!e.shiftKey) {
-        onSelectField(null);
-        setMultiSelectedFieldIds(new Set());
-      }
+    // Empty-area drag = lasso multi-select for fields. Panning is still
+    // available via wheel (plain wheel = vertical pan, shift+wheel = horizontal).
+    setLassoRect({ x: startWorld.x, y: startWorld.y, w: 0, h: 0 });
+    if (!e.shiftKey) {
+      onSelectField(null);
+      setMultiSelectedFieldIds(new Set());
     }
     const initialMulti = new Set(multiSelectedFieldIds);
     const move = (ev: PointerEvent) => {
-      if (mode === "pan") {
-        setPan({
-          x: startPan.x + (ev.clientX - startX),
-          y: startPan.y + (ev.clientY - startY),
-        });
-      } else {
-        const cur = toWorld(ev.clientX, ev.clientY);
-        const x = Math.min(startWorld.x, cur.x);
-        const y = Math.min(startWorld.y, cur.y);
-        const w = Math.abs(cur.x - startWorld.x);
-        const h = Math.abs(cur.y - startWorld.y);
-        setLassoRect({ x, y, w, h });
-      }
+      const cur = toWorld(ev.clientX, ev.clientY);
+      const x = Math.min(startWorld.x, cur.x);
+      const y = Math.min(startWorld.y, cur.y);
+      const w = Math.abs(cur.x - startWorld.x);
+      const h = Math.abs(cur.y - startWorld.y);
+      setLassoRect({ x, y, w, h });
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
