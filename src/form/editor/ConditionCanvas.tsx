@@ -595,110 +595,134 @@ export function ConditionCanvas({
 
   // ------- Drawing a new connector -------
   const [drawing, setDrawing] = useState<{
-    sourceId: string;
+    source: Endpoint;
     cursor: { x: number; y: number };
   } | null>(null);
 
+  /** Parse a "kind:id" data attribute into an Endpoint. */
+  const parseEndpointAttr = (raw: string | undefined): Endpoint | null => {
+    if (!raw) return null;
+    const i = raw.indexOf(":");
+    if (i < 0) return null;
+    const kind = raw.slice(0, i) as EndpointKind;
+    const id = raw.slice(i + 1);
+    if (kind !== "field" && kind !== "group" && kind !== "subgroup") return null;
+    return { kind, id };
+  };
+
   const onSourceHandlePointerDown = (
     e: ReactPointerEvent<HTMLButtonElement>,
-    sourceId: string
+    source: Endpoint
   ) => {
     e.preventDefault();
     e.stopPropagation();
     const updateCursor = (ev: PointerEvent) => {
-      setDrawing({ sourceId, cursor: toWorld(ev.clientX, ev.clientY) });
+      setDrawing({ source, cursor: toWorld(ev.clientX, ev.clientY) });
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", updateCursor);
       window.removeEventListener("pointerup", up);
       const el = document.elementFromPoint(ev.clientX, ev.clientY);
-      const targetEl = el?.closest("[data-target-id]") as HTMLElement | null;
-      const targetId = targetEl?.dataset.targetId;
+      const targetEl = el?.closest("[data-endpoint-target]") as HTMLElement | null;
+      const target = parseEndpointAttr(targetEl?.dataset.endpointTarget);
       setDrawing(null);
-      if (!targetId || targetId === sourceId) return;
-      addConditionEdge(targetId, sourceId);
+      if (!target) return;
+      if (target.kind === source.kind && target.id === source.id) return;
+      addConditionEdge(target, source);
     };
-    setDrawing({ sourceId, cursor: toWorld(e.clientX, e.clientY) });
+    setDrawing({ source, cursor: toWorld(e.clientX, e.clientY) });
     window.addEventListener("pointermove", updateCursor);
     window.addEventListener("pointerup", up);
   };
 
-  // ------- Condition mutation helpers -------
+  // ------- Condition lookup / mutation helpers -------
+  const getEndpointCondition = (e: Endpoint): ConditionGroup | undefined => {
+    if (e.kind === "field") return fieldById.get(e.id)?.condition;
+    if (e.kind === "group") return groupById.get(e.id)?.condition;
+    return subGroupById.get(e.id)?.condition;
+  };
+
+  const persistCondition = (e: Endpoint, cond: ConditionGroup | undefined) => {
+    if (e.kind === "field") void onSetCondition(e.id, cond);
+    else void onSetGroupCondition(e.id, cond);
+  };
+
   const addConditionEdge = useCallback(
-    (targetId: string, sourceId: string) => {
-      const target = fieldById.get(targetId);
-      if (!target) return;
-      const source = fieldById.get(sourceId);
-      if (!source) return;
-      const existing = target.condition;
+    (target: Endpoint, source: Endpoint) => {
+      const existing = getEndpointCondition(target);
       if (existing && !isFlatGroup(existing)) return; // safety
-      const ops = operatorsForField(source);
-      const newRule: FieldCondition = {
-        fieldId: sourceId,
-        operator: ops[0] ?? "equals",
-        value: "",
-      };
+      let newRule: FieldCondition | GroupSeenCondition;
+      if (source.kind === "field") {
+        const sf = fieldById.get(source.id);
+        if (!sf) return;
+        const ops = operatorsForField(sf);
+        newRule = {
+          fieldId: source.id,
+          operator: ops[0] ?? "equals",
+          value: "",
+        };
+      } else {
+        // Source is a group/sub-group → emit a group_seen rule.
+        newRule = {
+          kind: "group_seen",
+          groupId: source.id,
+          seen: true,
+        };
+      }
       const next: ConditionGroup = existing
         ? { ...existing, rules: [...existing.rules, newRule] }
         : { combinator: "and", rules: [newRule] };
       const newRuleIndex = next.rules.length - 1;
-      void onSetCondition(targetId, next);
-      // Auto-select the freshly-created edge so the condition editor
-      // opens for it immediately — saves the user a click. We mark it
-      // as "pending" because the edge derives from the parent's bundle
-      // state which updates asynchronously; an effect below promotes
-      // the pending selection once the edge actually exists.
+      persistCondition(target, next);
       onSelectField(null);
-      setPendingEdgeSelection({ targetId, ruleIndex: newRuleIndex });
+      setPendingEdgeSelection({ target, ruleIndex: newRuleIndex });
     },
-    [fieldById, onSetCondition, onSelectField]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition, onSelectField]
   );
 
   const updateRule = useCallback(
     (
-      targetId: string,
+      target: Endpoint,
       ruleIndex: number,
-      patch: Partial<FieldCondition>
+      patch: Partial<FieldCondition> | Partial<GroupSeenCondition>
     ) => {
-      const target = fieldById.get(targetId);
-      const cond = target?.condition;
+      const cond = getEndpointCondition(target);
       if (!cond || !isFlatGroup(cond)) return;
       const rules = cond.rules.slice();
       const current = rules[ruleIndex];
       if (!current || "combinator" in current) return;
-      rules[ruleIndex] = { ...current, ...patch };
-      void onSetCondition(targetId, { ...cond, rules });
+      rules[ruleIndex] = { ...current, ...patch } as typeof current;
+      persistCondition(target, { ...cond, rules });
     },
-    [fieldById, onSetCondition]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition]
   );
 
   const removeRule = useCallback(
-    (targetId: string, ruleIndex: number) => {
-      const target = fieldById.get(targetId);
-      const cond = target?.condition;
+    (target: Endpoint, ruleIndex: number) => {
+      const cond = getEndpointCondition(target);
       if (!cond || !isFlatGroup(cond)) return;
       const rules = cond.rules.slice();
       rules.splice(ruleIndex, 1);
-      if (rules.length === 0) {
-        void onSetCondition(targetId, undefined);
-      } else {
-        void onSetCondition(targetId, { ...cond, rules });
-      }
+      if (rules.length === 0) persistCondition(target, undefined);
+      else persistCondition(target, { ...cond, rules });
     },
-    [fieldById, onSetCondition]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition]
   );
 
   const toggleCombinator = useCallback(
-    (targetId: string) => {
-      const target = fieldById.get(targetId);
-      const cond = target?.condition;
+    (target: Endpoint) => {
+      const cond = getEndpointCondition(target);
       if (!cond || cond.rules.length < 2) return;
-      void onSetCondition(targetId, {
+      persistCondition(target, {
         ...cond,
         combinator: cond.combinator === "and" ? "or" : "and",
       });
     },
-    [fieldById, onSetCondition]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition]
   );
 
   // ------- Remove a box from the canvas -------
