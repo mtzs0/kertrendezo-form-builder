@@ -50,21 +50,17 @@ export function StepNavigator({
         <div className="flex items-stretch gap-1 px-3 md:px-4 pt-3 overflow-x-auto">
           {groups.map((g, i) => {
             const isActive = i === activeGroupIndex;
-            const isUnlocked = i <= maxGroupIndex;
             const isDone = i < maxGroupIndex;
             return (
               <button
                 key={g.id}
                 type="button"
-                disabled={!isUnlocked}
-                onClick={() => isUnlocked && onJumpGroup(i)}
+                onClick={() => onJumpGroup(i)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all",
+                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : isUnlocked
-                      ? "text-foreground/80 hover:bg-secondary/80 cursor-pointer"
-                      : "text-muted-foreground/60 cursor-not-allowed",
+                    : "text-foreground/80 hover:bg-secondary/80",
                 )}
                 aria-current={isActive ? "step" : undefined}
               >
