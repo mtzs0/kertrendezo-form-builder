@@ -1670,6 +1670,25 @@ export function ConditionCanvas({
                       </button>
                     </div>
                   </div>
+                  {/* Top handle (incoming target for arrows from sources) */}
+                  <div
+                    data-handle
+                    data-no-drag
+                    className="absolute left-1/2 -top-2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-primary bg-background pointer-events-none"
+                    title="Bejövő feltételek"
+                  />
+                  {/* Bottom handle (outgoing — drag to define a 'group seen' condition) */}
+                  <button
+                    type="button"
+                    data-handle
+                    data-no-drag
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      onSourceHandlePointerDown(e, frameEndpoint);
+                    }}
+                    className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-primary bg-primary hover:scale-125 transition-transform cursor-crosshair"
+                    title="Húzd egy mező vagy csoport felső pontjába (csoport megtekintve feltétel)"
+                  />
                   {/* Resize handle */}
                   <div
                     onPointerDown={(e) => onFrameResizeStart(e, isSub ? "subgroup" : "group", id)}
