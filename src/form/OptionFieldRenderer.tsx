@@ -145,7 +145,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               <RadioGroupItem
                 id={`${field.id}_${opt.dataName}`}
                 value={opt.dataName}
-                className={indicatorClass}
+                className={radioIndicatorClass}
               />
               <OptionCard option={opt} field={field} selected={selected} />
             </label>
@@ -177,7 +177,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               id={`${field.id}_${opt.dataName}`}
               checked={checked}
               onCheckedChange={(v) => toggle(opt.dataName, Boolean(v))}
-              className={indicatorClass}
+              className={checkboxIndicatorClass}
             />
             <OptionCard option={opt} field={field} selected={checked} />
           </label>
