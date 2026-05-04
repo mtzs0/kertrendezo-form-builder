@@ -1611,7 +1611,7 @@ export function ConditionCanvas({
                     onClick={(e) => e.stopPropagation()}
                     placeholder="#"
                     title="Sorrend (kisebb szám előbb jelenik meg)"
-                    className="absolute -left-3 top-3 w-9 h-7 rounded-md border border-border bg-card text-[11px] text-center font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none z-10"
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 w-9 h-7 rounded-md border border-border bg-card text-[11px] text-center font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none z-10"
                   />
                   {/* Title bar (drag handle) */}
                   <div
