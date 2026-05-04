@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Check, Lock } from "lucide-react";
+import { Check } from "lucide-react";
 
 export interface StepGroup {
   id: string;
@@ -82,7 +82,6 @@ export function StepNavigator({
                   {isDone ? <Check className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <span className="max-w-[12rem] truncate">{g.label}</span>
-                {!isUnlocked && <Lock className="h-3 w-3 opacity-60" aria-hidden />}
               </button>
             );
           })}
