@@ -50,8 +50,10 @@ export function GroupsManager({
   onPatchSubGroup,
   onRemoveGroup,
   onRemoveSubGroup,
+  onSetGroupCondition,
 }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [conditionFor, setConditionFor] = useState<string | null>(null);
 
   const toggle = (id: string) =>
     setExpanded((s) => ({ ...s, [id]: !s[id] }));
