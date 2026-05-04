@@ -480,49 +480,47 @@ export function ConditionCanvas({
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
-      if (mode === "lasso") {
-        const cur = toWorld(ev.clientX, ev.clientY);
-        const x = Math.min(startWorld.x, cur.x);
-        const y = Math.min(startWorld.y, cur.y);
-        const w = Math.abs(cur.x - startWorld.x);
-        const h = Math.abs(cur.y - startWorld.y);
-        setLassoRect(null);
-        // Treat tiny drags as a click (deselect — already handled above).
-        if (w < 4 && h < 4) {
-          if (!ev.shiftKey) {
-            onSelectField(null);
-            setSelectedEdge(null);
-          }
-          return;
+      const cur = toWorld(ev.clientX, ev.clientY);
+      const x = Math.min(startWorld.x, cur.x);
+      const y = Math.min(startWorld.y, cur.y);
+      const w = Math.abs(cur.x - startWorld.x);
+      const h = Math.abs(cur.y - startWorld.y);
+      setLassoRect(null);
+      // Treat tiny drags as a click (deselect — already handled above).
+      if (w < 4 && h < 4) {
+        if (!ev.shiftKey) {
+          onSelectField(null);
+          setSelectedEdge(null);
         }
-        // Intersect with field boxes only (NOT groups).
-        const pos = positionsRef.current;
-        const hits = new Set<string>(ev.shiftKey ? initialMulti : []);
-        for (const fid of Object.keys(pos)) {
-          const p = pos[fid];
-          if (!p) continue;
-          const bx = p.x;
-          const by = p.y;
-          const bw = BOX_W;
-          const bh = BOX_H;
-          // AABB intersection
-          if (bx < x + w && bx + bw > x && by < y + h && by + bh > y) {
-            hits.add(fid);
-          }
-        }
-        // If only one hit and no shift, promote to single selection.
-        if (hits.size === 1 && !ev.shiftKey) {
-          const only = Array.from(hits)[0];
-          onSelectField(only);
-          setMultiSelectedFieldIds(new Set());
-        } else {
-          setMultiSelectedFieldIds(hits);
-          if (hits.size > 0 && !hits.has(selectedFieldId ?? "")) {
-            onSelectField(null);
-          }
-        }
-        setSelectedEdge(null);
+        return;
       }
+      // Intersect with field boxes only (NOT groups).
+      const pos = positionsRef.current;
+      const hits = new Set<string>(ev.shiftKey ? initialMulti : []);
+      for (const fid of Object.keys(pos)) {
+        const p = pos[fid];
+        if (!p) continue;
+        const bx = p.x;
+        const by = p.y;
+        const bw = BOX_W;
+        const bh = BOX_H;
+        // AABB intersection
+        if (bx < x + w && bx + bw > x && by < y + h && by + bh > y) {
+          hits.add(fid);
+        }
+      }
+      // If only one hit and no shift, promote to single selection.
+      if (hits.size === 1 && !ev.shiftKey) {
+        const only = Array.from(hits)[0];
+        onSelectField(only);
+        setMultiSelectedFieldIds(new Set());
+      } else {
+        setMultiSelectedFieldIds(hits);
+        if (hits.size > 0 && !hits.has(selectedFieldId ?? "")) {
+          onSelectField(null);
+        }
+      }
+      setSelectedEdge(null);
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
