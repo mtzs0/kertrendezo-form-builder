@@ -289,7 +289,7 @@ function parseOr(ctx: ParseCtx): ConditionGroup {
 }
 
 /** If a group contains a single rule, unwrap it to keep the tree shallow. */
-function unwrapSingle(g: ConditionGroup): ConditionGroup | FieldCondition {
+function unwrapSingle(g: ConditionGroup): ConditionRule {
   if (g.rules.length === 1) {
     const only = g.rules[0];
     return only;
