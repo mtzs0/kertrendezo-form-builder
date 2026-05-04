@@ -317,6 +317,8 @@ export type Database = {
       form_groups: {
         Row: {
           color: string | null
+          condition_combinator: string
+          condition_rules: Json
           created_at: string
           form_id: string
           id: string
@@ -329,6 +331,8 @@ export type Database = {
         }
         Insert: {
           color?: string | null
+          condition_combinator?: string
+          condition_rules?: Json
           created_at?: string
           form_id: string
           id?: string
@@ -341,6 +345,8 @@ export type Database = {
         }
         Update: {
           color?: string | null
+          condition_combinator?: string
+          condition_rules?: Json
           created_at?: string
           form_id?: string
           id?: string

@@ -37,15 +37,32 @@ export interface FieldOption {
 }
 
 export interface FieldCondition {
+  /** Discriminator — present so we can tell field rules from group rules. */
+  kind?: "field";
   /** Field id whose answer we evaluate. */
   fieldId: string;
   operator: "is" | "is_not" | "equals" | "greater_than" | "less_than" | "contains" | "answered";
   value: string | number | boolean;
 }
 
+/**
+ * Group-seen condition rule. Evaluates true when the user has (or hasn't,
+ * when `seen === false`) entered the referenced group during the current
+ * session. "Seen" is sticky — once entered, the group stays seen.
+ */
+export interface GroupSeenCondition {
+  kind: "group_seen";
+  /** Top-level group id or sub-group id whose seen-state we check. */
+  groupId: string;
+  /** When true: rule passes if group HAS been seen. When false: passes if NOT seen. */
+  seen: boolean;
+}
+
+export type ConditionRule = FieldCondition | GroupSeenCondition | ConditionGroup;
+
 export interface ConditionGroup {
   combinator: "and" | "or";
-  rules: Array<FieldCondition | ConditionGroup>;
+  rules: Array<ConditionRule>;
 }
 
 export interface BaseField {
