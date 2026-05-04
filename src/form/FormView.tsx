@@ -221,6 +221,21 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     for (const g of groupSteps) {
       const ids: string[] = [];
       const labels: Record<string, string> = {};
+      // Determine if this group has at least one (visible) real sub-group.
+      const visibleSubGroups = g.children.filter(
+        (c): c is RenderSubGroup => {
+          if (c.kind !== "subgroup") return false;
+          const meta = subGroupById.get(c.id);
+          return !meta || isGroupVisible(meta, values, seenGroupIds);
+        },
+      );
+      const hasGroupLevelFields = g.children.some((c) => c.kind === "field");
+      if (visibleSubGroups.length === 0) {
+        // No real sub-groups → render the group's fields directly without
+        // creating a synthetic "Általános" sub-tab.
+        out[g.id] = { ids: [], labels: {} };
+        continue;
+      }
       let pseudoAdded = false;
       for (const child of g.children) {
         if (child.kind === "subgroup") {
@@ -228,7 +243,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           if (meta && !isGroupVisible(meta, values, seenGroupIds)) continue;
           ids.push(child.id);
           labels[child.id] = child.label;
-        } else if (!pseudoAdded) {
+        } else if (!pseudoAdded && hasGroupLevelFields) {
           ids.push(GROUP_LEVEL_SUB);
           labels[GROUP_LEVEL_SUB] = "Általános";
           pseudoAdded = true;
@@ -369,7 +384,17 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     );
   }
 
-  function collectFieldsForSubStep(group: RenderGroup, subId: string): FormField[] {
+  function collectFieldsForSubStep(group: RenderGroup, subId: string | null): FormField[] {
+    if (subId === null) {
+      // No sub-tabs → flatten every field in the group (group-level + any
+      // sub-group fields, though normally there are none in this branch).
+      const out: FormField[] = [];
+      for (const c of group.children) {
+        if (c.kind === "field") out.push(c.field);
+        else out.push(...c.fields);
+      }
+      return out;
+    }
     if (subId === GROUP_LEVEL_SUB) {
       return group.children
         .filter((c): c is RenderGroupChild => c.kind === "field")
@@ -383,7 +408,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 
   /** Soft-warn missing required (visible) fields in current sub-step. */
   const collectMissingInCurrentStep = (): string[] => {
-    if (!activeGroup || !activeSubId) return [];
+    if (!activeGroup) return [];
     const fields = collectFieldsForSubStep(activeGroup, activeSubId);
     const missing: string[] = [];
     for (const f of fields) {
@@ -486,7 +511,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 
   // ---- Stepped-mode active sub-step body ----
   function renderActiveSubStep() {
-    if (!activeGroup || !activeSubId) return null;
+    if (!activeGroup) return null;
     const fields = visibleFields(collectFieldsForSubStep(activeGroup, activeSubId));
     return (
       <div className="space-y-5">

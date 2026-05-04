@@ -253,6 +253,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 onPatchSubGroup={editor.patchSubGroup}
                 onRemoveGroup={editor.removeGroup}
                 onRemoveSubGroup={editor.removeSubGroup}
+                onSetGroupCondition={editor.setGroupCondition}
               />
             )}
           </TabsContent>
