@@ -144,9 +144,13 @@ function isAnswered(v: unknown): boolean {
 
 function evalCondition(c: FieldCondition, values: FormValues): boolean {
   const v = values[c.fieldId];
+  if (c.operator === "answered") return isAnswered(v);
+  // For every other operator, require the referenced field to be answered.
+  // Otherwise unanswered comparisons like `is_not "x"` would vacuously
+  // succeed (undefined !== "x"), revealing groups/fields before the user
+  // has had a chance to answer their gating question.
+  if (!isAnswered(v)) return false;
   switch (c.operator) {
-    case "answered":
-      return isAnswered(v);
     case "is":
     case "equals":
       return v === c.value;
