@@ -153,14 +153,21 @@ const NEW_FIELD_TYPES: { value: FieldType; label: string }[] = [
 const BOX_W = 220;
 const BOX_H = 88;
 
+type EndpointKind = "field" | "group" | "subgroup";
+interface Endpoint {
+  kind: EndpointKind;
+  id: string;
+}
+
 interface Edge {
-  /** target field id (the field whose visibility is conditional) */
-  targetId: string;
-  /** index within the target's flattened condition rules */
+  /** Whose condition this rule lives on. */
+  target: Endpoint;
+  /** Index within the target's flat condition rules. */
   ruleIndex: number;
-  /** source field id (referenced by the rule) */
-  sourceId: string;
-  rule: FieldCondition;
+  /** Source endpoint referenced by the rule (field id or group/subgroup id). */
+  source: Endpoint;
+  /** The actual stored rule (FieldCondition OR GroupSeenCondition). */
+  rule: FieldCondition | GroupSeenCondition;
 }
 
 /** Returns true if the group is "flat" — every rule is a leaf condition. */
@@ -168,6 +175,8 @@ function isFlatGroup(g: ConditionGroup | undefined): boolean {
   if (!g) return true;
   return g.rules.every((r) => !("combinator" in r));
 }
+
+const endpointKey = (e: Endpoint) => `${e.kind}:${e.id}`;
 
 // Position load/save now live in `./canvasPositionsStore` so the
 // Előnézet (demo) tab can subscribe to the same state.
