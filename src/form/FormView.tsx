@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
@@ -172,6 +172,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const explicitSubmitRef = useRef(false);
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
@@ -406,6 +407,12 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     return sg?.fields ?? [];
   }
 
+  const isMissingValue = (v: FormValues[string]) =>
+    v === undefined ||
+    v === null ||
+    v === "" ||
+    (Array.isArray(v) && v.length === 0);
+
   /** Soft-warn missing required (visible) fields in current sub-step. */
   const collectMissingInCurrentStep = (): string[] => {
     if (!activeGroup) return [];
@@ -415,18 +422,38 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       if (!isFieldVisible(f, values, seenGroupIds)) continue;
       if (!f.required) continue;
       const v = values[f.id];
-      const empty =
-        v === undefined ||
-        v === null ||
-        v === "" ||
-        (Array.isArray(v) && v.length === 0);
-      if (empty) missing.push(f.label || f.internalName);
+      if (isMissingValue(v)) missing.push(f.label || f.internalName);
+    }
+    return missing;
+  };
+
+  const collectMissingInVisibleForm = (): string[] => {
+    const missing: string[] = [];
+    for (const item of visibleTopItems(tree)) {
+      const fields = item.kind === "field"
+        ? [item.field]
+        : item.children.flatMap((child) => child.kind === "field" ? [child.field] : child.fields);
+      for (const f of fields) {
+        if (!f.required || !isFieldVisible(f, values, seenGroupIds)) continue;
+        if (isMissingValue(values[f.id])) missing.push(f.label || f.internalName);
+      }
     }
     return missing;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isStepped && !explicitSubmitRef.current) return;
+    explicitSubmitRef.current = false;
+
+    const missing = collectMissingInVisibleForm();
+    if (missing.length > 0) {
+      toast.warning(
+        `Hiányzó kötelező mezők: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`,
+      );
+      return;
+    }
+
     if (!formId) {
       console.log("Form submitted (local only)", values);
       setValues({});
