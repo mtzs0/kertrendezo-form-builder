@@ -263,7 +263,7 @@ function parseAtom(ctx: ParseCtx): ConditionGroup | FieldCondition {
 
 function parseAnd(ctx: ParseCtx): ConditionGroup {
   const first = parseAtom(ctx);
-  const rules: Array<FieldCondition | ConditionGroup> = [first];
+  const rules: Array<ConditionRule> = [first];
   while (peek(ctx)?.type === "and") {
     consume(ctx);
     rules.push(parseAtom(ctx));
@@ -277,7 +277,7 @@ function parseAnd(ctx: ParseCtx): ConditionGroup {
 
 function parseOr(ctx: ParseCtx): ConditionGroup {
   const first = parseAnd(ctx);
-  const rules: Array<FieldCondition | ConditionGroup> = [unwrapSingle(first)];
+  const rules: Array<ConditionRule> = [unwrapSingle(first)];
   while (peek(ctx)?.type === "or") {
     consume(ctx);
     rules.push(unwrapSingle(parseAnd(ctx)));
