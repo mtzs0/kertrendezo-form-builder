@@ -1900,7 +1900,7 @@ export function ConditionCanvas({
                   <button
                     type="button"
                     data-handle
-                    onPointerDown={(e) => onSourceHandlePointerDown(e, id)}
+                    onPointerDown={(e) => onSourceHandlePointerDown(e, { kind: "field", id })}
                     className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-primary bg-primary hover:scale-125 transition-transform cursor-crosshair"
                     title="Húzd egy másik mező felső pontjába"
                   />
