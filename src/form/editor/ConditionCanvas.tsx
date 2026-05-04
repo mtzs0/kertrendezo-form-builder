@@ -1031,21 +1031,24 @@ export function ConditionCanvas({
 
   // ------- Selected edge (for the bottom inspector) -------
   const [selectedEdge, setSelectedEdge] = useState<
-    { targetId: string; ruleIndex: number } | null
+    { target: Endpoint; ruleIndex: number } | null
   >(null);
   // A pending selection requested before the underlying edge exists in
   // the derived `edges` list (the parent's condition state updates
   // asynchronously after `onSetCondition`). Promoted to `selectedEdge`
   // by the effect below as soon as the edge appears.
   const [pendingEdgeSelection, setPendingEdgeSelection] = useState<
-    { targetId: string; ruleIndex: number } | null
+    { target: Endpoint; ruleIndex: number } | null
   >(null);
+
+  const sameEndpoint = (a: Endpoint, b: Endpoint) =>
+    a.kind === b.kind && a.id === b.id;
 
   useEffect(() => {
     if (!pendingEdgeSelection) return;
     const found = edges.find(
       (e) =>
-        e.targetId === pendingEdgeSelection.targetId &&
+        sameEndpoint(e.target, pendingEdgeSelection.target) &&
         e.ruleIndex === pendingEdgeSelection.ruleIndex
     );
     if (found) {
@@ -1059,7 +1062,7 @@ export function ConditionCanvas({
     if (!selectedEdge) return;
     const found = edges.find(
       (e) =>
-        e.targetId === selectedEdge.targetId &&
+        sameEndpoint(e.target, selectedEdge.target) &&
         e.ruleIndex === selectedEdge.ruleIndex
     );
     if (!found) setSelectedEdge(null);
@@ -1068,7 +1071,7 @@ export function ConditionCanvas({
   const selectedEdgeData = selectedEdge
     ? edges.find(
         (e) =>
-          e.targetId === selectedEdge.targetId &&
+          sameEndpoint(e.target, selectedEdge.target) &&
           e.ruleIndex === selectedEdge.ruleIndex
       )
     : null;
