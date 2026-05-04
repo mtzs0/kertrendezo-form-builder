@@ -369,7 +369,13 @@ function groupToText(
       }
       return inner;
     }
-    return conditionToText(r, fieldsById);
+    if ((r as { kind?: string }).kind === "group_seen") {
+      // Group-seen rules have no text representation in this mini-language.
+      // Render as a placeholder so the round-trip text stays informative.
+      const gs = r as { groupId: string; seen: boolean };
+      return `group_${gs.groupId.slice(0, 6)} ${gs.seen ? "seen" : "not_seen"}`;
+    }
+    return conditionToText(r as FieldCondition, fieldsById);
   });
   const text = parts.join(sep);
   if (
