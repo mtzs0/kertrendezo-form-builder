@@ -109,6 +109,11 @@ interface Props {
     fieldId: string,
     condition: ConditionGroup | undefined
   ) => Promise<void> | void;
+  /** Saves a group's (or sub-group's) display condition. */
+  onSetGroupCondition: (
+    groupId: string,
+    condition: ConditionGroup | undefined
+  ) => Promise<void> | void;
   /** Patches a field — used to assign groupId / subGroupId from frame containment. */
   onPatchField: (id: string, patch: Partial<FormField>) => void;
   selectedFieldId: string | null;
