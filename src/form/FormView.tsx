@@ -408,7 +408,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 
   /** Soft-warn missing required (visible) fields in current sub-step. */
   const collectMissingInCurrentStep = (): string[] => {
-    if (!activeGroup || !activeSubId) return [];
+    if (!activeGroup) return [];
     const fields = collectFieldsForSubStep(activeGroup, activeSubId);
     const missing: string[] = [];
     for (const f of fields) {
