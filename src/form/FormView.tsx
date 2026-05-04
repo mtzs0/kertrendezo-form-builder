@@ -564,8 +564,29 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   // prevents accidental submission when a newly-revealed group appears
   // after answering a conditional field on what was momentarily the last group.
   const reachedLastGroup = maxGroupIdx >= groupSteps.length - 1;
+
+  // A group hidden right now might still become visible once the user has
+  // entered (and thus "seen") all currently-visible groups. If any such
+  // group exists, the form is NOT yet on its final step — even if today the
+  // active group is the only visible one.
+  const anyHiddenGroupCouldReveal = useMemo(() => {
+    const hypotheticalSeen = new Set(seenGroupIds);
+    for (const g of groupSteps) hypotheticalSeen.add(g.id);
+    for (const g of allGroupSteps) {
+      const meta = groupById.get(g.id);
+      if (!meta) continue;
+      if (isGroupVisible(meta, values, seenGroupIds)) continue; // already visible
+      if (isGroupVisible(meta, values, hypotheticalSeen)) return true;
+    }
+    return false;
+  }, [allGroupSteps, groupSteps, groupById, values, seenGroupIds]);
+
   const isFinalStep =
-    isStepped && isLastGroup && isLastSubInGroup && reachedLastGroup;
+    isStepped &&
+    isLastGroup &&
+    isLastSubInGroup &&
+    reachedLastGroup &&
+    !anyHiddenGroupCouldReveal;
 
   const goNext = () => {
     if (!isStepped || !activeGroup || !subInfo) return;
