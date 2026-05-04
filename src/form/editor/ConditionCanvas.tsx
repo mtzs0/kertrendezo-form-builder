@@ -1486,9 +1486,11 @@ export function ConditionCanvas({
               const titleStyle: CSSProperties = hasColor
                 ? { height: 26, background: `${groupColor}33`, color: "inherit" }
                 : { height: 26 };
+              const frameEndpoint: Endpoint = { kind: isSub ? "subgroup" : "group", id };
               return (
                 <div
                   key={key}
+                  data-endpoint-target={`${isSub ? "subgroup" : "group"}:${id}`}
                   className={cn(
                     "absolute rounded-lg select-none transition-shadow",
                     !hasColor &&
