@@ -1956,23 +1956,48 @@ export function ConditionCanvas({
 // ---------- Edge inspector ----------
 
 interface EdgeInspectorProps {
-  targetField: FormField;
-  sourceField: FormField;
-  rule: FieldCondition;
-  onChange: (patch: Partial<FieldCondition>) => void;
+  edge: Edge;
+  fieldById: Map<string, FormField>;
+  groupById: Map<string, FormGroup>;
+  subGroupById: Map<string, FormSubGroup>;
+  onChange: (patch: Partial<FieldCondition> | Partial<GroupSeenCondition>) => void;
   onRemove: () => void;
   onClose: () => void;
 }
 
+function endpointLabel(
+  e: Endpoint,
+  fieldById: Map<string, FormField>,
+  groupById: Map<string, FormGroup>,
+  subGroupById: Map<string, FormSubGroup>
+): string {
+  if (e.kind === "field") {
+    const f = fieldById.get(e.id);
+    return f ? (f.label || f.internalName) : "(mező)";
+  }
+  if (e.kind === "group") {
+    const g = groupById.get(e.id);
+    return g ? `Csoport: ${g.label || g.internalName}` : "(csoport)";
+  }
+  const sg = subGroupById.get(e.id);
+  return sg ? `Al-csoport: ${sg.label || sg.internalName}` : "(al-csoport)";
+}
+
 function EdgeInspector({
-  targetField,
-  sourceField,
-  rule,
+  edge,
+  fieldById,
+  groupById,
+  subGroupById,
   onChange,
   onRemove,
   onClose,
 }: EdgeInspectorProps) {
-  const operators = operatorsForField(sourceField);
+  const isGroupSeen = isGroupSeenRule(edge.rule);
+  const sourceField = edge.source.kind === "field" ? fieldById.get(edge.source.id) : undefined;
+  const operators = sourceField ? operatorsForField(sourceField) : [];
+  const targetLabel = endpointLabel(edge.target, fieldById, groupById, subGroupById);
+  const sourceLabel = endpointLabel(edge.source, fieldById, groupById, subGroupById);
+
   return (
     <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -1981,77 +2006,104 @@ function EdgeInspector({
             Kiválasztott feltétel
           </p>
           <p className="text-sm font-semibold truncate">
-            <span className="text-muted-foreground">
-              {targetField.label || targetField.internalName}
-            </span>{" "}
-            ← {sourceField.label || sourceField.internalName}
+            <span className="text-muted-foreground">{targetLabel}</span> ← {sourceLabel}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="h-7 px-2"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-7 px-2">
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-end">
-        <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Feltétel típusa
-          </Label>
-          <Select
-            value={rule.operator}
-            onValueChange={(v) =>
-              onChange({ operator: v as FieldCondition["operator"] })
-            }
+      {isGroupSeen ? (
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Feltétel
+            </Label>
+            <Select
+              value={(edge.rule as GroupSeenCondition).seen ? "seen" : "not_seen"}
+              onValueChange={(v) => onChange({ seen: v === "seen" } as Partial<GroupSeenCondition>)}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="seen">A felhasználó belépett</SelectItem>
+                <SelectItem value="not_seen">A felhasználó még nem lépett be</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label="Feltétel törlése"
           >
-            <SelectTrigger className="h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {operators.map((op) => (
-                <SelectItem key={op} value={op}>
-                  {OPERATOR_LABELS[op]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-        {rule.operator === "answered" ? (
+      ) : !sourceField ? (
+        <p className="text-xs text-muted-foreground italic">
+          A forrásmező már nem érhető el.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-end">
           <div className="space-y-1">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Érték
+              Feltétel típusa
             </Label>
-            <p className="h-9 flex items-center text-xs text-muted-foreground italic">
-              Bármely válasz elegendő
-            </p>
+            <Select
+              value={(edge.rule as FieldCondition).operator}
+              onValueChange={(v) =>
+                onChange({ operator: v as FieldCondition["operator"] } as Partial<FieldCondition>)
+              }
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {operators.map((op) => (
+                  <SelectItem key={op} value={op}>
+                    {OPERATOR_LABELS[op]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Érték
-            </Label>
-            <ValueInput
-              field={sourceField}
-              value={rule.value}
-              onChange={(v) => onChange({ value: v })}
-            />
-          </div>
-        )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-          aria-label="Feltétel törlése"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+          {(edge.rule as FieldCondition).operator === "answered" ? (
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Érték
+              </Label>
+              <p className="h-9 flex items-center text-xs text-muted-foreground italic">
+                Bármely válasz elegendő
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Érték
+              </Label>
+              <ValueInput
+                field={sourceField}
+                value={(edge.rule as FieldCondition).value}
+                onChange={(v) => onChange({ value: v } as Partial<FieldCondition>)}
+              />
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label="Feltétel törlése"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
