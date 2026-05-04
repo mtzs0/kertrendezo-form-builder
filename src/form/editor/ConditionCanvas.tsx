@@ -1533,6 +1533,18 @@ export function ConditionCanvas({
               height: 1,
             }}
           >
+            {/* Lasso selection rectangle (world coords) */}
+            {lassoRect && (
+              <div
+                className="absolute pointer-events-none rounded-sm border border-primary bg-primary/10"
+                style={{
+                  left: lassoRect.x,
+                  top: lassoRect.y,
+                  width: lassoRect.w,
+                  height: lassoRect.h,
+                }}
+              />
+            )}
             {/* Group / sub-group frames — rendered first so they sit behind arrows + boxes */}
             {Object.entries(frames).map(([key, rect]) => {
               const isSub = key.startsWith("subgroup:");
