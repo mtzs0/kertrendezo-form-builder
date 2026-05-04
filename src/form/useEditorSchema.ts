@@ -819,5 +819,6 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     reorderFields,
     setFieldOptions,
     setFieldCondition,
+    setGroupCondition,
   };
 }
