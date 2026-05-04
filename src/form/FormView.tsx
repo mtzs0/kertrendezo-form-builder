@@ -588,13 +588,18 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     reachedLastGroup &&
     !anyHiddenGroupCouldReveal;
 
+  const warnMissing = (missing: string[]) => {
+    toast.warning(
+      `Hiányzó kötelező mezők: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`,
+    );
+  };
+
   const goNext = () => {
     if (!isStepped || !activeGroup || !subInfo) return;
     const missing = collectMissingInCurrentStep();
     if (missing.length > 0) {
-      toast.warning(
-        `Hiányzó kötelező mezők: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "…" : ""}`,
-      );
+      warnMissing(missing);
+      return;
     }
     if (!isLastSubInGroup) {
       const nextSubId = subInfo.ids[activeSubIdxInGroup + 1];
@@ -629,16 +634,39 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           maxGroupIndex={maxGroupIdx}
           maxSubIndexByGroup={maxSubIdxByGroup}
           onJumpGroup={(i) => {
-            if (i > maxGroupIdx) return;
+            if (i <= activeGroupIdx) {
+              setActiveGroupIdx(i);
+              return;
+            }
+            const missing = collectMissingInCurrentStep();
+            if (missing.length > 0) {
+              warnMissing(missing);
+              return;
+            }
             setActiveGroupIdx(i);
+            setMaxGroupIdx((m) => Math.max(m, i));
           }}
           onJumpSub={(gi, sid) => {
             const g = groupSteps[gi];
             if (!g) return;
             const ids = subStepsByGroup[g.id]?.ids ?? [];
             const idx = ids.indexOf(sid);
-            const cap = maxSubIdxByGroup[g.id] ?? 0;
-            if (idx < 0 || idx > cap) return;
+            if (idx < 0) return;
+            const isBackward =
+              gi < activeGroupIdx ||
+              (gi === activeGroupIdx && idx <= activeSubIdxInGroup);
+            if (!isBackward) {
+              const missing = collectMissingInCurrentStep();
+              if (missing.length > 0) {
+                warnMissing(missing);
+                return;
+              }
+              setMaxGroupIdx((m) => Math.max(m, gi));
+              setMaxSubIdxByGroup((p) => ({
+                ...p,
+                [g.id]: Math.max(p[g.id] ?? 0, idx),
+              }));
+            }
             setActiveGroupIdx(gi);
             setActiveSubByGroup((p) => ({ ...p, [g.id]: sid }));
           }}
