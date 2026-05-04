@@ -70,7 +70,9 @@ import type {
   FormField,
   FormGroup,
   FormSubGroup,
+  GroupSeenCondition,
 } from "@/form/types";
+import { isGroupSeenRule } from "@/form/types";
 import {
   OPERATOR_LABELS,
   ValueInput,
@@ -105,6 +107,11 @@ interface Props {
   formId: string | null | undefined;
   onSetCondition: (
     fieldId: string,
+    condition: ConditionGroup | undefined
+  ) => Promise<void> | void;
+  /** Saves a group's (or sub-group's) display condition. */
+  onSetGroupCondition: (
+    groupId: string,
     condition: ConditionGroup | undefined
   ) => Promise<void> | void;
   /** Patches a field — used to assign groupId / subGroupId from frame containment. */
@@ -146,14 +153,21 @@ const NEW_FIELD_TYPES: { value: FieldType; label: string }[] = [
 const BOX_W = 220;
 const BOX_H = 88;
 
+type EndpointKind = "field" | "group" | "subgroup";
+interface Endpoint {
+  kind: EndpointKind;
+  id: string;
+}
+
 interface Edge {
-  /** target field id (the field whose visibility is conditional) */
-  targetId: string;
-  /** index within the target's flattened condition rules */
+  /** Whose condition this rule lives on. */
+  target: Endpoint;
+  /** Index within the target's flat condition rules. */
   ruleIndex: number;
-  /** source field id (referenced by the rule) */
-  sourceId: string;
-  rule: FieldCondition;
+  /** Source endpoint referenced by the rule (field id or group/subgroup id). */
+  source: Endpoint;
+  /** The actual stored rule (FieldCondition OR GroupSeenCondition). */
+  rule: FieldCondition | GroupSeenCondition;
 }
 
 /** Returns true if the group is "flat" — every rule is a leaf condition. */
@@ -161,6 +175,8 @@ function isFlatGroup(g: ConditionGroup | undefined): boolean {
   if (!g) return true;
   return g.rules.every((r) => !("combinator" in r));
 }
+
+const endpointKey = (e: Endpoint) => `${e.kind}:${e.id}`;
 
 // Position load/save now live in `./canvasPositionsStore` so the
 // Előnézet (demo) tab can subscribe to the same state.
@@ -171,6 +187,7 @@ export function ConditionCanvas({
   subGroups,
   formId,
   onSetCondition,
+  onSetGroupCondition,
   onPatchField,
   selectedFieldId,
   onSelectField,
@@ -304,22 +321,55 @@ export function ConditionCanvas({
     [fields, positions]
   );
 
-  // Build edges from current condition data.
+  /** True if the endpoint is currently rendered on the canvas. */
+  const endpointPlaced = useCallback(
+    (e: Endpoint): boolean => {
+      if (e.kind === "field") return !!positions[e.id];
+      const fk = e.kind === "group" ? `group:${e.id}` : `subgroup:${e.id}`;
+      return !!frames[fk];
+    },
+    [positions, frames]
+  );
+
+  // Build edges from current condition data — fields AND groups/sub-groups.
   const edges: Edge[] = useMemo(() => {
     const out: Edge[] = [];
-    for (const targetId of placedFieldIds) {
-      const f = fieldById.get(targetId);
-      if (!f?.condition || !isFlatGroup(f.condition)) continue;
-      f.condition.rules.forEach((r, i) => {
+    const pushFromCondition = (target: Endpoint, cond: ConditionGroup | undefined) => {
+      if (!cond || !isFlatGroup(cond)) return;
+      cond.rules.forEach((r, i) => {
         if ("combinator" in r) return;
-        if ((r as { kind?: string }).kind === "group_seen") return;
-        const fr = r as FieldCondition;
-        if (!positions[fr.fieldId]) return;
-        out.push({ targetId, ruleIndex: i, sourceId: fr.fieldId, rule: fr });
+        if (isGroupSeenRule(r)) {
+          const srcKind: EndpointKind = groupById.has(r.groupId)
+            ? "group"
+            : subGroupById.has(r.groupId)
+            ? "subgroup"
+            : "group";
+          const src: Endpoint = { kind: srcKind, id: r.groupId };
+          if (!endpointPlaced(src) || !endpointPlaced(target)) return;
+          out.push({ target, ruleIndex: i, source: src, rule: r });
+        } else {
+          const fr = r as FieldCondition;
+          const src: Endpoint = { kind: "field", id: fr.fieldId };
+          if (!endpointPlaced(src) || !endpointPlaced(target)) return;
+          out.push({ target, ruleIndex: i, source: src, rule: fr });
+        }
       });
+    };
+    for (const fid of placedFieldIds) {
+      const f = fieldById.get(fid);
+      if (!f) continue;
+      pushFromCondition({ kind: "field", id: fid }, f.condition);
+    }
+    for (const g of groups) {
+      if (!frames[`group:${g.id}`]) continue;
+      pushFromCondition({ kind: "group", id: g.id }, g.condition);
+    }
+    for (const sg of subGroups) {
+      if (!frames[`subgroup:${sg.id}`]) continue;
+      pushFromCondition({ kind: "subgroup", id: sg.id }, sg.condition);
     }
     return out;
-  }, [placedFieldIds, fieldById, positions]);
+  }, [placedFieldIds, fieldById, groups, subGroups, frames, groupById, subGroupById, endpointPlaced]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -545,110 +595,134 @@ export function ConditionCanvas({
 
   // ------- Drawing a new connector -------
   const [drawing, setDrawing] = useState<{
-    sourceId: string;
+    source: Endpoint;
     cursor: { x: number; y: number };
   } | null>(null);
 
+  /** Parse a "kind:id" data attribute into an Endpoint. */
+  const parseEndpointAttr = (raw: string | undefined): Endpoint | null => {
+    if (!raw) return null;
+    const i = raw.indexOf(":");
+    if (i < 0) return null;
+    const kind = raw.slice(0, i) as EndpointKind;
+    const id = raw.slice(i + 1);
+    if (kind !== "field" && kind !== "group" && kind !== "subgroup") return null;
+    return { kind, id };
+  };
+
   const onSourceHandlePointerDown = (
     e: ReactPointerEvent<HTMLButtonElement>,
-    sourceId: string
+    source: Endpoint
   ) => {
     e.preventDefault();
     e.stopPropagation();
     const updateCursor = (ev: PointerEvent) => {
-      setDrawing({ sourceId, cursor: toWorld(ev.clientX, ev.clientY) });
+      setDrawing({ source, cursor: toWorld(ev.clientX, ev.clientY) });
     };
     const up = (ev: PointerEvent) => {
       window.removeEventListener("pointermove", updateCursor);
       window.removeEventListener("pointerup", up);
       const el = document.elementFromPoint(ev.clientX, ev.clientY);
-      const targetEl = el?.closest("[data-target-id]") as HTMLElement | null;
-      const targetId = targetEl?.dataset.targetId;
+      const targetEl = el?.closest("[data-endpoint-target]") as HTMLElement | null;
+      const target = parseEndpointAttr(targetEl?.dataset.endpointTarget);
       setDrawing(null);
-      if (!targetId || targetId === sourceId) return;
-      addConditionEdge(targetId, sourceId);
+      if (!target) return;
+      if (target.kind === source.kind && target.id === source.id) return;
+      addConditionEdge(target, source);
     };
-    setDrawing({ sourceId, cursor: toWorld(e.clientX, e.clientY) });
+    setDrawing({ source, cursor: toWorld(e.clientX, e.clientY) });
     window.addEventListener("pointermove", updateCursor);
     window.addEventListener("pointerup", up);
   };
 
-  // ------- Condition mutation helpers -------
+  // ------- Condition lookup / mutation helpers -------
+  const getEndpointCondition = (e: Endpoint): ConditionGroup | undefined => {
+    if (e.kind === "field") return fieldById.get(e.id)?.condition;
+    if (e.kind === "group") return groupById.get(e.id)?.condition;
+    return subGroupById.get(e.id)?.condition;
+  };
+
+  const persistCondition = (e: Endpoint, cond: ConditionGroup | undefined) => {
+    if (e.kind === "field") void onSetCondition(e.id, cond);
+    else void onSetGroupCondition(e.id, cond);
+  };
+
   const addConditionEdge = useCallback(
-    (targetId: string, sourceId: string) => {
-      const target = fieldById.get(targetId);
-      if (!target) return;
-      const source = fieldById.get(sourceId);
-      if (!source) return;
-      const existing = target.condition;
+    (target: Endpoint, source: Endpoint) => {
+      const existing = getEndpointCondition(target);
       if (existing && !isFlatGroup(existing)) return; // safety
-      const ops = operatorsForField(source);
-      const newRule: FieldCondition = {
-        fieldId: sourceId,
-        operator: ops[0] ?? "equals",
-        value: "",
-      };
+      let newRule: FieldCondition | GroupSeenCondition;
+      if (source.kind === "field") {
+        const sf = fieldById.get(source.id);
+        if (!sf) return;
+        const ops = operatorsForField(sf);
+        newRule = {
+          fieldId: source.id,
+          operator: ops[0] ?? "equals",
+          value: "",
+        };
+      } else {
+        // Source is a group/sub-group → emit a group_seen rule.
+        newRule = {
+          kind: "group_seen",
+          groupId: source.id,
+          seen: true,
+        };
+      }
       const next: ConditionGroup = existing
         ? { ...existing, rules: [...existing.rules, newRule] }
         : { combinator: "and", rules: [newRule] };
       const newRuleIndex = next.rules.length - 1;
-      void onSetCondition(targetId, next);
-      // Auto-select the freshly-created edge so the condition editor
-      // opens for it immediately — saves the user a click. We mark it
-      // as "pending" because the edge derives from the parent's bundle
-      // state which updates asynchronously; an effect below promotes
-      // the pending selection once the edge actually exists.
+      persistCondition(target, next);
       onSelectField(null);
-      setPendingEdgeSelection({ targetId, ruleIndex: newRuleIndex });
+      setPendingEdgeSelection({ target, ruleIndex: newRuleIndex });
     },
-    [fieldById, onSetCondition, onSelectField]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition, onSelectField]
   );
 
   const updateRule = useCallback(
     (
-      targetId: string,
+      target: Endpoint,
       ruleIndex: number,
-      patch: Partial<FieldCondition>
+      patch: Partial<FieldCondition> | Partial<GroupSeenCondition>
     ) => {
-      const target = fieldById.get(targetId);
-      const cond = target?.condition;
+      const cond = getEndpointCondition(target);
       if (!cond || !isFlatGroup(cond)) return;
       const rules = cond.rules.slice();
       const current = rules[ruleIndex];
       if (!current || "combinator" in current) return;
-      rules[ruleIndex] = { ...current, ...patch };
-      void onSetCondition(targetId, { ...cond, rules });
+      rules[ruleIndex] = { ...current, ...patch } as typeof current;
+      persistCondition(target, { ...cond, rules });
     },
-    [fieldById, onSetCondition]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition]
   );
 
   const removeRule = useCallback(
-    (targetId: string, ruleIndex: number) => {
-      const target = fieldById.get(targetId);
-      const cond = target?.condition;
+    (target: Endpoint, ruleIndex: number) => {
+      const cond = getEndpointCondition(target);
       if (!cond || !isFlatGroup(cond)) return;
       const rules = cond.rules.slice();
       rules.splice(ruleIndex, 1);
-      if (rules.length === 0) {
-        void onSetCondition(targetId, undefined);
-      } else {
-        void onSetCondition(targetId, { ...cond, rules });
-      }
+      if (rules.length === 0) persistCondition(target, undefined);
+      else persistCondition(target, { ...cond, rules });
     },
-    [fieldById, onSetCondition]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition]
   );
 
   const toggleCombinator = useCallback(
-    (targetId: string) => {
-      const target = fieldById.get(targetId);
-      const cond = target?.condition;
+    (target: Endpoint) => {
+      const cond = getEndpointCondition(target);
       if (!cond || cond.rules.length < 2) return;
-      void onSetCondition(targetId, {
+      persistCondition(target, {
         ...cond,
         combinator: cond.combinator === "and" ? "or" : "and",
       });
     },
-    [fieldById, onSetCondition]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fieldById, groupById, subGroupById, onSetCondition, onSetGroupCondition]
   );
 
   // ------- Remove a box from the canvas -------
@@ -957,21 +1031,24 @@ export function ConditionCanvas({
 
   // ------- Selected edge (for the bottom inspector) -------
   const [selectedEdge, setSelectedEdge] = useState<
-    { targetId: string; ruleIndex: number } | null
+    { target: Endpoint; ruleIndex: number } | null
   >(null);
   // A pending selection requested before the underlying edge exists in
   // the derived `edges` list (the parent's condition state updates
   // asynchronously after `onSetCondition`). Promoted to `selectedEdge`
   // by the effect below as soon as the edge appears.
   const [pendingEdgeSelection, setPendingEdgeSelection] = useState<
-    { targetId: string; ruleIndex: number } | null
+    { target: Endpoint; ruleIndex: number } | null
   >(null);
+
+  const sameEndpoint = (a: Endpoint, b: Endpoint) =>
+    a.kind === b.kind && a.id === b.id;
 
   useEffect(() => {
     if (!pendingEdgeSelection) return;
     const found = edges.find(
       (e) =>
-        e.targetId === pendingEdgeSelection.targetId &&
+        sameEndpoint(e.target, pendingEdgeSelection.target) &&
         e.ruleIndex === pendingEdgeSelection.ruleIndex
     );
     if (found) {
@@ -985,7 +1062,7 @@ export function ConditionCanvas({
     if (!selectedEdge) return;
     const found = edges.find(
       (e) =>
-        e.targetId === selectedEdge.targetId &&
+        sameEndpoint(e.target, selectedEdge.target) &&
         e.ruleIndex === selectedEdge.ruleIndex
     );
     if (!found) setSelectedEdge(null);
@@ -994,19 +1071,29 @@ export function ConditionCanvas({
   const selectedEdgeData = selectedEdge
     ? edges.find(
         (e) =>
-          e.targetId === selectedEdge.targetId &&
+          sameEndpoint(e.target, selectedEdge.target) &&
           e.ruleIndex === selectedEdge.ruleIndex
       )
     : null;
 
   // ------- Handle anchor coordinates -------
-  const topAnchor = (id: string) => {
-    const p = positions[id];
-    return p ? { x: p.x + BOX_W / 2, y: p.y } : null;
+  const topAnchor = (e: Endpoint) => {
+    if (e.kind === "field") {
+      const p = positions[e.id];
+      return p ? { x: p.x + BOX_W / 2, y: p.y } : null;
+    }
+    const fk = e.kind === "group" ? `group:${e.id}` : `subgroup:${e.id}`;
+    const f = frames[fk];
+    return f ? { x: f.x + f.w / 2, y: f.y } : null;
   };
-  const bottomAnchor = (id: string) => {
-    const p = positions[id];
-    return p ? { x: p.x + BOX_W / 2, y: p.y + BOX_H } : null;
+  const bottomAnchor = (e: Endpoint) => {
+    if (e.kind === "field") {
+      const p = positions[e.id];
+      return p ? { x: p.x + BOX_W / 2, y: p.y + BOX_H } : null;
+    }
+    const fk = e.kind === "group" ? `group:${e.id}` : `subgroup:${e.id}`;
+    const f = frames[fk];
+    return f ? { x: f.x + f.w / 2, y: f.y + f.h } : null;
   };
 
   // Bezier path between two points (vertical S-curve).
@@ -1136,18 +1223,19 @@ export function ConditionCanvas({
         <div>
           {selectedEdgeData ? (
             <EdgeInspector
-              targetField={fieldById.get(selectedEdgeData.targetId)!}
-              sourceField={fieldById.get(selectedEdgeData.sourceId)!}
-              rule={selectedEdgeData.rule}
+              edge={selectedEdgeData}
+              fieldById={fieldById}
+              groupById={groupById}
+              subGroupById={subGroupById}
               onChange={(patch) =>
                 updateRule(
-                  selectedEdgeData.targetId,
+                  selectedEdgeData.target,
                   selectedEdgeData.ruleIndex,
                   patch
                 )
               }
               onRemove={() =>
-                removeRule(selectedEdgeData.targetId, selectedEdgeData.ruleIndex)
+                removeRule(selectedEdgeData.target, selectedEdgeData.ruleIndex)
               }
               onClose={() => setSelectedEdge(null)}
             />
@@ -1398,9 +1486,11 @@ export function ConditionCanvas({
               const titleStyle: CSSProperties = hasColor
                 ? { height: 26, background: `${groupColor}33`, color: "inherit" }
                 : { height: 26 };
+              const frameEndpoint: Endpoint = { kind: isSub ? "subgroup" : "group", id };
               return (
                 <div
                   key={key}
+                  data-endpoint-target={`${isSub ? "subgroup" : "group"}:${id}`}
                   className={cn(
                     "absolute rounded-lg select-none transition-shadow",
                     !hasColor &&
@@ -1580,6 +1670,25 @@ export function ConditionCanvas({
                       </button>
                     </div>
                   </div>
+                  {/* Top handle (incoming target for arrows from sources) */}
+                  <div
+                    data-handle
+                    data-no-drag
+                    className="absolute left-1/2 -top-2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-primary bg-background pointer-events-none"
+                    title="Bejövő feltételek"
+                  />
+                  {/* Bottom handle (outgoing — drag to define a 'group seen' condition) */}
+                  <button
+                    type="button"
+                    data-handle
+                    data-no-drag
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      onSourceHandlePointerDown(e, frameEndpoint);
+                    }}
+                    className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-primary bg-primary hover:scale-125 transition-transform cursor-crosshair"
+                    title="Húzd egy mező vagy csoport felső pontjába (csoport megtekintve feltétel)"
+                  />
                   {/* Resize handle */}
                   <div
                     onPointerDown={(e) => onFrameResizeStart(e, isSub ? "subgroup" : "group", id)}
@@ -1635,16 +1744,15 @@ export function ConditionCanvas({
               </defs>
 
               {edges.map((edge) => {
-                const a = bottomAnchor(edge.sourceId);
-                const b = topAnchor(edge.targetId);
+                const a = bottomAnchor(edge.source);
+                const b = topAnchor(edge.target);
                 if (!a || !b) return null;
                 const isSel =
                   selectedEdge &&
-                  selectedEdge.targetId === edge.targetId &&
+                  sameEndpoint(selectedEdge.target, edge.target) &&
                   selectedEdge.ruleIndex === edge.ruleIndex;
                 return (
-                  <g key={`${edge.targetId}-${edge.ruleIndex}`}>
-                    {/* Wide invisible hit-line */}
+                  <g key={`${endpointKey(edge.target)}-${edge.ruleIndex}`}>
                     <path
                       d={pathBetween(a, b)}
                       stroke="transparent"
@@ -1653,7 +1761,7 @@ export function ConditionCanvas({
                       style={{ pointerEvents: "stroke", cursor: "pointer" }}
                       onClick={() =>
                         setSelectedEdge({
-                          targetId: edge.targetId,
+                          target: edge.target,
                           ruleIndex: edge.ruleIndex,
                         })
                       }
@@ -1679,7 +1787,7 @@ export function ConditionCanvas({
               {/* In-progress connector (while dragging) */}
               {drawing &&
                 (() => {
-                  const a = bottomAnchor(drawing.sourceId);
+                  const a = bottomAnchor(drawing.source);
                   if (!a) return null;
                   return (
                     <path
@@ -1718,7 +1826,7 @@ export function ConditionCanvas({
               return (
                 <div
                   key={id}
-                  data-target-id={id}
+                  data-endpoint-target={`field:${id}`}
                   onPointerDown={(e) => onBoxPointerDown(e, id)}
                   className={cn(
                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
@@ -1775,7 +1883,7 @@ export function ConditionCanvas({
                           data-no-drag
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleCombinator(id);
+                            toggleCombinator({ kind: "field", id });
                           }}
                           className={cn(
                             "text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 border transition-colors",
@@ -1813,7 +1921,7 @@ export function ConditionCanvas({
                   <button
                     type="button"
                     data-handle
-                    onPointerDown={(e) => onSourceHandlePointerDown(e, id)}
+                    onPointerDown={(e) => onSourceHandlePointerDown(e, { kind: "field", id })}
                     className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-primary bg-primary hover:scale-125 transition-transform cursor-crosshair"
                     title="Húzd egy másik mező felső pontjába"
                   />
@@ -1869,23 +1977,48 @@ export function ConditionCanvas({
 // ---------- Edge inspector ----------
 
 interface EdgeInspectorProps {
-  targetField: FormField;
-  sourceField: FormField;
-  rule: FieldCondition;
-  onChange: (patch: Partial<FieldCondition>) => void;
+  edge: Edge;
+  fieldById: Map<string, FormField>;
+  groupById: Map<string, FormGroup>;
+  subGroupById: Map<string, FormSubGroup>;
+  onChange: (patch: Partial<FieldCondition> | Partial<GroupSeenCondition>) => void;
   onRemove: () => void;
   onClose: () => void;
 }
 
+function endpointLabel(
+  e: Endpoint,
+  fieldById: Map<string, FormField>,
+  groupById: Map<string, FormGroup>,
+  subGroupById: Map<string, FormSubGroup>
+): string {
+  if (e.kind === "field") {
+    const f = fieldById.get(e.id);
+    return f ? (f.label || f.internalName) : "(mező)";
+  }
+  if (e.kind === "group") {
+    const g = groupById.get(e.id);
+    return g ? `Csoport: ${g.label || g.internalName}` : "(csoport)";
+  }
+  const sg = subGroupById.get(e.id);
+  return sg ? `Al-csoport: ${sg.label || sg.internalName}` : "(al-csoport)";
+}
+
 function EdgeInspector({
-  targetField,
-  sourceField,
-  rule,
+  edge,
+  fieldById,
+  groupById,
+  subGroupById,
   onChange,
   onRemove,
   onClose,
 }: EdgeInspectorProps) {
-  const operators = operatorsForField(sourceField);
+  const isGroupSeen = isGroupSeenRule(edge.rule);
+  const sourceField = edge.source.kind === "field" ? fieldById.get(edge.source.id) : undefined;
+  const operators = sourceField ? operatorsForField(sourceField) : [];
+  const targetLabel = endpointLabel(edge.target, fieldById, groupById, subGroupById);
+  const sourceLabel = endpointLabel(edge.source, fieldById, groupById, subGroupById);
+
   return (
     <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
@@ -1894,77 +2027,104 @@ function EdgeInspector({
             Kiválasztott feltétel
           </p>
           <p className="text-sm font-semibold truncate">
-            <span className="text-muted-foreground">
-              {targetField.label || targetField.internalName}
-            </span>{" "}
-            ← {sourceField.label || sourceField.internalName}
+            <span className="text-muted-foreground">{targetLabel}</span> ← {sourceLabel}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          className="h-7 px-2"
-        >
+        <Button type="button" variant="ghost" size="sm" onClick={onClose} className="h-7 px-2">
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-end">
-        <div className="space-y-1">
-          <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-            Feltétel típusa
-          </Label>
-          <Select
-            value={rule.operator}
-            onValueChange={(v) =>
-              onChange({ operator: v as FieldCondition["operator"] })
-            }
+      {isGroupSeen ? (
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2 items-end">
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Feltétel
+            </Label>
+            <Select
+              value={(edge.rule as GroupSeenCondition).seen ? "seen" : "not_seen"}
+              onValueChange={(v) => onChange({ seen: v === "seen" } as Partial<GroupSeenCondition>)}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="seen">A felhasználó belépett</SelectItem>
+                <SelectItem value="not_seen">A felhasználó még nem lépett be</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label="Feltétel törlése"
           >
-            <SelectTrigger className="h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {operators.map((op) => (
-                <SelectItem key={op} value={op}>
-                  {OPERATOR_LABELS[op]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
-        {rule.operator === "answered" ? (
+      ) : !sourceField ? (
+        <p className="text-xs text-muted-foreground italic">
+          A forrásmező már nem érhető el.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2 items-end">
           <div className="space-y-1">
             <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Érték
+              Feltétel típusa
             </Label>
-            <p className="h-9 flex items-center text-xs text-muted-foreground italic">
-              Bármely válasz elegendő
-            </p>
+            <Select
+              value={(edge.rule as FieldCondition).operator}
+              onValueChange={(v) =>
+                onChange({ operator: v as FieldCondition["operator"] } as Partial<FieldCondition>)
+              }
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {operators.map((op) => (
+                  <SelectItem key={op} value={op}>
+                    {OPERATOR_LABELS[op]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Érték
-            </Label>
-            <ValueInput
-              field={sourceField}
-              value={rule.value}
-              onChange={(v) => onChange({ value: v })}
-            />
-          </div>
-        )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
-          aria-label="Feltétel törlése"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
+          {(edge.rule as FieldCondition).operator === "answered" ? (
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Érték
+              </Label>
+              <p className="h-9 flex items-center text-xs text-muted-foreground italic">
+                Bármely válasz elegendő
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Érték
+              </Label>
+              <ValueInput
+                field={sourceField}
+                value={(edge.rule as FieldCondition).value}
+                onChange={(v) => onChange({ value: v } as Partial<FieldCondition>)}
+              />
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onRemove}
+            className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+            aria-label="Feltétel törlése"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

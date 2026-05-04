@@ -7,6 +7,7 @@ import {
   buildRenderTree,
   filterPlacedSchema,
   isFieldVisible,
+  isGroupVisible,
   packByWidth,
   type RenderGroup,
   type RenderGroupChild,
@@ -171,7 +172,20 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
+
+  // Lookup maps for group / sub-group condition checks.
+  const groupById = useMemo(() => {
+    const m = new Map<string, typeof schema.groups[number]>();
+    for (const g of schema.groups) m.set(g.id, g);
+    return m;
+  }, [schema.groups]);
+  const subGroupById = useMemo(() => {
+    const m = new Map<string, typeof schema.subGroups[number]>();
+    for (const s of schema.subGroups) m.set(s.id, s);
+    return m;
+  }, [schema.subGroups]);
 
   // Notify parent of value changes so the demo preview can drive its
   // "reveal one-by-one" mode based on which fields have been answered.
@@ -183,10 +197,18 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   // Groups become steps; their sub-groups (+ group-level fields as a pseudo
   // sub-step) become sub-steps. Global (no-group) top-level fields are NOT
   // rendered in stepped mode per requirement.
-  const groupSteps = useMemo<RenderGroup[]>(
+  const allGroupSteps = useMemo<RenderGroup[]>(
     () => tree.filter((it): it is RenderGroup => it.kind === "group"),
     [tree],
   );
+  // Filter out group-steps whose `condition` evaluates false.
+  const groupSteps = useMemo<RenderGroup[]>(() => {
+    return allGroupSteps.filter((g) => {
+      const meta = groupById.get(g.id);
+      if (!meta) return true;
+      return isGroupVisible(meta, values, seenGroupIds);
+    });
+  }, [allGroupSteps, groupById, values, seenGroupIds]);
   const isStepped = groupSteps.length > 0;
 
   /**
@@ -202,6 +224,8 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       let pseudoAdded = false;
       for (const child of g.children) {
         if (child.kind === "subgroup") {
+          const meta = subGroupById.get(child.id);
+          if (meta && !isGroupVisible(meta, values, seenGroupIds)) continue;
           ids.push(child.id);
           labels[child.id] = child.label;
         } else if (!pseudoAdded) {
@@ -213,7 +237,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       out[g.id] = { ids, labels };
     }
     return out;
-  }, [groupSteps]);
+  }, [groupSteps, subGroupById, values, seenGroupIds]);
 
   // Active step state.
   const [activeGroupIdx, setActiveGroupIdx] = useState(0);
@@ -235,11 +259,34 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     ? (activeSubByGroup[activeGroup.id] ?? subStepsByGroup[activeGroup.id]?.ids[0] ?? null)
     : null;
 
+  // Mark active group + sub-group as seen the moment they become active.
+  // "Seen" is sticky — once entered, the id stays in the set.
+  useEffect(() => {
+    const toAdd: string[] = [];
+    if (activeGroup && !seenGroupIds.has(activeGroup.id)) toAdd.push(activeGroup.id);
+    if (activeSubId && activeSubId !== GROUP_LEVEL_SUB && !seenGroupIds.has(activeSubId)) {
+      toAdd.push(activeSubId);
+    }
+    if (!isStepped) {
+      // Linear mode: every visible group/sub-group is effectively seen on render.
+      for (const g of allGroupSteps) {
+        if (!seenGroupIds.has(g.id)) toAdd.push(g.id);
+      }
+    }
+    if (toAdd.length) {
+      setSeenGroupIds((prev) => {
+        const next = new Set(prev);
+        for (const id of toAdd) next.add(id);
+        return next;
+      });
+    }
+  }, [activeGroup, activeSubId, isStepped, allGroupSteps, seenGroupIds]);
+
   const handleChange = (id: string, v: FormValues[string]) =>
     setValues((prev) => ({ ...prev, [id]: v }));
 
   const renderField = (field: FormField) => {
-    if (!isFieldVisible(field, values)) return null;
+    if (!isFieldVisible(field, values, seenGroupIds)) return null;
     return (
       <FieldRenderer
         key={field.id}
@@ -256,23 +303,30 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
    * width-packing so they don't leave empty space in the row.
    */
   const visibleFields = (fields: FormField[]) =>
-    fields.filter((f) => isFieldVisible(f, values));
+    fields.filter((f) => isFieldVisible(f, values, seenGroupIds));
 
-  const subGroupHasVisible = (sg: RenderSubGroup) => visibleFields(sg.fields).length > 0;
+  const subGroupHasVisible = (sg: RenderSubGroup) => {
+    const meta = subGroupById.get(sg.id);
+    if (meta && !isGroupVisible(meta, values, seenGroupIds)) return false;
+    return visibleFields(sg.fields).length > 0;
+  };
 
-  const groupHasVisible = (g: RenderGroup) =>
-    g.children.some((c) =>
-      c.kind === "field" ? isFieldVisible(c.field, values) : subGroupHasVisible(c),
+  const groupHasVisible = (g: RenderGroup) => {
+    const meta = groupById.get(g.id);
+    if (meta && !isGroupVisible(meta, values, seenGroupIds)) return false;
+    return g.children.some((c) =>
+      c.kind === "field" ? isFieldVisible(c.field, values, seenGroupIds) : subGroupHasVisible(c),
     );
+  };
 
   const visibleGroupChildren = (g: RenderGroup) =>
     g.children.filter((c) =>
-      c.kind === "field" ? isFieldVisible(c.field, values) : subGroupHasVisible(c),
+      c.kind === "field" ? isFieldVisible(c.field, values, seenGroupIds) : subGroupHasVisible(c),
     );
 
   const visibleTopItems = (items: RenderItem[]) =>
     items.filter((it) =>
-      it.kind === "field" ? isFieldVisible(it.field, values) : groupHasVisible(it),
+      it.kind === "field" ? isFieldVisible(it.field, values, seenGroupIds) : groupHasVisible(it),
     );
 
   /** Render an array of items (fields/subgroups/groups) as width-packed rows. */
@@ -333,7 +387,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     const fields = collectFieldsForSubStep(activeGroup, activeSubId);
     const missing: string[] = [];
     for (const f of fields) {
-      if (!isFieldVisible(f, values)) continue;
+      if (!isFieldVisible(f, values, seenGroupIds)) continue;
       if (!f.required) continue;
       const v = values[f.id];
       const empty =

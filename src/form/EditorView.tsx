@@ -268,6 +268,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   subGroups={editor.subGroups}
                   formId={editor.form?.id ?? null}
                   onSetCondition={editor.setFieldCondition}
+                  onSetGroupCondition={editor.setGroupCondition}
                   onPatchField={editor.patchField}
                   selectedFieldId={selectedFieldId}
                   onSelectField={setSelectedFieldId}
