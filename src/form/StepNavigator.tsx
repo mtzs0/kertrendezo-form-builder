@@ -41,7 +41,6 @@ export function StepNavigator({
   if (groups.length === 0) return null;
   const activeGroup = groups[activeGroupIndex];
   const subs = activeGroup?.subIds ?? [];
-  const maxSubIdx = maxSubIndexByGroup[activeGroup?.id] ?? 0;
 
   return (
     <div className="sticky top-0 z-30 -mx-5 md:-mx-8 -mt-5 md:-mt-8 mb-2">
