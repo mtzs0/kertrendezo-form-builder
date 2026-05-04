@@ -660,6 +660,7 @@ export function ConditionCanvas({
       if (!moved) {
         // Treat as click → select field for the right-side panel.
         onSelectField(fieldId);
+        setMultiSelectedFieldIds(new Set());
         setSelectedEdge(null);
       } else {
         // Drag finished — re-evaluate group containment based on the
