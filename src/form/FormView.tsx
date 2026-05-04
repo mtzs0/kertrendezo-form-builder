@@ -658,6 +658,9 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             type="submit"
             size="lg"
             disabled={submitting}
+            onClick={() => {
+              explicitSubmitRef.current = true;
+            }}
             className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
           >
             {submitting ? "Küldés…" : "Küldés"}
