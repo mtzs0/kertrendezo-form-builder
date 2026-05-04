@@ -70,7 +70,9 @@ import type {
   FormField,
   FormGroup,
   FormSubGroup,
+  GroupSeenCondition,
 } from "@/form/types";
+import { isGroupSeenRule } from "@/form/types";
 import {
   OPERATOR_LABELS,
   ValueInput,
