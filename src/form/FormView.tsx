@@ -221,6 +221,21 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     for (const g of groupSteps) {
       const ids: string[] = [];
       const labels: Record<string, string> = {};
+      // Determine if this group has at least one (visible) real sub-group.
+      const visibleSubGroups = g.children.filter(
+        (c): c is RenderSubGroup => {
+          if (c.kind !== "subgroup") return false;
+          const meta = subGroupById.get(c.id);
+          return !meta || isGroupVisible(meta, values, seenGroupIds);
+        },
+      );
+      const hasGroupLevelFields = g.children.some((c) => c.kind === "field");
+      if (visibleSubGroups.length === 0) {
+        // No real sub-groups → render the group's fields directly without
+        // creating a synthetic "Általános" sub-tab.
+        out[g.id] = { ids: [], labels: {} };
+        continue;
+      }
       let pseudoAdded = false;
       for (const child of g.children) {
         if (child.kind === "subgroup") {
@@ -228,7 +243,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           if (meta && !isGroupVisible(meta, values, seenGroupIds)) continue;
           ids.push(child.id);
           labels[child.id] = child.label;
-        } else if (!pseudoAdded) {
+        } else if (!pseudoAdded && hasGroupLevelFields) {
           ids.push(GROUP_LEVEL_SUB);
           labels[GROUP_LEVEL_SUB] = "Általános";
           pseudoAdded = true;
