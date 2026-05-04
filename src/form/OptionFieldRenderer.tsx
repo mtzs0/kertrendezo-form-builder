@@ -113,10 +113,12 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
   const indicatorPosClass = useImg
     ? "absolute top-2 right-2"
     : "absolute right-3 top-1/2 -translate-y-1/2";
-  // Green circle, white fill while unselected; filled green with white check when selected.
-  const indicatorStyleClass =
-    "!h-5 !w-5 !rounded-full !border-2 !border-success !bg-background data-[state=checked]:!bg-success data-[state=checked]:!text-success-foreground";
-  const indicatorClass = cn(indicatorPosClass, indicatorStyleClass);
+  // Green selector, white fill while unselected; filled green with white check when selected.
+  // Radio uses a circle; checkbox uses a square so the two field types are visually distinct.
+  const indicatorBaseClass =
+    "!h-5 !w-5 !border-2 !border-success !bg-background data-[state=checked]:!bg-success data-[state=checked]:!text-success-foreground";
+  const radioIndicatorClass = cn(indicatorPosClass, indicatorBaseClass, "!rounded-full");
+  const checkboxIndicatorClass = cn(indicatorPosClass, indicatorBaseClass, "!rounded-sm");
   const cardLayoutClass = useImg
     ? "relative rounded-lg border bg-card p-3 cursor-pointer transition-colors flex flex-col"
     : "relative rounded-lg border bg-card p-3 pr-10 cursor-pointer transition-colors flex items-center";
