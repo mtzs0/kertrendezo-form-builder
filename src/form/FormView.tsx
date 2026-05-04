@@ -172,7 +172,20 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
+
+  // Lookup maps for group / sub-group condition checks.
+  const groupById = useMemo(() => {
+    const m = new Map<string, typeof schema.groups[number]>();
+    for (const g of schema.groups) m.set(g.id, g);
+    return m;
+  }, [schema.groups]);
+  const subGroupById = useMemo(() => {
+    const m = new Map<string, typeof schema.subGroups[number]>();
+    for (const s of schema.subGroups) m.set(s.id, s);
+    return m;
+  }, [schema.subGroups]);
 
   // Notify parent of value changes so the demo preview can drive its
   // "reveal one-by-one" mode based on which fields have been answered.
@@ -184,10 +197,18 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   // Groups become steps; their sub-groups (+ group-level fields as a pseudo
   // sub-step) become sub-steps. Global (no-group) top-level fields are NOT
   // rendered in stepped mode per requirement.
-  const groupSteps = useMemo<RenderGroup[]>(
+  const allGroupSteps = useMemo<RenderGroup[]>(
     () => tree.filter((it): it is RenderGroup => it.kind === "group"),
     [tree],
   );
+  // Filter out group-steps whose `condition` evaluates false.
+  const groupSteps = useMemo<RenderGroup[]>(() => {
+    return allGroupSteps.filter((g) => {
+      const meta = groupById.get(g.id);
+      if (!meta) return true;
+      return isGroupVisible(meta, values, seenGroupIds);
+    });
+  }, [allGroupSteps, groupById, values, seenGroupIds]);
   const isStepped = groupSteps.length > 0;
 
   /**
