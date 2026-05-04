@@ -1595,6 +1595,24 @@ export function ConditionCanvas({
                   )}
                   style={frameStyle}
                 >
+                  {/* Order number (drives display order; lower goes first) */}
+                  <input
+                    type="number"
+                    data-no-drag
+                    value={meta.location ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const n = raw === "" ? 0 : Number(raw);
+                      const loc = Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+                      if (isSub) onPatchSubGroup(id, { location: loc });
+                      else onPatchGroup(id, { location: loc });
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    placeholder="#"
+                    title="Sorrend (kisebb szám előbb jelenik meg)"
+                    className="absolute -left-3 top-3 w-9 h-7 rounded-md border border-border bg-card text-[11px] text-center font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none z-10"
+                  />
                   {/* Title bar (drag handle) */}
                   <div
                     onPointerDown={(e) => onFrameDragStart(e, isSub ? "subgroup" : "group", id)}
