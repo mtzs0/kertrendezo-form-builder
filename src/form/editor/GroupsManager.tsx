@@ -123,7 +123,7 @@ export function GroupsManager({
                     )}
                   </Button>
 
-                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_1fr_90px] gap-2">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">
                         Külső név (megjelenített)
@@ -159,6 +159,23 @@ export function GroupsManager({
                         placeholder="kapcsolat"
                       />
                     </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        Sorrend
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={g.location ?? 0}
+                        onChange={(e) => {
+                          const n = Number(e.target.value);
+                          onPatchGroup(g.id, {
+                            location: Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0,
+                          });
+                        }}
+                        placeholder="1"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-1 pt-5">
@@ -166,6 +183,17 @@ export function GroupsManager({
                       {g.location > 0 ? "elhelyezve" : "elhelyezetlen"} ·{" "}
                       {fieldsInGroup(g.id)} mező
                     </span>
+                    <Button
+                      type="button"
+                      variant={g.condition && g.condition.rules.length > 0 ? "default" : "ghost"}
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setConditionFor((c) => (c === g.id ? null : g.id))}
+                      aria-label="Feltétel"
+                      title="Megjelenítési feltétel"
+                    >
+                      <Filter className="h-3.5 w-3.5" />
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
@@ -185,6 +213,18 @@ export function GroupsManager({
                     </Button>
                   </div>
                 </div>
+
+                {conditionFor === g.id && (
+                  <div className="border-t border-border px-3 py-3 bg-background/60">
+                    <ConditionEditor
+                      currentFieldId={g.id}
+                      currentFieldLabel={`Csoport: ${g.label || g.internalName}`}
+                      allFields={fields}
+                      value={g.condition}
+                      onChange={(next) => onSetGroupCondition(g.id, next)}
+                    />
+                  </div>
+                )}
 
                 {isOpen && (
                   <div className="border-t border-border px-3 py-3 space-y-3 bg-background/40">
