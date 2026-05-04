@@ -2,10 +2,13 @@ import type {
   ConditionGroup,
   FieldCondition,
   FormField,
+  FormGroup,
   FormSchema,
+  FormSubGroup,
   FormValues,
   WidthPercent,
 } from "./types";
+import { isGroupSeenRule } from "./types";
 
 /** Sort by location ascending (stable). */
 const byLocation = <T extends { location: number }>(a: T, b: T) =>
