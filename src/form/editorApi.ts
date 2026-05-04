@@ -618,3 +618,24 @@ export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "for
     fields: bundle.fields,
   };
 }
+
+/**
+ * Save (or clear) the display condition for a group / sub-group. Both kinds
+ * of rows live in the `form_groups` table, so this is a single-row update.
+ * Passing `undefined` (or an empty rules array) clears the condition.
+ */
+export async function saveGroupCondition(
+  groupId: string,
+  condition: import("./types").ConditionGroup | undefined
+) {
+  const u: Record<string, unknown> = {};
+  if (!condition || !condition.rules.length) {
+    u.condition_combinator = "and";
+    u.condition_rules = [];
+  } else {
+    u.condition_combinator = condition.combinator;
+    u.condition_rules = condition.rules;
+  }
+  const { error } = await sbAny.from("form_groups").update(u).eq("id", groupId);
+  if (error) throw error;
+}
