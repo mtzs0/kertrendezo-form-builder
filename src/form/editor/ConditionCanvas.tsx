@@ -1550,7 +1550,7 @@ export function ConditionCanvas({
                               setEditingFrameKey(null);
                             }
                           }}
-                          className="flex-1 min-w-0 px-1 py-0 text-[11px] font-semibold uppercase tracking-wide bg-background/80 text-foreground border border-border rounded outline-none focus:ring-1 focus:ring-primary"
+                          className="flex-1 min-w-0 px-1 py-0 text-[11px] font-semibold normal-case tracking-normal bg-background/80 text-foreground border border-border rounded outline-none focus:ring-1 focus:ring-primary"
                         />
                       ) : (
                         <span className="truncate">{label}</span>
