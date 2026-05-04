@@ -93,22 +93,16 @@ export function DemoPreview({ fields, groups, subGroups, formId, thankYouText }:
       } as FormField;
     });
 
-    // Synthesize groups/sub-groups with positive locations (in placement
-    // order) so FormView's `filterPlacedSchema` picks them up.
-    const groupOrder = new Map<string, number>();
-    const subOrder = new Map<string, number>();
-    let gn = 0;
-    let sn = 0;
-    for (const f of orderedFields) {
-      if (f.groupId && !groupOrder.has(f.groupId)) groupOrder.set(f.groupId, ++gn);
-      if (f.subGroupId && !subOrder.has(f.subGroupId)) subOrder.set(f.subGroupId, ++sn);
-    }
+    // Keep manually-entered group/sub-group order numbers authoritative.
+    // FormView treats location <= 0 as unplaced, but the canvas frame itself
+    // is the placement signal here, so shift numbers by +1 to allow 0 as a
+    // valid first position while preserving relative order.
     const placedGroups: FormGroup[] = groups
       .filter((g) => usedGroupIds.has(g.id))
-      .map((g) => ({ ...g, location: groupOrder.get(g.id) ?? 1 }));
+      .map((g) => ({ ...g, location: (g.location ?? 0) + 1 }));
     const placedSubGroups: FormSubGroup[] = subGroups
       .filter((sg) => usedSubGroupIds.has(sg.id))
-      .map((sg) => ({ ...sg, location: subOrder.get(sg.id) ?? 1 }));
+      .map((sg) => ({ ...sg, location: (sg.location ?? 0) + 1 }));
 
     return { fields: orderedFields, groups: placedGroups, subGroups: placedSubGroups };
   }, [fields, groups, subGroups, positions, frames]);
