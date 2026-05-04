@@ -1213,18 +1213,19 @@ export function ConditionCanvas({
         <div>
           {selectedEdgeData ? (
             <EdgeInspector
-              targetField={fieldById.get(selectedEdgeData.targetId)!}
-              sourceField={fieldById.get(selectedEdgeData.sourceId)!}
-              rule={selectedEdgeData.rule}
+              edge={selectedEdgeData}
+              fieldById={fieldById}
+              groupById={groupById}
+              subGroupById={subGroupById}
               onChange={(patch) =>
                 updateRule(
-                  selectedEdgeData.targetId,
+                  selectedEdgeData.target,
                   selectedEdgeData.ruleIndex,
                   patch
                 )
               }
               onRemove={() =>
-                removeRule(selectedEdgeData.targetId, selectedEdgeData.ruleIndex)
+                removeRule(selectedEdgeData.target, selectedEdgeData.ruleIndex)
               }
               onClose={() => setSelectedEdge(null)}
             />
