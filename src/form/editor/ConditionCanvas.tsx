@@ -312,8 +312,10 @@ export function ConditionCanvas({
       if (!f?.condition || !isFlatGroup(f.condition)) continue;
       f.condition.rules.forEach((r, i) => {
         if ("combinator" in r) return;
-        if (!positions[r.fieldId]) return;
-        out.push({ targetId, ruleIndex: i, sourceId: r.fieldId, rule: r });
+        if ((r as { kind?: string }).kind === "group_seen") return;
+        const fr = r as FieldCondition;
+        if (!positions[fr.fieldId]) return;
+        out.push({ targetId, ruleIndex: i, sourceId: fr.fieldId, rule: fr });
       });
     }
     return out;
