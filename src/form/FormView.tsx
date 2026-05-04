@@ -261,14 +261,29 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [maxGroupIdx, setMaxGroupIdx] = useState(0);
   const [maxSubIdxByGroup, setMaxSubIdxByGroup] = useState<Record<string, number>>({});
 
-  // Reset stepper when groups change shape.
-  const groupsKey = groupSteps.map((g) => g.id).join("|");
+  // When the visible group set changes, only reset the stepper if the
+  // currently active group is no longer present. Newly-revealed groups
+  // appearing AFTER the active group must NOT collapse the user back to
+  // group 0 — that would discard their progress and require a second
+  // "Tovább" click to advance.
+  const groupIdsKey = groupSteps.map((g) => g.id).join("|");
   useEffect(() => {
+    const ids = groupIdsKey ? groupIdsKey.split("|") : [];
+    const activeId = activeGroup?.id;
+    if (activeId && ids.includes(activeId)) {
+      // Re-anchor activeGroupIdx in case insertion shifted positions.
+      const newIdx = ids.indexOf(activeId);
+      if (newIdx !== activeGroupIdx) setActiveGroupIdx(newIdx);
+      setMaxGroupIdx((m) => Math.min(Math.max(m, newIdx), ids.length - 1));
+      return;
+    }
+    // Active group disappeared (or none yet) — reset.
     setActiveGroupIdx(0);
     setMaxGroupIdx(0);
     setActiveSubByGroup({});
     setMaxSubIdxByGroup({});
-  }, [groupsKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupIdsKey]);
 
   const activeGroup = isStepped ? groupSteps[activeGroupIdx] : null;
   const activeSubId = activeGroup
