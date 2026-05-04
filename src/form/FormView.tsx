@@ -387,7 +387,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     const fields = collectFieldsForSubStep(activeGroup, activeSubId);
     const missing: string[] = [];
     for (const f of fields) {
-      if (!isFieldVisible(f, values)) continue;
+      if (!isFieldVisible(f, values, seenGroupIds)) continue;
       if (!f.required) continue;
       const v = values[f.id];
       const empty =
