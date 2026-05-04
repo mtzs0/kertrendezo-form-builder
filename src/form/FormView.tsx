@@ -259,11 +259,34 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     ? (activeSubByGroup[activeGroup.id] ?? subStepsByGroup[activeGroup.id]?.ids[0] ?? null)
     : null;
 
+  // Mark active group + sub-group as seen the moment they become active.
+  // "Seen" is sticky — once entered, the id stays in the set.
+  useEffect(() => {
+    const toAdd: string[] = [];
+    if (activeGroup && !seenGroupIds.has(activeGroup.id)) toAdd.push(activeGroup.id);
+    if (activeSubId && activeSubId !== GROUP_LEVEL_SUB && !seenGroupIds.has(activeSubId)) {
+      toAdd.push(activeSubId);
+    }
+    if (!isStepped) {
+      // Linear mode: every visible group/sub-group is effectively seen on render.
+      for (const g of allGroupSteps) {
+        if (!seenGroupIds.has(g.id)) toAdd.push(g.id);
+      }
+    }
+    if (toAdd.length) {
+      setSeenGroupIds((prev) => {
+        const next = new Set(prev);
+        for (const id of toAdd) next.add(id);
+        return next;
+      });
+    }
+  }, [activeGroup, activeSubId, isStepped, allGroupSteps, seenGroupIds]);
+
   const handleChange = (id: string, v: FormValues[string]) =>
     setValues((prev) => ({ ...prev, [id]: v }));
 
   const renderField = (field: FormField) => {
-    if (!isFieldVisible(field, values)) return null;
+    if (!isFieldVisible(field, values, seenGroupIds)) return null;
     return (
       <FieldRenderer
         key={field.id}
@@ -280,23 +303,30 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
    * width-packing so they don't leave empty space in the row.
    */
   const visibleFields = (fields: FormField[]) =>
-    fields.filter((f) => isFieldVisible(f, values));
+    fields.filter((f) => isFieldVisible(f, values, seenGroupIds));
 
-  const subGroupHasVisible = (sg: RenderSubGroup) => visibleFields(sg.fields).length > 0;
+  const subGroupHasVisible = (sg: RenderSubGroup) => {
+    const meta = subGroupById.get(sg.id);
+    if (meta && !isGroupVisible(meta, values, seenGroupIds)) return false;
+    return visibleFields(sg.fields).length > 0;
+  };
 
-  const groupHasVisible = (g: RenderGroup) =>
-    g.children.some((c) =>
-      c.kind === "field" ? isFieldVisible(c.field, values) : subGroupHasVisible(c),
+  const groupHasVisible = (g: RenderGroup) => {
+    const meta = groupById.get(g.id);
+    if (meta && !isGroupVisible(meta, values, seenGroupIds)) return false;
+    return g.children.some((c) =>
+      c.kind === "field" ? isFieldVisible(c.field, values, seenGroupIds) : subGroupHasVisible(c),
     );
+  };
 
   const visibleGroupChildren = (g: RenderGroup) =>
     g.children.filter((c) =>
-      c.kind === "field" ? isFieldVisible(c.field, values) : subGroupHasVisible(c),
+      c.kind === "field" ? isFieldVisible(c.field, values, seenGroupIds) : subGroupHasVisible(c),
     );
 
   const visibleTopItems = (items: RenderItem[]) =>
     items.filter((it) =>
-      it.kind === "field" ? isFieldVisible(it.field, values) : groupHasVisible(it),
+      it.kind === "field" ? isFieldVisible(it.field, values, seenGroupIds) : groupHasVisible(it),
     );
 
   /** Render an array of items (fields/subgroups/groups) as width-packed rows. */
