@@ -29,6 +29,7 @@
 
 import type {
   ConditionGroup,
+  ConditionRule,
   FieldCondition,
   FormField,
 } from "./types";
