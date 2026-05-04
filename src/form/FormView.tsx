@@ -384,7 +384,17 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     );
   }
 
-  function collectFieldsForSubStep(group: RenderGroup, subId: string): FormField[] {
+  function collectFieldsForSubStep(group: RenderGroup, subId: string | null): FormField[] {
+    if (subId === null) {
+      // No sub-tabs → flatten every field in the group (group-level + any
+      // sub-group fields, though normally there are none in this branch).
+      const out: FormField[] = [];
+      for (const c of group.children) {
+        if (c.kind === "field") out.push(c.field);
+        else out.push(...c.fields);
+      }
+      return out;
+    }
     if (subId === GROUP_LEVEL_SUB) {
       return group.children
         .filter((c): c is RenderGroupChild => c.kind === "field")
