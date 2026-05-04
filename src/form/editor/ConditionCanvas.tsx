@@ -321,22 +321,55 @@ export function ConditionCanvas({
     [fields, positions]
   );
 
-  // Build edges from current condition data.
+  /** True if the endpoint is currently rendered on the canvas. */
+  const endpointPlaced = useCallback(
+    (e: Endpoint): boolean => {
+      if (e.kind === "field") return !!positions[e.id];
+      const fk = e.kind === "group" ? `group:${e.id}` : `subgroup:${e.id}`;
+      return !!frames[fk];
+    },
+    [positions, frames]
+  );
+
+  // Build edges from current condition data — fields AND groups/sub-groups.
   const edges: Edge[] = useMemo(() => {
     const out: Edge[] = [];
-    for (const targetId of placedFieldIds) {
-      const f = fieldById.get(targetId);
-      if (!f?.condition || !isFlatGroup(f.condition)) continue;
-      f.condition.rules.forEach((r, i) => {
+    const pushFromCondition = (target: Endpoint, cond: ConditionGroup | undefined) => {
+      if (!cond || !isFlatGroup(cond)) return;
+      cond.rules.forEach((r, i) => {
         if ("combinator" in r) return;
-        if ((r as { kind?: string }).kind === "group_seen") return;
-        const fr = r as FieldCondition;
-        if (!positions[fr.fieldId]) return;
-        out.push({ targetId, ruleIndex: i, sourceId: fr.fieldId, rule: fr });
+        if (isGroupSeenRule(r)) {
+          const srcKind: EndpointKind = groupById.has(r.groupId)
+            ? "group"
+            : subGroupById.has(r.groupId)
+            ? "subgroup"
+            : "group";
+          const src: Endpoint = { kind: srcKind, id: r.groupId };
+          if (!endpointPlaced(src) || !endpointPlaced(target)) return;
+          out.push({ target, ruleIndex: i, source: src, rule: r });
+        } else {
+          const fr = r as FieldCondition;
+          const src: Endpoint = { kind: "field", id: fr.fieldId };
+          if (!endpointPlaced(src) || !endpointPlaced(target)) return;
+          out.push({ target, ruleIndex: i, source: src, rule: fr });
+        }
       });
+    };
+    for (const fid of placedFieldIds) {
+      const f = fieldById.get(fid);
+      if (!f) continue;
+      pushFromCondition({ kind: "field", id: fid }, f.condition);
+    }
+    for (const g of groups) {
+      if (!frames[`group:${g.id}`]) continue;
+      pushFromCondition({ kind: "group", id: g.id }, g.condition);
+    }
+    for (const sg of subGroups) {
+      if (!frames[`subgroup:${sg.id}`]) continue;
+      pushFromCondition({ kind: "subgroup", id: sg.id }, sg.condition);
     }
     return out;
-  }, [placedFieldIds, fieldById, positions]);
+  }, [placedFieldIds, fieldById, groups, subGroups, frames, groupById, subGroupById, endpointPlaced]);
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
