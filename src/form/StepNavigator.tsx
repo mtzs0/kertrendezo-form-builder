@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Check, Lock } from "lucide-react";
+import { Check } from "lucide-react";
 
 export interface StepGroup {
   id: string;
