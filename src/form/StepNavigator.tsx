@@ -41,7 +41,6 @@ export function StepNavigator({
   if (groups.length === 0) return null;
   const activeGroup = groups[activeGroupIndex];
   const subs = activeGroup?.subIds ?? [];
-  const maxSubIdx = maxSubIndexByGroup[activeGroup?.id] ?? 0;
 
   return (
     <div className="sticky top-0 z-30 -mx-5 md:-mx-8 -mt-5 md:-mt-8 mb-2">
@@ -50,21 +49,17 @@ export function StepNavigator({
         <div className="flex items-stretch gap-1 px-3 md:px-4 pt-3 overflow-x-auto">
           {groups.map((g, i) => {
             const isActive = i === activeGroupIndex;
-            const isUnlocked = i <= maxGroupIndex;
             const isDone = i < maxGroupIndex;
             return (
               <button
                 key={g.id}
                 type="button"
-                disabled={!isUnlocked}
-                onClick={() => isUnlocked && onJumpGroup(i)}
+                onClick={() => onJumpGroup(i)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all",
+                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : isUnlocked
-                      ? "text-foreground/80 hover:bg-secondary/80 cursor-pointer"
-                      : "text-muted-foreground/60 cursor-not-allowed",
+                    : "text-foreground/80 hover:bg-secondary/80",
                 )}
                 aria-current={isActive ? "step" : undefined}
               >
@@ -100,25 +95,19 @@ export function StepNavigator({
               aria-hidden
             />
             <div className="absolute inset-0 flex items-end px-3 md:px-6 pb-3 gap-2 overflow-x-auto">
-              {subs.map((subId, idx) => {
+              {subs.map((subId) => {
                 const isActive = subId === activeSubId;
-                const isUnlocked = idx <= maxSubIdx;
                 const label = activeGroup.subLabels[subId] ?? "—";
                 return (
                   <button
                     key={subId}
                     type="button"
-                    disabled={!isUnlocked}
-                    onClick={() =>
-                      isUnlocked && onJumpSub(activeGroupIndex, subId)
-                    }
+                    onClick={() => onJumpSub(activeGroupIndex, subId)}
                     className={cn(
-                      "px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border",
+                      "px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer",
                       isActive
                         ? "bg-card text-primary border-transparent shadow-md"
-                        : isUnlocked
-                          ? "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10"
-                          : "bg-transparent text-primary-foreground/50 border-dashed border-primary-foreground/30 cursor-not-allowed",
+                        : "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10",
                     )}
                     aria-current={isActive ? "step" : undefined}
                   >
