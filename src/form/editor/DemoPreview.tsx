@@ -159,7 +159,7 @@ export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, s
         schema={schema}
         layout="horizontal"
         formId={formId ?? null}
-        showDemoButton
+        showDemoButton={showDemoButton}
         thankYouText={thankYouText ?? null}
         onValuesChange={handleValuesChange}
       />
