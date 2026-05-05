@@ -9,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FormView } from "@/form/FormView";
 import { DemoPreview } from "@/form/editor/DemoPreview";
 import { useDoubleHotkey, useIsMobile } from "@/form/hooks";
 import { usePublishedForm } from "@/form/usePublishedForm";
