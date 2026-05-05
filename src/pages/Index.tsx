@@ -56,20 +56,18 @@ const Index = () => {
             )}
           </header>
 
-          <div className="rounded-2xl bg-card border border-border kr-shadow-soft p-5 md:p-8">
-            {loading ? (
-              <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
-            ) : (
-              <DemoPreview
-                fields={schema.fields}
-                groups={schema.groups}
-                subGroups={schema.subGroups}
-                formId={formId}
-                thankYouText={form?.thank_you_text ?? null}
-                showDemoButton={false}
-              />
-            )}
-          </div>
+          {loading ? (
+            <div className="rounded-2xl bg-card border border-border kr-shadow-soft p-5 md:p-8 py-16 text-center text-muted-foreground">Betöltés…</div>
+          ) : (
+            <DemoPreview
+              fields={schema.fields}
+              groups={schema.groups}
+              subGroups={schema.subGroups}
+              formId={formId}
+              thankYouText={form?.thank_you_text ?? null}
+              showDemoButton={false}
+            />
+          )}
 
         </div>
       </section>
