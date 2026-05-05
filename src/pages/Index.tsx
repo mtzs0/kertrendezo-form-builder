@@ -61,11 +61,13 @@ const Index = () => {
             {loading ? (
               <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
             ) : (
-              <FormView
-                schema={schema}
-                layout={isMobile ? "vertical" : "horizontal"}
+              <DemoPreview
+                fields={schema.fields}
+                groups={schema.groups}
+                subGroups={schema.subGroups}
                 formId={formId}
                 thankYouText={form?.thank_you_text ?? null}
+                showDemoButton={false}
               />
             )}
           </div>
