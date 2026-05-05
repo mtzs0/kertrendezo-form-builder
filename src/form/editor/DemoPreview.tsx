@@ -44,7 +44,7 @@ function isAnswered(field: FormField, values: FormValues): boolean {
   return true;
 }
 
-export function DemoPreview({ fields, groups, subGroups, formId, thankYouText }: Props) {
+export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, showDemoButton = true }: Props) {
   const positions = useCanvasPositions(formId);
   const frames = useGroupFrames(formId);
   const [revealOneByOne] = useRevealOneByOne(formId);
