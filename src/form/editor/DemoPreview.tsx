@@ -30,6 +30,8 @@ interface Props {
   subGroups: FormSubGroup[];
   formId: string | null | undefined;
   thankYouText: string | null | undefined;
+  /** When true, the floating "Demo" debug button is shown. Defaults to true. */
+  showDemoButton?: boolean;
 }
 
 /** Returns true if the user hasn't supplied any value for this field yet. */
@@ -42,7 +44,7 @@ function isAnswered(field: FormField, values: FormValues): boolean {
   return true;
 }
 
-export function DemoPreview({ fields, groups, subGroups, formId, thankYouText }: Props) {
+export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, showDemoButton = true }: Props) {
   const positions = useCanvasPositions(formId);
   const frames = useGroupFrames(formId);
   const [revealOneByOne] = useRevealOneByOne(formId);
@@ -157,7 +159,7 @@ export function DemoPreview({ fields, groups, subGroups, formId, thankYouText }:
         schema={schema}
         layout="horizontal"
         formId={formId ?? null}
-        showDemoButton
+        showDemoButton={showDemoButton}
         thankYouText={thankYouText ?? null}
         onValuesChange={handleValuesChange}
       />
