@@ -30,6 +30,8 @@ interface Props {
   subGroups: FormSubGroup[];
   formId: string | null | undefined;
   thankYouText: string | null | undefined;
+  /** When true, the floating "Demo" debug button is shown. Defaults to true. */
+  showDemoButton?: boolean;
 }
 
 /** Returns true if the user hasn't supplied any value for this field yet. */
