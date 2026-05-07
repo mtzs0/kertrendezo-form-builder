@@ -1934,7 +1934,10 @@ export function ConditionCanvas({
                 style.borderWidth = 2;
                 style.boxShadow = `0 0 0 2px ${containerColor}33`;
               }
-              return (
+              const selectedSet = new Set(multiSelectedFieldIds);
+              if (selectedFieldId) selectedSet.add(selectedFieldId);
+              const isInMultiSelection = selectedSet.size >= 2 && selectedSet.has(id);
+              const boxNode = (
                 <div
                   key={id}
                   data-endpoint-target={`field:${id}`}
@@ -2046,6 +2049,41 @@ export function ConditionCanvas({
                     </div>
                   )}
                 </div>
+              );
+              if (!isInMultiSelection) return boxNode;
+              return (
+                <ContextMenu key={id}>
+                  <ContextMenuTrigger asChild onContextMenu={(e) => e.stopPropagation()}>
+                    {boxNode}
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem
+                      onSelect={() => {
+                        const ids = Array.from(selectedSet);
+                        const currentPositions = positionsRef.current;
+                        const sorted = ids
+                          .filter((fid) => currentPositions[fid])
+                          .sort((a, b) => {
+                            const ya = currentPositions[a].y;
+                            const yb = currentPositions[b].y;
+                            if (ya !== yb) return ya - yb;
+                            return currentPositions[a].x - currentPositions[b].x;
+                          });
+                        if (sorted.length === 0) return;
+                        const startOrder = currentPositions[sorted[0]].order ?? 1;
+                        setPositions((prev) => {
+                          const next = { ...prev };
+                          sorted.forEach((fid, i) => {
+                            next[fid] = { ...next[fid], order: startOrder + i };
+                          });
+                          return next;
+                        });
+                      }}
+                    >
+                      Auto számozás
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
           </div>
