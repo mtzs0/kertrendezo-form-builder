@@ -647,13 +647,40 @@ export function ConditionCanvas({
     const offsetY = start.y - pos.y;
     let moved = false;
 
+    // If the dragged field is part of an active multi-selection, move all of
+    // them by the same delta. Otherwise just drag this one box.
+    const multiSet = new Set(multiSelectedFieldIds);
+    if (selectedFieldId) multiSet.add(selectedFieldId);
+    const groupDrag = multiSet.size >= 2 && multiSet.has(fieldId);
+    const startPositions: Record<string, { x: number; y: number }> = {};
+    if (groupDrag) {
+      multiSet.forEach((fid) => {
+        const p = positions[fid];
+        if (p) startPositions[fid] = { x: p.x, y: p.y };
+      });
+    }
+
     const move = (ev: PointerEvent) => {
       moved = true;
       const w = toWorld(ev.clientX, ev.clientY);
-      setPositions((prev) => ({
-        ...prev,
-        [fieldId]: { ...prev[fieldId], x: w.x - offsetX, y: w.y - offsetY },
-      }));
+      if (groupDrag) {
+        const dx = w.x - offsetX - startPositions[fieldId].x;
+        const dy = w.y - offsetY - startPositions[fieldId].y;
+        setPositions((prev) => {
+          const next = { ...prev };
+          for (const fid of Object.keys(startPositions)) {
+            const sp = startPositions[fid];
+            if (!next[fid]) continue;
+            next[fid] = { ...next[fid], x: sp.x + dx, y: sp.y + dy };
+          }
+          return next;
+        });
+      } else {
+        setPositions((prev) => ({
+          ...prev,
+          [fieldId]: { ...prev[fieldId], x: w.x - offsetX, y: w.y - offsetY },
+        }));
+      }
     };
     const up = () => {
       window.removeEventListener("pointermove", move);
@@ -666,8 +693,12 @@ export function ConditionCanvas({
       } else {
         // Drag finished — re-evaluate group containment based on the
         // box's final position (read fresh from the store).
-        const cur = getPositions(formId)[fieldId];
-        if (cur) applyContainment(fieldId, cur.x, cur.y);
+        const movedIds = groupDrag ? Object.keys(startPositions) : [fieldId];
+        const fresh = getPositions(formId);
+        for (const fid of movedIds) {
+          const cur = fresh[fid];
+          if (cur) applyContainment(fid, cur.x, cur.y);
+        }
       }
     };
     window.addEventListener("pointermove", move);
