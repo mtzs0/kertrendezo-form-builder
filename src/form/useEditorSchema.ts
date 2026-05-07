@@ -860,6 +860,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     removeSubGroup,
     reorderSubGroups,
     addField,
+    duplicateField,
     patchField,
     removeField,
     reorderFields,
