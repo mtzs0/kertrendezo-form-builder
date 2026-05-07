@@ -533,6 +533,80 @@ export async function deleteField(id: string) {
   if (error) throw error;
 }
 
+/**
+ * Duplicate a field row (and its options + condition) at the DB level.
+ * The new row gets a fresh `id`, an incremented `internal_name` and
+ * `position` set to old+1 (callers can pass anything via `position`).
+ * Returns the new row's id.
+ */
+export async function duplicateFieldRow(
+  fieldId: string,
+  newInternalName: string,
+  position: number
+): Promise<string> {
+  // 1) Read the original row.
+  const { data: orig, error: selErr } = await supabase
+    .from("form_fields")
+    .select("*")
+    .eq("id", fieldId)
+    .single();
+  if (selErr) throw selErr;
+  if (!orig) throw new Error("Field not found");
+
+  // 2) Insert a clone (omit `id`, set new internal_name + position).
+  const insertRow: Record<string, unknown> = { ...(orig as Record<string, unknown>) };
+  delete insertRow.id;
+  delete insertRow.created_at;
+  delete insertRow.updated_at;
+  insertRow.internal_name = newInternalName;
+  insertRow.position = position;
+  const { data: created, error: insErr } = await supabase
+    .from("form_fields")
+    .insert(insertRow as Database["public"]["Tables"]["form_fields"]["Insert"])
+    .select("id")
+    .single();
+  if (insErr) throw insErr;
+  const newId = (created as { id: string }).id;
+
+  // 3) Clone options.
+  const { data: opts, error: optErr } = await supabase
+    .from("form_field_options")
+    .select("*")
+    .eq("field_id", fieldId);
+  if (optErr) throw optErr;
+  if (opts && opts.length) {
+    const optRows = (opts as OptionRow[]).map((o) => {
+      const r: Record<string, unknown> = { ...o };
+      delete r.id;
+      delete r.created_at;
+      delete r.updated_at;
+      r.field_id = newId;
+      return r;
+    });
+    const { error: optInsErr } = await supabase
+      .from("form_field_options")
+      .insert(optRows as Database["public"]["Tables"]["form_field_options"]["Insert"][]);
+    if (optInsErr) throw optInsErr;
+  }
+
+  // 4) Clone condition (if any). Stored in form_field_conditions (one row / field).
+  const { data: condRow } = await supabase
+    .from("form_field_conditions")
+    .select("combinator, rules")
+    .eq("field_id", fieldId)
+    .maybeSingle();
+  if (condRow) {
+    const c = condRow as { combinator: string; rules: unknown };
+    await supabase.from("form_field_conditions").insert({
+      field_id: newId,
+      combinator: c.combinator,
+      rules: c.rules as Database["public"]["Tables"]["form_field_conditions"]["Insert"]["rules"],
+    });
+  }
+
+  return newId;
+}
+
 /** Bulk position update — used by drag-and-drop reorder. */
 export async function setFieldPositions(
   updates: Array<{ id: string; position: number; groupId?: string | null; subGroupId?: string | null }>
