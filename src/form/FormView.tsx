@@ -708,6 +708,33 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             Demo
           </Button>
         )}
+        {isStepped && (activeGroupIdx > 0 || activeSubIdxInGroup > 0) && (
+          <Button
+            type="button"
+            size="lg"
+            variant="outline"
+            onClick={() => {
+              if (activeGroup && subInfo && activeSubIdxInGroup > 0) {
+                const prevSubId = subInfo.ids[activeSubIdxInGroup - 1];
+                setActiveSubByGroup((p) => ({ ...p, [activeGroup.id]: prevSubId }));
+                return;
+              }
+              if (activeGroupIdx > 0) {
+                const prevIdx = activeGroupIdx - 1;
+                setActiveGroupIdx(prevIdx);
+                // Move to last sub of previous group, if any.
+                const prevGroup = groupSteps[prevIdx];
+                const prevSubInfo = prevGroup ? subStepsByGroup[prevGroup.id] : null;
+                if (prevGroup && prevSubInfo && prevSubInfo.ids.length > 0) {
+                  const lastSubId = prevSubInfo.ids[prevSubInfo.ids.length - 1];
+                  setActiveSubByGroup((p) => ({ ...p, [prevGroup.id]: lastSubId }));
+                }
+              }
+            }}
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" /> Vissza
+          </Button>
+        )}
         {isStepped && !isFinalStep ? (
           <Button
             type="button"
