@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import type { FormField, FormValues, ImageField, NotePosition, OptionField, RepeaterField, RepeaterInstance } from "@/form/types";
 import { OptionFieldRenderer } from "./OptionFieldRenderer";
 import { RepeaterRenderer } from "./RepeaterRenderer";
+import { Markdown } from "./Markdown";
 import { uploadOptionImage } from "@/form/editorApi";
 import { toast } from "sonner";
 
