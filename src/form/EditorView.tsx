@@ -278,6 +278,11 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     setSelectedFieldId(id);
                     return id;
                   }}
+                  onDuplicateField={async (id) => {
+                    const newId = await editor.duplicateField(id);
+                    if (newId) setSelectedFieldId(newId);
+                    return newId;
+                  }}
                   onAddGroup={editor.addGroup}
                   onAddSubGroup={editor.addSubGroup}
                   onRemoveGroup={editor.removeGroup}
