@@ -2100,7 +2100,37 @@ export function ConditionCanvas({
                   )}
                 </div>
               );
-              if (!isInMultiSelection) return boxNode;
+              if (!isInMultiSelection) {
+                return (
+                  <ContextMenu key={id}>
+                    <ContextMenuTrigger asChild onContextMenu={(e) => e.stopPropagation()}>
+                      {boxNode}
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        onSelect={async () => {
+                          const newId = await onDuplicateField(id);
+                          if (!newId) return;
+                          // Place duplicate on the canvas next to the original.
+                          const origPos = positionsRef.current[id];
+                          if (origPos) {
+                            setPositions((prev) => ({
+                              ...prev,
+                              [newId]: {
+                                x: origPos.x + BOX_W + 24,
+                                y: origPos.y,
+                                order: maxOrder(prev) + 1,
+                              },
+                            }));
+                          }
+                        }}
+                      >
+                        Duplikálás
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              }
               return (
                 <ContextMenu key={id}>
                   <ContextMenuTrigger asChild onContextMenu={(e) => e.stopPropagation()}>
