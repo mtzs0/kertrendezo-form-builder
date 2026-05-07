@@ -5,6 +5,7 @@ import {
   createGroup,
   createSubGroup,
   deleteField,
+  duplicateFieldRow,
   deleteGroup,
   deleteSubGroup,
   ensureForm,
@@ -81,6 +82,8 @@ export interface UseEditorSchemaResult {
 
   // Field ops
   addField: (type: FieldType, opts?: { groupId?: string; subGroupId?: string }) => Promise<string>;
+  /** Duplicate an existing field (including options + condition). Returns the new field id. */
+  duplicateField: (id: string) => Promise<string | undefined>;
   patchField: (id: string, patch: Partial<FormField> & { type?: FieldType }) => void;
   removeField: (id: string) => Promise<void>;
   reorderFields: (
@@ -514,6 +517,49 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     [form, bundle]
   );
 
+  /**
+   * Duplicate a field (including options + condition). The new field has the
+   * same `internal_name` as the original with a numeric suffix incremented
+   * (or `_1` appended if the original has no trailing number).
+   */
+  const duplicateField = useCallback(
+    async (id: string): Promise<string | undefined> => {
+      if (!form || !bundle) return undefined;
+      const orig = bundle.fields.find((f) => f.id === id);
+      if (!orig) return undefined;
+      // Compute next internal name. If original ends with digits, increment;
+      // otherwise check for existing names with suffixes and pick the next.
+      const existingNames = new Set(bundle.fields.map((f) => f.internalName));
+      const m = /^(.*?)(\d+)$/.exec(orig.internalName);
+      const base = m ? m[1] : `${orig.internalName}_`;
+      let n = m ? parseInt(m[2], 10) + 1 : 1;
+      let candidate = `${base}${n}`;
+      while (existingNames.has(candidate)) {
+        n += 1;
+        candidate = `${base}${n}`;
+      }
+      // Place the new field right after the original within the same container.
+      const newPosition = (orig.location ?? 0) + 1;
+      try {
+        const newId = await duplicateFieldRow(id, candidate, newPosition);
+        // Re-load editor bundle so the new field (with options + condition) shows up.
+        const fresh = await loadEditorBundle(form.id);
+        const conditions = await loadConditions(form.id);
+        const fieldsWithCond: FormField[] = fresh.fields.map((field) =>
+          conditions.has(field.id)
+            ? ({ ...field, condition: conditions.get(field.id) } as FormField)
+            : field
+        );
+        setBundle({ ...fresh, fields: fieldsWithCond });
+        return newId;
+      } catch (e) {
+        console.error("Duplicate field failed", e);
+        return undefined;
+      }
+    },
+    [form, bundle]
+  );
+
   const patchField = useCallback(
     (id: string, patch: Partial<FormField> & { type?: FieldType }) => {
       setBundle((b) =>
@@ -814,6 +860,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     removeSubGroup,
     reorderSubGroups,
     addField,
+    duplicateField,
     patchField,
     removeField,
     reorderFields,

@@ -120,6 +120,8 @@ interface Props {
   onSelectField: (id: string | null) => void;
   /** Creates a new field (no group) and returns its id. */
   onAddField: (type: FieldType) => Promise<string>;
+  /** Duplicate an existing field; returns the new id (or undefined on failure). */
+  onDuplicateField: (id: string) => Promise<string | undefined>;
   onAddGroup: () => Promise<string | undefined>;
   onAddSubGroup: (groupId: string) => Promise<string | undefined>;
   onRemoveGroup: (id: string) => Promise<void> | void;
@@ -192,6 +194,7 @@ export function ConditionCanvas({
   selectedFieldId,
   onSelectField,
   onAddField,
+  onDuplicateField,
   onAddGroup,
   onAddSubGroup,
   onRemoveGroup,
@@ -1987,7 +1990,9 @@ export function ConditionCanvas({
                   data-endpoint-target={`field:${id}`}
                    onPointerDown={(e) => onBoxPointerDown(e, id)}
                    onContextMenu={(e) => {
-                     if (isInMultiSelection) e.stopPropagation();
+                     // Always stop propagation so the field-specific context menu opens
+                     // instead of the global canvas "Új mező hozzáadása" menu.
+                     e.stopPropagation();
                    }}
                    className={cn(
                      "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
@@ -2097,7 +2102,37 @@ export function ConditionCanvas({
                   )}
                 </div>
               );
-              if (!isInMultiSelection) return boxNode;
+              if (!isInMultiSelection) {
+                return (
+                  <ContextMenu key={id}>
+                    <ContextMenuTrigger asChild onContextMenu={(e) => e.stopPropagation()}>
+                      {boxNode}
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        onSelect={async () => {
+                          const newId = await onDuplicateField(id);
+                          if (!newId) return;
+                          // Place duplicate on the canvas next to the original.
+                          const origPos = positionsRef.current[id];
+                          if (origPos) {
+                            setPositions((prev) => ({
+                              ...prev,
+                              [newId]: {
+                                x: origPos.x + BOX_W + 24,
+                                y: origPos.y,
+                                order: maxOrder(prev) + 1,
+                              },
+                            }));
+                          }
+                        }}
+                      >
+                        Duplikálás
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                );
+              }
               return (
                 <ContextMenu key={id}>
                   <ContextMenuTrigger asChild onContextMenu={(e) => e.stopPropagation()}>
