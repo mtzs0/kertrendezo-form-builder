@@ -88,9 +88,13 @@ function OptionCard({
   if (note && !noteIsSide) {
     return (
       <div className="flex flex-col gap-2">
-        {note.position === "above" && <OptionNote note={note} className="text-center" />}
-        {useImg ? stack : <div className="text-center">{labelEl}</div>}
-        {note.position === "below" && <OptionNote note={note} className="text-center" />}
+        {note.position === "above" && (
+          <OptionNote note={note} className={useImg ? "text-center" : "text-left"} />
+        )}
+        {useImg ? stack : <div className="text-left">{labelEl}</div>}
+        {note.position === "below" && (
+          <OptionNote note={note} className={useImg ? "text-center" : "text-left"} />
+        )}
       </div>
     );
   }
