@@ -1972,9 +1972,12 @@ export function ConditionCanvas({
                 <div
                   key={id}
                   data-endpoint-target={`field:${id}`}
-                  onPointerDown={(e) => onBoxPointerDown(e, id)}
-                  className={cn(
-                    "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
+                   onPointerDown={(e) => onBoxPointerDown(e, id)}
+                   onContextMenu={(e) => {
+                     if (isInMultiSelection) e.stopPropagation();
+                   }}
+                   className={cn(
+                     "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
                     selectedFieldId === id
                       ? "border-primary ring-2 ring-primary/30"
                       : multiSelectedFieldIds.has(id)
