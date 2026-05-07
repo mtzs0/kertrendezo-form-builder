@@ -82,6 +82,8 @@ export interface UseEditorSchemaResult {
 
   // Field ops
   addField: (type: FieldType, opts?: { groupId?: string; subGroupId?: string }) => Promise<string>;
+  /** Duplicate an existing field (including options + condition). Returns the new field id. */
+  duplicateField: (id: string) => Promise<string | undefined>;
   patchField: (id: string, patch: Partial<FormField> & { type?: FieldType }) => void;
   removeField: (id: string) => Promise<void>;
   reorderFields: (
