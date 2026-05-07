@@ -178,18 +178,16 @@ interface Props {
 }
 
 function FieldNote({ children, position }: { children: React.ReactNode; position: NotePosition }) {
-  return (
-    <p
-      className={cn(
-        "text-xs text-muted-foreground leading-relaxed",
-        position === "above" && "mb-2",
-        position === "below" && "mt-2",
-        position === "side" && "md:ml-3"
-      )}
-    >
-      {children}
-    </p>
+  const className = cn(
+    "text-xs text-muted-foreground leading-relaxed",
+    position === "above" && "mb-2",
+    position === "below" && "mt-2",
+    position === "side" && "md:ml-3"
   );
+  if (typeof children === "string") {
+    return <Markdown className={className}>{children}</Markdown>;
+  }
+  return <p className={className}>{children}</p>;
 }
 
 /**
