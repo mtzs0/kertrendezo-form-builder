@@ -36,7 +36,9 @@ function OptionNote({
   className?: string;
 }) {
   return (
-    <p className={cn("text-[11px] text-muted-foreground leading-snug", className)}>{note.value}</p>
+    <Markdown className={cn("text-[11px] text-muted-foreground leading-snug", className)}>
+      {note.value}
+    </Markdown>
   );
 }
 
