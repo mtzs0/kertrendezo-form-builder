@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import type { FormField, FormValues, ImageField, NotePosition, OptionField, RepeaterField, RepeaterInstance } from "@/form/types";
 import { OptionFieldRenderer } from "./OptionFieldRenderer";
 import { RepeaterRenderer } from "./RepeaterRenderer";
+import { Markdown } from "./Markdown";
 import { uploadOptionImage } from "@/form/editorApi";
 import { toast } from "sonner";
 
@@ -178,18 +179,16 @@ interface Props {
 }
 
 function FieldNote({ children, position }: { children: React.ReactNode; position: NotePosition }) {
-  return (
-    <p
-      className={cn(
-        "text-xs text-muted-foreground leading-relaxed",
-        position === "above" && "mb-2",
-        position === "below" && "mt-2",
-        position === "side" && "md:ml-3"
-      )}
-    >
-      {children}
-    </p>
+  const className = cn(
+    "text-xs text-muted-foreground leading-relaxed",
+    position === "above" && "mb-2",
+    position === "below" && "mt-2",
+    position === "side" && "md:ml-3"
   );
+  if (typeof children === "string") {
+    return <Markdown className={className}>{children}</Markdown>;
+  }
+  return <p className={className}>{children}</p>;
 }
 
 /**

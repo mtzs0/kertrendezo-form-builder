@@ -329,6 +329,9 @@ function OptionRow({
             }
             placeholder="Pl. Részletek erről az opcióról…"
           />
+          <p className="text-[11px] text-muted-foreground">
+            Markdown: **félkövér**, *dőlt*, ~~áthúzott~~, `kód`, [link](https://…)
+          </p>
           {option.note?.value && (
             <Select
               value={option.note?.position ?? "below"}

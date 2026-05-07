@@ -245,6 +245,9 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, d
               value={note.value}
               onChange={(e) => onChange({ note: { value: e.target.value, position: note.position } })}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Markdown támogatott: **félkövér**, *dőlt*, ~~áthúzott~~, `kód`, [link](https://…)
+            </p>
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Elhelyezés</Label>
               <Select
