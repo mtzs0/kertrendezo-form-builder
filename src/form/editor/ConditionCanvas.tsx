@@ -120,6 +120,8 @@ interface Props {
   onSelectField: (id: string | null) => void;
   /** Creates a new field (no group) and returns its id. */
   onAddField: (type: FieldType) => Promise<string>;
+  /** Duplicate an existing field; returns the new id (or undefined on failure). */
+  onDuplicateField: (id: string) => Promise<string | undefined>;
   onAddGroup: () => Promise<string | undefined>;
   onAddSubGroup: (groupId: string) => Promise<string | undefined>;
   onRemoveGroup: (id: string) => Promise<void> | void;
