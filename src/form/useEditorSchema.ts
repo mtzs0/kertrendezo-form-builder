@@ -5,6 +5,7 @@ import {
   createGroup,
   createSubGroup,
   deleteField,
+  duplicateFieldRow,
   deleteGroup,
   deleteSubGroup,
   ensureForm,
