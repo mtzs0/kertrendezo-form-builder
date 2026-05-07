@@ -1990,7 +1990,9 @@ export function ConditionCanvas({
                   data-endpoint-target={`field:${id}`}
                    onPointerDown={(e) => onBoxPointerDown(e, id)}
                    onContextMenu={(e) => {
-                     if (isInMultiSelection) e.stopPropagation();
+                     // Always stop propagation so the field-specific context menu opens
+                     // instead of the global canvas "Új mező hozzáadása" menu.
+                     e.stopPropagation();
                    }}
                    className={cn(
                      "absolute rounded-lg border bg-card kr-shadow-soft select-none cursor-move group",
