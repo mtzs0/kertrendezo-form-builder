@@ -559,6 +559,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
     },
     [form, bundle]
   );
+
+  const patchField = useCallback(
     (id: string, patch: Partial<FormField> & { type?: FieldType }) => {
       setBundle((b) =>
         b ? { ...b, fields: b.fields.map((f) => (f.id === id ? ({ ...f, ...patch } as FormField) : f)) } : b
