@@ -194,6 +194,7 @@ export function ConditionCanvas({
   selectedFieldId,
   onSelectField,
   onAddField,
+  onDuplicateField,
   onAddGroup,
   onAddSubGroup,
   onRemoveGroup,
