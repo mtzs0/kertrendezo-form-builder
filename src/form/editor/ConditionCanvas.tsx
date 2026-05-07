@@ -639,6 +639,19 @@ export function ConditionCanvas({
     if ((e.target as HTMLElement).closest("[data-handle]")) return;
     if ((e.target as HTMLElement).closest("button")) return;
     if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
+    // Right-click: don't drag and don't clear multi-selection — let the
+    // context menu open against the current selection.
+    if (e.button !== 0) {
+      const multiSet = new Set(multiSelectedFieldIds);
+      if (selectedFieldId) multiSet.add(selectedFieldId);
+      // If the right-clicked field isn't part of multi-selection, fall back
+      // to selecting it as a single field.
+      if (!(multiSet.size >= 2 && multiSet.has(fieldId))) {
+        onSelectField(fieldId);
+        setMultiSelectedFieldIds(new Set());
+      }
+      return;
+    }
     e.preventDefault();
     const pos = positions[fieldId];
     if (!pos) return;
