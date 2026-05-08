@@ -237,7 +237,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   // ---------- Mutations ----------
 
   const patchForm = useCallback(
-    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null }>) => {
+    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => {
       setForm((f) =>
         f
           ? {
@@ -249,6 +249,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                 patch.webhook_url !== undefined ? patch.webhook_url : f.webhook_url,
               thank_you_text:
                 patch.thank_you_text !== undefined ? patch.thank_you_text : f.thank_you_text,
+              output_url:
+                patch.output_url !== undefined ? patch.output_url : f.output_url,
             }
           : f
       );
