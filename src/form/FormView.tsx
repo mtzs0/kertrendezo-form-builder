@@ -469,7 +469,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     setSubmitting(true);
     try {
       const effectiveTestWebhookUrl = testWebhookUrl?.trim() || DEFAULT_TEST_WEBHOOK_URL;
-      const overrideUrl = (opts?.demo || demoMode) && effectiveTestWebhookUrl ? effectiveTestWebhookUrl : undefined;
+      const overrideUrl = opts?.demo && effectiveTestWebhookUrl ? effectiveTestWebhookUrl : undefined;
       await submitForm(formId, values, { testWebhookUrl: overrideUrl });
       setValues({});
       setDemoMode(false);
