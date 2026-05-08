@@ -1,0 +1,1 @@
+ALTER TABLE public.forms ADD COLUMN IF NOT EXISTS test_webhook_url text DEFAULT 'n.dakexpo.hu/webhook-test/278a29c4-bb5e-4221-b895-7436d1e74d82';

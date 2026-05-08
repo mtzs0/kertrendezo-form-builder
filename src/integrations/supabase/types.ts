@@ -453,6 +453,7 @@ export type Database = {
           published: boolean
           schema: Json
           slug: string
+          test_webhook_url: string | null
           thank_you_text: string | null
           title: string
           updated_at: string
@@ -468,6 +469,7 @@ export type Database = {
           published?: boolean
           schema?: Json
           slug: string
+          test_webhook_url?: string | null
           thank_you_text?: string | null
           title: string
           updated_at?: string
@@ -483,6 +485,7 @@ export type Database = {
           published?: boolean
           schema?: Json
           slug?: string
+          test_webhook_url?: string | null
           thank_you_text?: string | null
           title?: string
           updated_at?: string

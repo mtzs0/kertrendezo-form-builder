@@ -57,6 +57,7 @@ export interface EditorForm {
   description: string | null;
   published: boolean;
   webhook_url: string | null;
+  test_webhook_url: string | null;
   thank_you_text: string | null;
   output_url: string | null;
 }
