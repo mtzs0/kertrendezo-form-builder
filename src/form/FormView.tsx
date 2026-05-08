@@ -428,7 +428,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     return missing;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, opts?: { demo?: boolean }) => {
     e.preventDefault();
     if (isStepped && !explicitSubmitRef.current) return;
     explicitSubmitRef.current = false;
@@ -444,13 +444,16 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     if (!formId) {
       console.log("Form submitted (local only)", values);
       setValues({});
+      setDemoMode(false);
       setSubmitted(true);
       return;
     }
     setSubmitting(true);
     try {
-      await submitForm(formId, values);
+      const overrideUrl = opts?.demo && testWebhookUrl?.trim() ? testWebhookUrl.trim() : undefined;
+      await submitForm(formId, values, { testWebhookUrl: overrideUrl });
       setValues({});
+      setDemoMode(false);
       setSubmitted(true);
     } catch (err) {
       console.error(err);
