@@ -1,0 +1,1 @@
+ALTER TABLE public.forms ADD COLUMN output_url text DEFAULT 'https://docs.google.com/spreadsheets/d/1j-p8GgXY5SrlrxgW-fhk560JvT0sHSEXrY00A-JCMmU/edit?usp=sharing';

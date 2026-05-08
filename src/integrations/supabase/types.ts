@@ -449,6 +449,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          output_url: string | null
           published: boolean
           schema: Json
           slug: string
@@ -463,6 +464,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          output_url?: string | null
           published?: boolean
           schema?: Json
           slug: string
@@ -477,6 +479,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          output_url?: string | null
           published?: boolean
           schema?: Json
           slug?: string
