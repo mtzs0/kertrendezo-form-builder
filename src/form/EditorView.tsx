@@ -424,10 +424,12 @@ function SettingsPanel({
   description,
   webhookUrl,
   thankYouText,
+  outputUrl,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
   onChangeThankYouText,
+  onChangeOutputUrl,
 }: SettingsPanelProps) {
   return (
     <Tabs defaultValue="general" className="w-full">
@@ -435,6 +437,7 @@ function SettingsPanel({
         <TabsTrigger value="general">Általános</TabsTrigger>
         <TabsTrigger value="webhook">Webhook</TabsTrigger>
         <TabsTrigger value="thankyou">Köszönő oldal</TabsTrigger>
+        <TabsTrigger value="output">Output</TabsTrigger>
       </TabsList>
 
       <TabsContent value="general" className="mt-4">
