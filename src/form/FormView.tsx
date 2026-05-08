@@ -20,6 +20,7 @@ import type { FormSchema, FormValues, FormField } from "./types";
 
 /** "group-level" pseudo sub-step id for fields directly on a group. */
 const GROUP_LEVEL_SUB = "__group_level__";
+const DEFAULT_TEST_WEBHOOK_URL = "n.dakexpo.hu/webhook-test/278a29c4-bb5e-4221-b895-7436d1e74d82";
 
 interface Props {
   schema: FormSchema;
@@ -467,7 +468,8 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     }
     setSubmitting(true);
     try {
-      const overrideUrl = opts?.demo && testWebhookUrl?.trim() ? testWebhookUrl.trim() : undefined;
+      const effectiveTestWebhookUrl = testWebhookUrl?.trim() || DEFAULT_TEST_WEBHOOK_URL;
+      const overrideUrl = (opts?.demo || demoMode) && effectiveTestWebhookUrl ? effectiveTestWebhookUrl : undefined;
       await submitForm(formId, values, { testWebhookUrl: overrideUrl });
       setValues({});
       setDemoMode(false);
@@ -622,7 +624,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       onSubmit={(e) => {
         const isDemo = demoSubmitRef.current;
         demoSubmitRef.current = false;
-        handleSubmit(e, { demo: isDemo });
+        handleSubmit(e, { demo: isDemo || demoMode });
       }}
       className="flex flex-col gap-8"
     >

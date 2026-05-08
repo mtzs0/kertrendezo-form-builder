@@ -29,6 +29,8 @@ const DEFAULTS = {
   description: "Mondd el, milyen kertet álmodtál meg, és mi felvesszük veled a kapcsolatot.",
 };
 
+const DEFAULT_TEST_WEBHOOK_URL = "n.dakexpo.hu/webhook-test/278a29c4-bb5e-4221-b895-7436d1e74d82";
+
 function SaveIndicator({ status }: { status: "idle" | "saving" | "saved" | "error" }) {
   if (status === "idle") return null;
   if (status === "saving")
@@ -346,6 +348,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 subGroups={editor.subGroups}
                 formId={editor.form?.id ?? null}
                 thankYouText={editor.form?.thank_you_text ?? null}
+                testWebhookUrl={editor.form?.test_webhook_url ?? DEFAULT_TEST_WEBHOOK_URL}
               />
             )}
           </TabsContent>
@@ -376,7 +379,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     formId={editor.form?.id ?? null}
                     showDemoButton
                     thankYouText={editor.form?.thank_you_text ?? null}
-                    testWebhookUrl={editor.form?.test_webhook_url ?? null}
+                    testWebhookUrl={editor.form?.test_webhook_url ?? DEFAULT_TEST_WEBHOOK_URL}
                   />
                 </div>
               )}
@@ -391,7 +394,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 title={editor.form?.title ?? ""}
                 description={editor.form?.description ?? ""}
                 webhookUrl={editor.form?.webhook_url ?? ""}
-                testWebhookUrl={editor.form?.test_webhook_url ?? ""}
+                testWebhookUrl={editor.form?.test_webhook_url ?? DEFAULT_TEST_WEBHOOK_URL}
                 thankYouText={editor.form?.thank_you_text ?? ""}
                 outputUrl={editor.form?.output_url ?? ""}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
