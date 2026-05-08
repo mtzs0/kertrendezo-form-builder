@@ -685,7 +685,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           )}
 
       <div className="flex justify-end pt-2 gap-2">
-        {showDemoButton && (
+        {showDemoButton && !demoMode && (
           <Button
             type="button"
             size="lg"
@@ -696,6 +696,21 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             }}
           >
             Demo
+          </Button>
+        )}
+        {showDemoButton && demoMode && (
+          <Button
+            type="button"
+            size="lg"
+            disabled={submitting}
+            onClick={(e) => {
+              explicitSubmitRef.current = true;
+              demoSubmitRef.current = true;
+              handleSubmit(e as unknown as React.FormEvent, { demo: true });
+            }}
+            className="bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
+          >
+            {submitting ? "Küldés…" : "Demo küldés"}
           </Button>
         )}
         {isStepped && (activeGroupIdx > 0 || activeSubIdxInGroup > 0) && (
