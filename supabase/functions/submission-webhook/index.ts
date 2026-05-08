@@ -166,6 +166,7 @@ Deno.serve(async (req) => {
     if (!/^https?:\/\//i.test(targetUrl)) {
       targetUrl = `https://${targetUrl}`;
     }
+    console.log("Relaying webhook", { targetUrl, isTest: !!overrideUrl, fieldCount: Object.keys(namedValues).length });
     try {
       const resp = await fetch(targetUrl, {
         method: "POST",
