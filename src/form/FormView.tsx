@@ -615,7 +615,6 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   }));
 
   const isDemoSubmit = demoMode && (!isStepped || isFinalStep);
-  const demoSubmitRef = useRef(false);
 
   return (
     <form
