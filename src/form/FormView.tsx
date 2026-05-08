@@ -614,8 +614,18 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     subLabels: subStepsByGroup[g.id]?.labels ?? {},
   }));
 
+  const isDemoSubmit = demoMode && (!isStepped || isFinalStep);
+  const demoSubmitRef = useRef(false);
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+    <form
+      onSubmit={(e) => {
+        const isDemo = demoSubmitRef.current;
+        demoSubmitRef.current = false;
+        handleSubmit(e, { demo: isDemo });
+      }}
+      className="flex flex-col gap-8"
+    >
       {isStepped && (
         <StepNavigator
           groups={stepNavGroups}
