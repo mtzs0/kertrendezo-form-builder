@@ -88,15 +88,31 @@ export function EditorView({ slug = "default", onExit }: Props) {
         )}
 
         <Tabs defaultValue="demo-preview" className="w-full">
-          <TabsList>
-            <TabsTrigger value="field">Mező</TabsTrigger>
-            <TabsTrigger value="group">Csoport</TabsTrigger>
-            <TabsTrigger value="canvas">Vizuális feltételek</TabsTrigger>
-            <TabsTrigger value="demo-preview">Előnézet</TabsTrigger>
-            <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
-            <TabsTrigger value="preview">Előnézet (régi)</TabsTrigger>
-            <TabsTrigger value="settings">Beállítások</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <TabsList>
+              <TabsTrigger value="field">Mező</TabsTrigger>
+              <TabsTrigger value="group">Csoport</TabsTrigger>
+              <TabsTrigger value="canvas">Vizuális feltételek</TabsTrigger>
+              <TabsTrigger value="demo-preview">Előnézet</TabsTrigger>
+              <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
+              <TabsTrigger value="preview">Előnézet (régi)</TabsTrigger>
+              <TabsTrigger value="settings">Beállítások</TabsTrigger>
+            </TabsList>
+            <Button
+              type="button"
+              onClick={() => {
+                const url =
+                  editor.form?.output_url ??
+                  "https://docs.google.com/spreadsheets/d/1j-p8GgXY5SrlrxgW-fhk560JvT0sHSEXrY00A-JCMmU/edit?usp=sharing";
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+              }}
+              className="ml-4 bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Output
+            </Button>
+          </div>
+
 
           <TabsContent value="form" className="mt-4">
             {editor.loading ? (
