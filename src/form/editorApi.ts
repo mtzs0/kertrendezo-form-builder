@@ -58,6 +58,7 @@ export interface EditorForm {
   published: boolean;
   webhook_url: string | null;
   thank_you_text: string | null;
+  output_url: string | null;
 }
 
 export interface EditorBundle {
