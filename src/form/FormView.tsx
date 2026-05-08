@@ -32,6 +32,12 @@ interface Props {
   /** Optional thank-you message shown after a successful submission. */
   thankYouText?: string | null;
   /**
+   * Optional test webhook URL — used by the "Demo küldés" button when the user
+   * has filled the form with the "Demo" auto-fill button. Falls back to the
+   * normal webhook configured on the form when empty.
+   */
+  testWebhookUrl?: string | null;
+  /**
    * Optional listener invoked whenever the internal `values` map changes.
    * Used by the demo preview to drive its "reveal fields one-by-one" mode.
    */
