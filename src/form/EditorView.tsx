@@ -390,11 +390,13 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 title={editor.form?.title ?? ""}
                 description={editor.form?.description ?? ""}
                 webhookUrl={editor.form?.webhook_url ?? ""}
+                testWebhookUrl={editor.form?.test_webhook_url ?? ""}
                 thankYouText={editor.form?.thank_you_text ?? ""}
                 outputUrl={editor.form?.output_url ?? ""}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
+                onChangeTestWebhookUrl={(v) => editor.patchForm({ test_webhook_url: v.trim() ? v.trim() : null })}
                 onChangeThankYouText={(v) => editor.patchForm({ thank_you_text: v.trim() ? v : null })}
                 onChangeOutputUrl={(v) => editor.patchForm({ output_url: v.trim() ? v.trim() : null })}
               />
@@ -410,11 +412,13 @@ interface SettingsPanelProps {
   title: string;
   description: string;
   webhookUrl: string;
+  testWebhookUrl: string;
   thankYouText: string;
   outputUrl: string;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
+  onChangeTestWebhookUrl: (value: string) => void;
   onChangeThankYouText: (value: string) => void;
   onChangeOutputUrl: (value: string) => void;
 }
@@ -423,11 +427,13 @@ function SettingsPanel({
   title,
   description,
   webhookUrl,
+  testWebhookUrl,
   thankYouText,
   outputUrl,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
+  onChangeTestWebhookUrl,
   onChangeThankYouText,
   onChangeOutputUrl,
 }: SettingsPanelProps) {
@@ -501,6 +507,20 @@ function SettingsPanel({
               />
               <p className="text-xs text-muted-foreground">
                 Üresen hagyva nem történik továbbítás. A változás automatikusan mentésre kerül.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_test_webhook">Teszt webhook URL</Label>
+              <Input
+                id="settings_test_webhook"
+                type="url"
+                value={testWebhookUrl}
+                onChange={(e) => onChangeTestWebhookUrl(e.target.value)}
+                placeholder="https://example.com/webhook-test"
+              />
+              <p className="text-xs text-muted-foreground">
+                A „Demo" gombbal kitöltött űrlap a „Demo küldés" gombra erre az URL-re küldi az adatokat (a normál webhook helyett).
               </p>
             </div>
           </div>

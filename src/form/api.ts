@@ -41,18 +41,25 @@ export async function loadPublishedForm(slug = "default"): Promise<FormRecord | 
  * when the referenced form is published) and asynchronously triggers the
  * webhook relay edge function if a webhook_url is configured server-side.
  */
-export async function submitForm(formId: string, values: FormValues) {
+export async function submitForm(
+  formId: string,
+  values: FormValues,
+  opts?: { testWebhookUrl?: string }
+) {
   // Serialize Date / File values into JSON-friendly shapes.
   const serializable = serializeValues(values);
 
   // Route everything through the edge function: it inserts the submission
   // (using the service role, bypassing RLS read-back limits for anon) and
-  // then relays the payload to the form's webhook URL if configured.
+  // then relays the payload to the form's webhook URL if configured. When a
+  // testWebhookUrl is provided the edge function relays there instead of the
+  // form's saved webhook URL — used by the "Demo küldés" button.
   const { data, error } = await supabase.functions.invoke("submission-webhook", {
     body: {
       formId,
       values: serializable,
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      testWebhookUrl: opts?.testWebhookUrl,
     },
   });
 

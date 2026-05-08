@@ -32,6 +32,12 @@ interface Props {
   /** Optional thank-you message shown after a successful submission. */
   thankYouText?: string | null;
   /**
+   * Optional test webhook URL — used by the "Demo küldés" button when the user
+   * has filled the form with the "Demo" auto-fill button. Falls back to the
+   * normal webhook configured on the form when empty.
+   */
+  testWebhookUrl?: string | null;
+  /**
    * Optional listener invoked whenever the internal `values` map changes.
    * Used by the demo preview to drive its "reveal fields one-by-one" mode.
    */
@@ -133,10 +139,11 @@ function buildDemoValues(schema: FormSchema): FormValues {
   return values;
 }
 
-export function FormView({ schema, layout, formId, showDemoButton, thankYouText, onValuesChange }: Props) {
+export function FormView({ schema, layout, formId, showDemoButton, thankYouText, testWebhookUrl, onValuesChange }: Props) {
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const explicitSubmitRef = useRef(false);
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
@@ -421,7 +428,23 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     return missing;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // A group hidden right now might still become visible once the user has
+  // entered (and thus "seen") all currently-visible groups. If any such
+  // group exists, the form is NOT yet on its final step. Declared here
+  // (above any early return) so the hook order stays stable across renders.
+  const anyHiddenGroupCouldReveal = useMemo(() => {
+    const hypotheticalSeen = new Set(seenGroupIds);
+    for (const g of groupSteps) hypotheticalSeen.add(g.id);
+    for (const g of allGroupSteps) {
+      const meta = groupById.get(g.id);
+      if (!meta) continue;
+      if (isGroupVisible(meta, values, seenGroupIds)) continue;
+      if (isGroupVisible(meta, values, hypotheticalSeen)) return true;
+    }
+    return false;
+  }, [allGroupSteps, groupSteps, groupById, values, seenGroupIds]);
+
+  const handleSubmit = async (e: React.FormEvent, opts?: { demo?: boolean }) => {
     e.preventDefault();
     if (isStepped && !explicitSubmitRef.current) return;
     explicitSubmitRef.current = false;
@@ -437,13 +460,16 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     if (!formId) {
       console.log("Form submitted (local only)", values);
       setValues({});
+      setDemoMode(false);
       setSubmitted(true);
       return;
     }
     setSubmitting(true);
     try {
-      await submitForm(formId, values);
+      const overrideUrl = opts?.demo && testWebhookUrl?.trim() ? testWebhookUrl.trim() : undefined;
+      await submitForm(formId, values, { testWebhookUrl: overrideUrl });
       setValues({});
+      setDemoMode(false);
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -545,22 +571,6 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   // after answering a conditional field on what was momentarily the last group.
   const reachedLastGroup = maxGroupIdx >= groupSteps.length - 1;
 
-  // A group hidden right now might still become visible once the user has
-  // entered (and thus "seen") all currently-visible groups. If any such
-  // group exists, the form is NOT yet on its final step — even if today the
-  // active group is the only visible one.
-  const anyHiddenGroupCouldReveal = useMemo(() => {
-    const hypotheticalSeen = new Set(seenGroupIds);
-    for (const g of groupSteps) hypotheticalSeen.add(g.id);
-    for (const g of allGroupSteps) {
-      const meta = groupById.get(g.id);
-      if (!meta) continue;
-      if (isGroupVisible(meta, values, seenGroupIds)) continue; // already visible
-      if (isGroupVisible(meta, values, hypotheticalSeen)) return true;
-    }
-    return false;
-  }, [allGroupSteps, groupSteps, groupById, values, seenGroupIds]);
-
   const isFinalStep =
     isStepped &&
     isLastGroup &&
@@ -604,8 +614,18 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     subLabels: subStepsByGroup[g.id]?.labels ?? {},
   }));
 
+  const isDemoSubmit = demoMode && (!isStepped || isFinalStep);
+  const demoSubmitRef = useRef(false);
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+    <form
+      onSubmit={(e) => {
+        const isDemo = demoSubmitRef.current;
+        demoSubmitRef.current = false;
+        handleSubmit(e, { demo: isDemo });
+      }}
+      className="flex flex-col gap-8"
+    >
       {isStepped && (
         <StepNavigator
           groups={stepNavGroups}
@@ -668,7 +688,10 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             type="button"
             size="lg"
             variant="outline"
-            onClick={() => setValues(buildDemoValues(schema))}
+            onClick={() => {
+              setValues(buildDemoValues(schema));
+              setDemoMode(true);
+            }}
           >
             Demo
           </Button>
@@ -716,10 +739,15 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             disabled={submitting}
             onClick={() => {
               explicitSubmitRef.current = true;
+              demoSubmitRef.current = isDemoSubmit;
             }}
-            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            className={
+              isDemoSubmit
+                ? "bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
+                : "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            }
           >
-            {submitting ? "Küldés…" : "Küldés"}
+            {submitting ? "Küldés…" : isDemoSubmit ? "Demo küldés" : "Küldés"}
           </Button>
         )}
       </div>
