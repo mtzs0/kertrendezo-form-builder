@@ -428,6 +428,22 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     return missing;
   };
 
+  // A group hidden right now might still become visible once the user has
+  // entered (and thus "seen") all currently-visible groups. If any such
+  // group exists, the form is NOT yet on its final step. Declared here
+  // (above any early return) so the hook order stays stable across renders.
+  const anyHiddenGroupCouldReveal = useMemo(() => {
+    const hypotheticalSeen = new Set(seenGroupIds);
+    for (const g of groupSteps) hypotheticalSeen.add(g.id);
+    for (const g of allGroupSteps) {
+      const meta = groupById.get(g.id);
+      if (!meta) continue;
+      if (isGroupVisible(meta, values, seenGroupIds)) continue;
+      if (isGroupVisible(meta, values, hypotheticalSeen)) return true;
+    }
+    return false;
+  }, [allGroupSteps, groupSteps, groupById, values, seenGroupIds]);
+
   const handleSubmit = async (e: React.FormEvent, opts?: { demo?: boolean }) => {
     e.preventDefault();
     if (isStepped && !explicitSubmitRef.current) return;
