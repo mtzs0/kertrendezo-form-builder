@@ -145,6 +145,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [submitted, setSubmitted] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
   const explicitSubmitRef = useRef(false);
+  const demoSubmitRef = useRef(false);
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
@@ -615,7 +616,6 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   }));
 
   const isDemoSubmit = demoMode && (!isStepped || isFinalStep);
-  const demoSubmitRef = useRef(false);
 
   return (
     <form
