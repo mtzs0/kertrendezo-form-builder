@@ -139,10 +139,11 @@ function buildDemoValues(schema: FormSchema): FormValues {
   return values;
 }
 
-export function FormView({ schema, layout, formId, showDemoButton, thankYouText, onValuesChange }: Props) {
+export function FormView({ schema, layout, formId, showDemoButton, thankYouText, testWebhookUrl, onValuesChange }: Props) {
   const [values, setValues] = useState<FormValues>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const explicitSubmitRef = useRef(false);
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
