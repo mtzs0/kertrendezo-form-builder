@@ -739,10 +739,15 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             disabled={submitting}
             onClick={() => {
               explicitSubmitRef.current = true;
+              demoSubmitRef.current = isDemoSubmit;
             }}
-            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            className={
+              isDemoSubmit
+                ? "bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
+                : "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            }
           >
-            {submitting ? "Küldés…" : "Küldés"}
+            {submitting ? "Küldés…" : isDemoSubmit ? "Demo küldés" : "Küldés"}
           </Button>
         )}
       </div>
