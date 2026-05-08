@@ -509,6 +509,20 @@ function SettingsPanel({
                 Üresen hagyva nem történik továbbítás. A változás automatikusan mentésre kerül.
               </p>
             </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_test_webhook">Teszt webhook URL</Label>
+              <Input
+                id="settings_test_webhook"
+                type="url"
+                value={testWebhookUrl}
+                onChange={(e) => onChangeTestWebhookUrl(e.target.value)}
+                placeholder="https://example.com/webhook-test"
+              />
+              <p className="text-xs text-muted-foreground">
+                A „Demo" gombbal kitöltött űrlap a „Demo küldés" gombra erre az URL-re küldi az adatokat (a normál webhook helyett).
+              </p>
+            </div>
           </div>
         </div>
       </TabsContent>
