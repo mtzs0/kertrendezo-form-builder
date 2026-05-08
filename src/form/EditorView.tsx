@@ -412,11 +412,13 @@ interface SettingsPanelProps {
   title: string;
   description: string;
   webhookUrl: string;
+  testWebhookUrl: string;
   thankYouText: string;
   outputUrl: string;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
+  onChangeTestWebhookUrl: (value: string) => void;
   onChangeThankYouText: (value: string) => void;
   onChangeOutputUrl: (value: string) => void;
 }
@@ -425,11 +427,13 @@ function SettingsPanel({
   title,
   description,
   webhookUrl,
+  testWebhookUrl,
   thankYouText,
   outputUrl,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
+  onChangeTestWebhookUrl,
   onChangeThankYouText,
   onChangeOutputUrl,
 }: SettingsPanelProps) {
