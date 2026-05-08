@@ -617,7 +617,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     subLabels: subStepsByGroup[g.id]?.labels ?? {},
   }));
 
-  const isDemoSubmit = demoMode && (!isStepped || isFinalStep);
+  
 
   return (
     <form
