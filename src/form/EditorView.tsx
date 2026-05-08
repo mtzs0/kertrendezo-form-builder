@@ -391,10 +391,12 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 description={editor.form?.description ?? ""}
                 webhookUrl={editor.form?.webhook_url ?? ""}
                 thankYouText={editor.form?.thank_you_text ?? ""}
+                outputUrl={editor.form?.output_url ?? ""}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
                 onChangeThankYouText={(v) => editor.patchForm({ thank_you_text: v.trim() ? v : null })}
+                onChangeOutputUrl={(v) => editor.patchForm({ output_url: v.trim() ? v.trim() : null })}
               />
             )}
           </TabsContent>
@@ -409,10 +411,12 @@ interface SettingsPanelProps {
   description: string;
   webhookUrl: string;
   thankYouText: string;
+  outputUrl: string;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
   onChangeThankYouText: (value: string) => void;
+  onChangeOutputUrl: (value: string) => void;
 }
 
 function SettingsPanel({
