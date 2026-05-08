@@ -64,7 +64,7 @@ export interface UseEditorSchemaResult {
   reload: () => Promise<void>;
 
   // Form meta ops
-  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => void;
+  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => void;
 
   // Group ops
   addGroup: () => Promise<string | undefined>;
@@ -116,7 +116,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
   const groupPatchBuf = useRef<Map<string, Partial<FormGroup>>>(new Map());
   const subGroupPatchBuf = useRef<Map<string, Partial<FormSubGroup>>>(new Map());
-  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>>({});
+  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>>({});
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
@@ -237,7 +237,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   // ---------- Mutations ----------
 
   const patchForm = useCallback(
-    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => {
+    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => {
       setForm((f) =>
         f
           ? {
