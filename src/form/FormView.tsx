@@ -617,14 +617,14 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     subLabels: subStepsByGroup[g.id]?.labels ?? {},
   }));
 
-  const isDemoSubmit = demoMode && (!isStepped || isFinalStep);
+  
 
   return (
     <form
       onSubmit={(e) => {
         const isDemo = demoSubmitRef.current;
         demoSubmitRef.current = false;
-        handleSubmit(e, { demo: isDemo || demoMode });
+        handleSubmit(e, { demo: isDemo });
       }}
       className="flex flex-col gap-8"
     >
@@ -685,7 +685,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           )}
 
       <div className="flex justify-end pt-2 gap-2">
-        {showDemoButton && (
+        {showDemoButton && !demoMode && (
           <Button
             type="button"
             size="lg"
@@ -696,6 +696,21 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             }}
           >
             Demo
+          </Button>
+        )}
+        {showDemoButton && demoMode && (
+          <Button
+            type="button"
+            size="lg"
+            disabled={submitting}
+            onClick={(e) => {
+              explicitSubmitRef.current = true;
+              demoSubmitRef.current = true;
+              handleSubmit(e as unknown as React.FormEvent, { demo: true });
+            }}
+            className="bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
+          >
+            {submitting ? "Küldés…" : "Demo küldés"}
           </Button>
         )}
         {isStepped && (activeGroupIdx > 0 || activeSubIdxInGroup > 0) && (
@@ -741,15 +756,11 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             disabled={submitting}
             onClick={() => {
               explicitSubmitRef.current = true;
-              demoSubmitRef.current = isDemoSubmit;
+              demoSubmitRef.current = false;
             }}
-            className={
-              isDemoSubmit
-                ? "bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
-                : "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
-            }
+            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
           >
-            {submitting ? "Küldés…" : isDemoSubmit ? "Demo küldés" : "Küldés"}
+            {submitting ? "Küldés…" : "Küldés"}
           </Button>
         )}
       </div>
