@@ -533,6 +533,33 @@ function SettingsPanel({
           </div>
         </div>
       </TabsContent>
+
+      <TabsContent value="output" className="mt-4">
+        <div className="max-w-2xl">
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Output URL</h3>
+              <p className="text-sm text-muted-foreground">
+                Az „Output" gombra kattintva ez az URL nyílik meg új lapon.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_output">URL</Label>
+              <Input
+                id="settings_output"
+                type="url"
+                value={outputUrl}
+                onChange={(e) => onChangeOutputUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Pl. egy Google Sheets dokumentum, ahol a beküldött adatok elérhetőek.
+              </p>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
     </Tabs>
   );
 }
