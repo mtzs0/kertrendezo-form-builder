@@ -688,7 +688,10 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
             type="button"
             size="lg"
             variant="outline"
-            onClick={() => setValues(buildDemoValues(schema))}
+            onClick={() => {
+              setValues(buildDemoValues(schema));
+              setDemoMode(true);
+            }}
           >
             Demo
           </Button>
