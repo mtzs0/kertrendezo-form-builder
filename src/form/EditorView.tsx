@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Check, CircleAlert, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, ExternalLink, Loader2 } from "lucide-react";
 import { FormView } from "./FormView";
 import { useEditorSchema } from "./useEditorSchema";
 import { StructureEditor } from "./editor/StructureEditor";
@@ -88,15 +88,31 @@ export function EditorView({ slug = "default", onExit }: Props) {
         )}
 
         <Tabs defaultValue="demo-preview" className="w-full">
-          <TabsList>
-            <TabsTrigger value="field">Mező</TabsTrigger>
-            <TabsTrigger value="group">Csoport</TabsTrigger>
-            <TabsTrigger value="canvas">Vizuális feltételek</TabsTrigger>
-            <TabsTrigger value="demo-preview">Előnézet</TabsTrigger>
-            <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
-            <TabsTrigger value="preview">Előnézet (régi)</TabsTrigger>
-            <TabsTrigger value="settings">Beállítások</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <TabsList>
+              <TabsTrigger value="field">Mező</TabsTrigger>
+              <TabsTrigger value="group">Csoport</TabsTrigger>
+              <TabsTrigger value="canvas">Vizuális feltételek</TabsTrigger>
+              <TabsTrigger value="demo-preview">Előnézet</TabsTrigger>
+              <TabsTrigger value="form">Űrlap (régi)</TabsTrigger>
+              <TabsTrigger value="preview">Előnézet (régi)</TabsTrigger>
+              <TabsTrigger value="settings">Beállítások</TabsTrigger>
+            </TabsList>
+            <Button
+              type="button"
+              onClick={() => {
+                const url =
+                  editor.form?.output_url ??
+                  "https://docs.google.com/spreadsheets/d/1j-p8GgXY5SrlrxgW-fhk560JvT0sHSEXrY00A-JCMmU/edit?usp=sharing";
+                if (url) window.open(url, "_blank", "noopener,noreferrer");
+              }}
+              className="ml-4 bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Output
+            </Button>
+          </div>
+
 
           <TabsContent value="form" className="mt-4">
             {editor.loading ? (
@@ -375,10 +391,12 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 description={editor.form?.description ?? ""}
                 webhookUrl={editor.form?.webhook_url ?? ""}
                 thankYouText={editor.form?.thank_you_text ?? ""}
+                outputUrl={editor.form?.output_url ?? ""}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
                 onChangeThankYouText={(v) => editor.patchForm({ thank_you_text: v.trim() ? v : null })}
+                onChangeOutputUrl={(v) => editor.patchForm({ output_url: v.trim() ? v.trim() : null })}
               />
             )}
           </TabsContent>
@@ -393,10 +411,12 @@ interface SettingsPanelProps {
   description: string;
   webhookUrl: string;
   thankYouText: string;
+  outputUrl: string;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
   onChangeThankYouText: (value: string) => void;
+  onChangeOutputUrl: (value: string) => void;
 }
 
 function SettingsPanel({
@@ -404,10 +424,12 @@ function SettingsPanel({
   description,
   webhookUrl,
   thankYouText,
+  outputUrl,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
   onChangeThankYouText,
+  onChangeOutputUrl,
 }: SettingsPanelProps) {
   return (
     <Tabs defaultValue="general" className="w-full">
@@ -415,6 +437,7 @@ function SettingsPanel({
         <TabsTrigger value="general">Általános</TabsTrigger>
         <TabsTrigger value="webhook">Webhook</TabsTrigger>
         <TabsTrigger value="thankyou">Köszönő oldal</TabsTrigger>
+        <TabsTrigger value="output">Output</TabsTrigger>
       </TabsList>
 
       <TabsContent value="general" className="mt-4">
@@ -505,6 +528,33 @@ function SettingsPanel({
               />
               <p className="text-xs text-muted-foreground">
                 Üresen hagyva az alapértelmezett „Köszönjük! A foglalást rögzítettük." szöveg jelenik meg.
+              </p>
+            </div>
+          </div>
+        </div>
+      </TabsContent>
+
+      <TabsContent value="output" className="mt-4">
+        <div className="max-w-2xl">
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Output URL</h3>
+              <p className="text-sm text-muted-foreground">
+                Az „Output" gombra kattintva ez az URL nyílik meg új lapon.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="settings_output">URL</Label>
+              <Input
+                id="settings_output"
+                type="url"
+                value={outputUrl}
+                onChange={(e) => onChangeOutputUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Pl. egy Google Sheets dokumentum, ahol a beküldött adatok elérhetőek.
               </p>
             </div>
           </div>
