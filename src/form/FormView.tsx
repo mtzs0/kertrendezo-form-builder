@@ -49,121 +49,86 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function buildDemoValues(schema: FormSchema): FormValues {
-  // Only fill fields actually placed in the form structure (location > 0)
-  // and whose group/sub-group (if any) is also placed.
-  const placed = filterPlacedSchema(schema);
-  const groupIds = new Set(placed.groups.map((g) => g.id));
-  const subGroupIds = new Set(placed.subGroups.map((s) => s.id));
-  const fields = placed.fields.filter((f) => {
-    if (f.groupId && !groupIds.has(f.groupId)) return false;
-    if (f.subGroupId && !subGroupIds.has(f.subGroupId)) return false;
-    return true;
-  });
+function randomDate(): Date {
+  // Random date within ±30 days of today.
+  const offsetDays = Math.floor(Math.random() * 60) - 30;
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d;
+}
 
-  const values: FormValues = {};
-  for (const field of fields) {
-    switch (field.type) {
-      case "text":
-      case "textarea":
-        values[field.id] = randomString(10);
-        break;
-      case "email":
-        values[field.id] = "test@test.com";
-        break;
-      case "phone":
-        values[field.id] = "06701234567";
-        break;
-      case "post_code":
-        values[field.id] = "1027";
-        break;
-      case "city":
-        values[field.id] = "Budapest";
-        break;
-      case "street":
-        values[field.id] = "Margit krt. 64/b";
-        break;
-      case "date":
-        values[field.id] = new Date();
-        break;
-      case "slider": {
-        const stops = field.customStops && field.customStops.length > 0
-          ? [field.min, ...field.customStops, field.max]
-          : null;
-        if (stops) {
-          values[field.id] = pickRandom(stops);
-        } else {
-          const step = field.step ?? 1;
-          const range = field.max - field.min;
-          const steps = Math.floor(range / step);
-          values[field.id] = field.min + Math.floor(Math.random() * (steps + 1)) * step;
-        }
-        break;
-      }
-      case "radio":
-      case "select": {
-        if (field.options.length > 0) values[field.id] = pickRandom(field.options).dataName;
-        break;
-      }
-      case "checkbox": {
-        if (field.options.length > 0) {
-          const count = 1 + Math.floor(Math.random() * field.options.length);
-          const shuffled = [...field.options].sort(() => Math.random() - 0.5);
-          values[field.id] = shuffled.slice(0, count).map((o) => o.dataName);
-        }
-        break;
-      }
-      case "image":
-      case "label":
-        // Skip: image upload requires real files; label collects no value.
-        break;
-      case "repeater": {
-        // Generate 1–2 demo instances using each child's default demo logic.
-        const childCount = 1 + Math.floor(Math.random() * 2);
-        const out: Record<string, unknown>[] = [];
-        for (let i = 0; i < childCount; i++) {
-          const inst: Record<string, unknown> = {};
-          for (const c of field.children ?? []) {
-            switch (c.type) {
-              case "text":
-              case "textarea":
-                inst[c.internalName] = randomString(8);
-                break;
-              case "email":
-                inst[c.internalName] = "test@test.com";
-                break;
-              case "phone":
-                inst[c.internalName] = "06701234567";
-                break;
-              case "post_code":
-                inst[c.internalName] = "1027";
-                break;
-              case "city":
-                inst[c.internalName] = "Budapest";
-                break;
-              case "street":
-                inst[c.internalName] = "Margit krt. 64/b";
-                break;
-              case "slider":
-                inst[c.internalName] = c.min + Math.floor(Math.random() * (c.max - c.min));
-                break;
-              case "radio":
-              case "select":
-                if (c.options.length > 0) inst[c.internalName] = pickRandom(c.options).dataName;
-                break;
-              case "checkbox":
-                if (c.options.length > 0) inst[c.internalName] = [pickRandom(c.options).dataName];
-                break;
-              default:
-                break;
-            }
-          }
-          out.push(inst);
-        }
-        values[field.id] = out as FormValues[string];
-        break;
-      }
+/** Generate a random demo value for a single field. Returns undefined to skip. */
+function demoValueForField(field: FormField): FormValues[string] | undefined {
+  switch (field.type) {
+    case "text":
+    case "textarea":
+      return randomString(10);
+    case "email":
+      return "test@test.com";
+    case "phone":
+      return "06701234567";
+    case "post_code":
+      return "1027";
+    case "city":
+      return "Budapest";
+    case "street":
+      return "Margit krt. 64/b";
+    case "date":
+      return randomDate();
+    case "slider": {
+      const stops = field.customStops && field.customStops.length > 0
+        ? [field.min, ...field.customStops, field.max]
+        : null;
+      if (stops) return pickRandom(stops);
+      const step = field.step ?? 1;
+      const range = field.max - field.min;
+      const steps = Math.floor(range / step);
+      return field.min + Math.floor(Math.random() * (steps + 1)) * step;
     }
+    case "radio":
+    case "select":
+      if (field.options.length > 0) return pickRandom(field.options).dataName;
+      return undefined;
+    case "checkbox":
+      if (field.options.length > 0) {
+        const count = 1 + Math.floor(Math.random() * field.options.length);
+        const shuffled = [...field.options].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, count).map((o) => o.dataName);
+      }
+      return undefined;
+    case "measurement": {
+      const unit = field.options.length > 0 ? pickRandom(field.options).dataName : "";
+      const amount = 1 + Math.floor(Math.random() * 100);
+      return { amount, unit };
+    }
+    case "repeater": {
+      const childCount = 1 + Math.floor(Math.random() * 2);
+      const out: Record<string, unknown>[] = [];
+      for (let i = 0; i < childCount; i++) {
+        const inst: Record<string, unknown> = {};
+        for (const c of field.children ?? []) {
+          const v = demoValueForField(c);
+          if (v !== undefined) inst[c.internalName] = v;
+        }
+        out.push(inst);
+      }
+      return out as FormValues[string];
+    }
+    case "image":
+    case "label":
+      // image upload requires real files; label collects no value.
+      return undefined;
+  }
+}
+
+function buildDemoValues(schema: FormSchema): FormValues {
+  // Fill EVERY field in the schema — including hidden fields (conditional)
+  // and unplaced fields. The webhook payload mirrors the values map, so this
+  // ensures hidden field data is also captured and sent.
+  const values: FormValues = {};
+  for (const field of schema.fields) {
+    const v = demoValueForField(field);
+    if (v !== undefined) values[field.id] = v;
   }
   return values;
 }
