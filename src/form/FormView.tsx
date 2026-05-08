@@ -624,7 +624,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
       onSubmit={(e) => {
         const isDemo = demoSubmitRef.current;
         demoSubmitRef.current = false;
-        handleSubmit(e, { demo: isDemo || demoMode });
+        handleSubmit(e, { demo: isDemo });
       }}
       className="flex flex-col gap-8"
     >
