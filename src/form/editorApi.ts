@@ -460,6 +460,8 @@ export interface FieldPatch {
    * `repeater_config` JSONB column. `null` clears the column.
    */
   repeaterConfig?: Record<string, unknown> | null;
+  /** Measurement-field config blob (e.g. unitDisplay). null = clear. */
+  measurementConfig?: { unitDisplay?: "dropdown" | "radio" } | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
