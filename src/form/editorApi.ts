@@ -29,6 +29,7 @@ type FieldExtraCols = {
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
   hide_label?: boolean | null;
   repeater_config?: unknown | null;
+  measurement_config?: { unitDisplay?: "dropdown" | "radio" } | null;
 };
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
