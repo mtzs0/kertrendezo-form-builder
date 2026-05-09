@@ -280,10 +280,12 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             imageUrl: o.image_url ?? undefined,
           })),
       };
-    case "measurement":
+    case "measurement": {
+      const mcfg = ((f as FieldRow & { measurement_config?: { unitDisplay?: "dropdown" | "radio" } | null }).measurement_config ?? null);
       return {
         ...base,
         type: "measurement",
+        unitDisplay: mcfg?.unitDisplay ?? "radio",
         options: opts
           .slice()
           .sort((a, b) => a.position - b.position)
@@ -292,6 +294,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             dataName: o.data_name,
           })),
       };
+    }
     case "repeater": {
       const cfg = ((f as FieldRow & { repeater_config?: unknown }).repeater_config ?? null) as
         | (Partial<RepeaterField> & { children?: FormField[] })
