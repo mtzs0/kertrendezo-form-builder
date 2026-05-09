@@ -494,6 +494,7 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
   if (patch.hideLabel !== undefined) u.hide_label = patch.hideLabel;
   if (patch.repeaterConfig !== undefined) (u as Record<string, unknown>).repeater_config = patch.repeaterConfig;
+  if (patch.measurementConfig !== undefined) (u as Record<string, unknown>).measurement_config = patch.measurementConfig;
   if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
     // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
     if (patch.sliderCustomStops === null) {
