@@ -149,6 +149,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Detect device type from the User-Agent string of the submitter so the
+    // webhook receiver knows whether the form was filled out on mobile,
+    // tablet, or desktop. We expose it inside `values` (as `_device`) so it
+    // appears alongside the user's answers.
+    const ua = (body.userAgent ?? "").toLowerCase();
+    const deviceType = /ipad|tablet|playbook|silk|(android(?!.*mobile))/i.test(ua)
+      ? "tablet"
+      : /mobi|iphone|ipod|android.*mobile|blackberry|iemobile|opera mini/i.test(ua)
+        ? "mobile"
+        : ua
+          ? "desktop"
+          : "unknown";
+    namedValues._device = deviceType;
+    namedValues._userAgent = body.userAgent ?? null;
+
     const payload = {
       submissionId: submission.id,
       formId: form.id,
