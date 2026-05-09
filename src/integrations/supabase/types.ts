@@ -142,6 +142,7 @@ export type Database = {
           id: string
           internal_name: string
           label: string
+          measurement_config: Json | null
           multiple_images: boolean
           note_position: Database["public"]["Enums"]["note_position"] | null
           note_value: string | null
@@ -178,6 +179,7 @@ export type Database = {
           id?: string
           internal_name: string
           label: string
+          measurement_config?: Json | null
           multiple_images?: boolean
           note_position?: Database["public"]["Enums"]["note_position"] | null
           note_value?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           id?: string
           internal_name?: string
           label?: string
+          measurement_config?: Json | null
           multiple_images?: boolean
           note_position?: Database["public"]["Enums"]["note_position"] | null
           note_value?: string | null
