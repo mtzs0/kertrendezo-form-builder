@@ -320,6 +320,23 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, d
               Add meg az elérhető egységeket (pl. óra, nap, hét). A felhasználó beír egy számot, és kiválaszt egyet ezek közül.
             </p>
           </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Egységválasztó megjelenítése</Label>
+            <Select
+              value={(field as { unitDisplay?: "dropdown" | "radio" }).unitDisplay ?? "radio"}
+              onValueChange={(v) =>
+                onChange({ unitDisplay: v as "dropdown" | "radio" } as Partial<FormField>)
+              }
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="radio">Rádió gombok (mind látszik)</SelectItem>
+                <SelectItem value="dropdown">Legördülő lista</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <OptionsEditor
             field={field as unknown as OptionField}
             onChange={(opts) => onChangeOptions(field.id, opts)}
