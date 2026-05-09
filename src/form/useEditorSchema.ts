@@ -630,6 +630,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
         const ud = (patch as { unitDisplay?: "dropdown" | "radio" }).unitDisplay;
         fp.measurementConfig = { unitDisplay: ud ?? "radio" };
       }
+      // Repeater extras: any change to a repeater-specific attribute triggers
       // a rewrite of the entire `repeater_config` JSONB blob from the merged
       // in-memory state. We compute it after the local setBundle below by
       // reading the just-patched field.
