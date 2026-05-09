@@ -185,6 +185,12 @@ export interface MeasurementField extends BaseField {
   type: "measurement";
   /** Available unit options (uses the same shape as radio/checkbox/select). */
   options: FieldOption[];
+  /**
+   * How the unit picker is displayed next to the numeric input.
+   * "radio" (default): all units shown side-by-side as radio buttons.
+   * "dropdown": classic <select> dropdown.
+   */
+  unitDisplay?: "dropdown" | "radio";
 }
 
 export type FormField =

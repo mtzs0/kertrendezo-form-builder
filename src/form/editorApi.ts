@@ -29,6 +29,7 @@ type FieldExtraCols = {
   slider_custom_stops?: number[] | { stops: number[]; spacing?: "equal" | "proportional" } | null;
   hide_label?: boolean | null;
   repeater_config?: unknown | null;
+  measurement_config?: { unitDisplay?: "dropdown" | "radio" } | null;
 };
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
@@ -279,10 +280,12 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             imageUrl: o.image_url ?? undefined,
           })),
       };
-    case "measurement":
+    case "measurement": {
+      const mcfg = ((f as FieldRow & { measurement_config?: { unitDisplay?: "dropdown" | "radio" } | null }).measurement_config ?? null);
       return {
         ...base,
         type: "measurement",
+        unitDisplay: mcfg?.unitDisplay ?? "radio",
         options: opts
           .slice()
           .sort((a, b) => a.position - b.position)
@@ -291,6 +294,7 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
             dataName: o.data_name,
           })),
       };
+    }
     case "repeater": {
       const cfg = ((f as FieldRow & { repeater_config?: unknown }).repeater_config ?? null) as
         | (Partial<RepeaterField> & { children?: FormField[] })
@@ -456,6 +460,8 @@ export interface FieldPatch {
    * `repeater_config` JSONB column. `null` clears the column.
    */
   repeaterConfig?: Record<string, unknown> | null;
+  /** Measurement-field config blob (e.g. unitDisplay). null = clear. */
+  measurementConfig?: { unitDisplay?: "dropdown" | "radio" } | null;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
@@ -488,6 +494,7 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.placeholderNotePosition !== undefined) u.placeholder_note_position = patch.placeholderNotePosition;
   if (patch.hideLabel !== undefined) u.hide_label = patch.hideLabel;
   if (patch.repeaterConfig !== undefined) (u as Record<string, unknown>).repeater_config = patch.repeaterConfig;
+  if (patch.measurementConfig !== undefined) (u as Record<string, unknown>).measurement_config = patch.measurementConfig;
   if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
     // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
     if (patch.sliderCustomStops === null) {
