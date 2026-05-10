@@ -562,13 +562,8 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
       } else {
         const hasValue = typeof value === "number";
         const current = hasValue ? (value as number) : field.min;
-        const step = field.step ?? 1;
-        const snapToStep = (n: number) => {
-          // Snap to the nearest step starting from min, then clamp to [min,max].
-          const offset = Math.round((n - field.min) / step) * step;
-          const v = field.min + offset;
-          return Math.min(field.max, Math.max(field.min, v));
-        };
+        const snapToInt = (n: number) =>
+          Math.min(field.max, Math.max(field.min, Math.round(n)));
         control = (
           <div className="flex items-start gap-3 pt-1">
             <SliderNumberInput
@@ -577,7 +572,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
               max={field.max}
               unit={field.unit}
               value={hasValue ? current : undefined}
-              snap={snapToStep}
+              snap={snapToInt}
               onCommit={(n) => onChange(field.id, n)}
             />
             <div className="space-y-3 flex-1 min-w-0">
@@ -585,9 +580,10 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                 id={field.id}
                 min={field.min}
                 max={field.max}
-                step={step}
+                step={1}
                 value={[current]}
-                onValueChange={(v) => onChange(field.id, v[0])}
+                onValueChange={(v) => onChange(field.id, snapToInt(v[0]))}
+                className="py-2 [&_[role=slider]]:h-7 [&_[role=slider]]:w-7 [&>span:first-child]:h-4"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{field.min} {field.unit}</span>
