@@ -665,12 +665,12 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
         );
       } else {
         control = (
-          <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {numberInput}
             <div
               role="radiogroup"
               aria-label="Mértékegység"
-              className="flex flex-wrap gap-2"
+              className="flex flex-wrap gap-2 shrink-0"
             >
               {field.options.map((o) => {
                 const selected = unit === o.dataName;
