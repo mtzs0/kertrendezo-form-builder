@@ -122,14 +122,32 @@ Deno.serve(async (req) => {
       position: number | null;
       group_id: string | null;
       sub_group_id: string | null;
+      order_index?: number | null;
     }>;
 
-    // Stable ordering: by position then internal_name, just so the webhook
-    // payload key order is deterministic.
+    // Load canvas order numbers (set by the editor's canvas) so the webhook
+    // payload mirrors the order the form author assigned to each field.
+    const { data: canvasPos } = await admin
+      .from("form_field_canvas_positions")
+      .select("field_id, order_index")
+      .in("field_id", allFields.map((f) => f.id));
+    const orderByField = new Map<string, number | null>();
+    for (const r of (canvasPos ?? []) as Array<{ field_id: string; order_index: number | null }>) {
+      orderByField.set(r.field_id, r.order_index);
+    }
+    for (const f of allFields) {
+      f.order_index = orderByField.get(f.id) ?? null;
+    }
+
+    // Order by canvas order_index ascending (fields without one go last),
+    // breaking ties alphabetically by internal_name.
     allFields.sort((a, b) => {
-      const ap = a.position ?? 0;
-      const bp = b.position ?? 0;
-      if (ap !== bp) return ap - bp;
+      const ao = a.order_index;
+      const bo = b.order_index;
+      if (ao == null && bo == null) return a.internal_name.localeCompare(b.internal_name);
+      if (ao == null) return 1;
+      if (bo == null) return -1;
+      if (ao !== bo) return ao - bo;
       return a.internal_name.localeCompare(b.internal_name);
     });
 
