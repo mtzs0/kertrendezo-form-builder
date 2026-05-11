@@ -440,6 +440,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                     value={[knob]}
                     onValueChange={(v) => onChange(field.id, v[0])}
                     onValueCommit={(v) => onChange(field.id, snap(v[0]))}
+                    className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
                   />
                   <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
                     {ticks.map((pct, i) => (
@@ -517,6 +518,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                       if (i === 0) onChange(field.id, undefined);
                       else onChange(field.id, selectable[i - 1]);
                     }}
+                    className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
                   />
                   <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
                     {ticks.map((pct, i) => (
@@ -583,7 +585,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                 step={1}
                 value={[current]}
                 onValueChange={(v) => onChange(field.id, snapToInt(v[0]))}
-                className="py-2 [&_[role=slider]]:h-7 [&_[role=slider]]:w-7 [&>span:first-child]:h-4"
+                className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>{field.min} {field.unit}</span>
