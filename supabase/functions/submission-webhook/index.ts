@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
     // ----- Load full submission + form (with webhook url) -----
     const { data: submission, error: subErr } = await admin
       .from("form_submissions")
-      .select("id, values, created_at, form_id, forms!inner(id, slug, title, webhook_url)")
+      .select("id, values, created_at, form_id, forms!inner(id, slug, title, webhook_url, include_device_type, include_browser, include_page_url)")
       .eq("id", submissionId)
       .single();
 
@@ -91,7 +91,15 @@ Deno.serve(async (req) => {
     }
 
     const form = (submission as unknown as {
-      forms: { webhook_url: string | null; slug: string; title: string; id: string };
+      forms: {
+        webhook_url: string | null;
+        slug: string;
+        title: string;
+        id: string;
+        include_device_type: boolean;
+        include_browser: boolean;
+        include_page_url: boolean;
+      };
     }).forms;
 
     // Determine which webhook URL to use. The optional `testWebhookUrl` (sent
