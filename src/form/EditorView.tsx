@@ -425,12 +425,18 @@ interface SettingsPanelProps {
   testWebhookUrl: string;
   thankYouText: string;
   outputUrl: string;
+  includeDeviceType: boolean;
+  includeBrowser: boolean;
+  includePageUrl: boolean;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
   onChangeTestWebhookUrl: (value: string) => void;
   onChangeThankYouText: (value: string) => void;
   onChangeOutputUrl: (value: string) => void;
+  onChangeIncludeDeviceType: (value: boolean) => void;
+  onChangeIncludeBrowser: (value: boolean) => void;
+  onChangeIncludePageUrl: (value: boolean) => void;
 }
 
 function SettingsPanel({
@@ -440,12 +446,18 @@ function SettingsPanel({
   testWebhookUrl,
   thankYouText,
   outputUrl,
+  includeDeviceType,
+  includeBrowser,
+  includePageUrl,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
   onChangeTestWebhookUrl,
   onChangeThankYouText,
   onChangeOutputUrl,
+  onChangeIncludeDeviceType,
+  onChangeIncludeBrowser,
+  onChangeIncludePageUrl,
 }: SettingsPanelProps) {
   return (
     <Tabs defaultValue="general" className="w-full">
