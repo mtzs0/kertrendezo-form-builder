@@ -452,6 +452,9 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          include_browser: boolean
+          include_device_type: boolean
+          include_page_url: boolean
           output_url: string | null
           published: boolean
           schema: Json
@@ -468,6 +471,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          include_browser?: boolean
+          include_device_type?: boolean
+          include_page_url?: boolean
           output_url?: string | null
           published?: boolean
           schema?: Json
@@ -484,6 +490,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          include_browser?: boolean
+          include_device_type?: boolean
+          include_page_url?: boolean
           output_url?: string | null
           published?: boolean
           schema?: Json

@@ -397,12 +397,18 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 testWebhookUrl={editor.form?.test_webhook_url ?? DEFAULT_TEST_WEBHOOK_URL}
                 thankYouText={editor.form?.thank_you_text ?? ""}
                 outputUrl={editor.form?.output_url ?? ""}
+                includeDeviceType={editor.form?.include_device_type ?? false}
+                includeBrowser={editor.form?.include_browser ?? false}
+                includePageUrl={editor.form?.include_page_url ?? true}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
                 onChangeTestWebhookUrl={(v) => editor.patchForm({ test_webhook_url: v.trim() ? v.trim() : null })}
                 onChangeThankYouText={(v) => editor.patchForm({ thank_you_text: v.trim() ? v : null })}
                 onChangeOutputUrl={(v) => editor.patchForm({ output_url: v.trim() ? v.trim() : null })}
+                onChangeIncludeDeviceType={(v) => editor.patchForm({ include_device_type: v })}
+                onChangeIncludeBrowser={(v) => editor.patchForm({ include_browser: v })}
+                onChangeIncludePageUrl={(v) => editor.patchForm({ include_page_url: v })}
               />
             )}
           </TabsContent>
@@ -419,12 +425,18 @@ interface SettingsPanelProps {
   testWebhookUrl: string;
   thankYouText: string;
   outputUrl: string;
+  includeDeviceType: boolean;
+  includeBrowser: boolean;
+  includePageUrl: boolean;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
   onChangeTestWebhookUrl: (value: string) => void;
   onChangeThankYouText: (value: string) => void;
   onChangeOutputUrl: (value: string) => void;
+  onChangeIncludeDeviceType: (value: boolean) => void;
+  onChangeIncludeBrowser: (value: boolean) => void;
+  onChangeIncludePageUrl: (value: boolean) => void;
 }
 
 function SettingsPanel({
@@ -434,12 +446,18 @@ function SettingsPanel({
   testWebhookUrl,
   thankYouText,
   outputUrl,
+  includeDeviceType,
+  includeBrowser,
+  includePageUrl,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
   onChangeTestWebhookUrl,
   onChangeThankYouText,
   onChangeOutputUrl,
+  onChangeIncludeDeviceType,
+  onChangeIncludeBrowser,
+  onChangeIncludePageUrl,
 }: SettingsPanelProps) {
   return (
     <Tabs defaultValue="general" className="w-full">
@@ -526,6 +544,51 @@ function SettingsPanel({
               <p className="text-xs text-muted-foreground">
                 A „Demo" gombbal kitöltött űrlap a „Demo küldés" gombra erre az URL-re küldi az adatokat (a normál webhook helyett).
               </p>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-border">
+              <div>
+                <h4 className="text-sm font-semibold">További adatok továbbítása</h4>
+                <p className="text-xs text-muted-foreground">
+                  Ezek az értékek a mezők adatai után, a webhook payload végén kerülnek elküldésre.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="settings_inc_device" className="cursor-pointer">Készülék típusa</Label>
+                  <p className="text-xs text-muted-foreground">{`Mobil / tablet / desktop, _device néven.`}</p>
+                </div>
+                <Switch
+                  id="settings_inc_device"
+                  checked={includeDeviceType}
+                  onCheckedChange={onChangeIncludeDeviceType}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="settings_inc_browser" className="cursor-pointer">Böngésző</Label>
+                  <p className="text-xs text-muted-foreground">{`Chrome / Firefox / Safari stb., _browser néven (és teljes _userAgent).`}</p>
+                </div>
+                <Switch
+                  id="settings_inc_browser"
+                  checked={includeBrowser}
+                  onCheckedChange={onChangeIncludeBrowser}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="settings_inc_url" className="cursor-pointer">Weboldal URL</Label>
+                  <p className="text-xs text-muted-foreground">{`Az oldal címe, ahol a felhasználó kitöltötte az űrlapot, _url néven (tracking URL-ek azonosítására).`}</p>
+                </div>
+                <Switch
+                  id="settings_inc_url"
+                  checked={includePageUrl}
+                  onCheckedChange={onChangeIncludePageUrl}
+                />
+              </div>
             </div>
           </div>
         </div>

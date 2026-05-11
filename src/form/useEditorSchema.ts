@@ -64,7 +64,7 @@ export interface UseEditorSchemaResult {
   reload: () => Promise<void>;
 
   // Form meta ops
-  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => void;
+  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>) => void;
 
   // Group ops
   addGroup: () => Promise<string | undefined>;
@@ -116,7 +116,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
   const groupPatchBuf = useRef<Map<string, Partial<FormGroup>>>(new Map());
   const subGroupPatchBuf = useRef<Map<string, Partial<FormSubGroup>>>(new Map());
-  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>>({});
+  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>>({});
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
@@ -237,7 +237,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   // ---------- Mutations ----------
 
   const patchForm = useCallback(
-    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => {
+    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>) => {
       setForm((f) =>
         f
           ? {
@@ -253,6 +253,12 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                 patch.thank_you_text !== undefined ? patch.thank_you_text : f.thank_you_text,
               output_url:
                 patch.output_url !== undefined ? patch.output_url : f.output_url,
+              include_device_type:
+                patch.include_device_type !== undefined ? patch.include_device_type : f.include_device_type,
+              include_browser:
+                patch.include_browser !== undefined ? patch.include_browser : f.include_browser,
+              include_page_url:
+                patch.include_page_url !== undefined ? patch.include_page_url : f.include_page_url,
             }
           : f
       );

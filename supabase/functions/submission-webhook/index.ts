@@ -20,6 +20,7 @@ interface RequestBody {
   formId?: string;
   values?: Record<string, unknown>;
   userAgent?: string;
+  pageUrl?: string;
   /** Optional override webhook URL — used by the "Demo küldés" button. */
   testWebhookUrl?: string;
 }
@@ -80,7 +81,7 @@ Deno.serve(async (req) => {
     // ----- Load full submission + form (with webhook url) -----
     const { data: submission, error: subErr } = await admin
       .from("form_submissions")
-      .select("id, values, created_at, form_id, forms!inner(id, slug, title, webhook_url)")
+      .select("id, values, created_at, form_id, forms!inner(id, slug, title, webhook_url, include_device_type, include_browser, include_page_url)")
       .eq("id", submissionId)
       .single();
 
@@ -90,7 +91,15 @@ Deno.serve(async (req) => {
     }
 
     const form = (submission as unknown as {
-      forms: { webhook_url: string | null; slug: string; title: string; id: string };
+      forms: {
+        webhook_url: string | null;
+        slug: string;
+        title: string;
+        id: string;
+        include_device_type: boolean;
+        include_browser: boolean;
+        include_page_url: boolean;
+      };
     }).forms;
 
     // Determine which webhook URL to use. The optional `testWebhookUrl` (sent
@@ -167,20 +176,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Detect device type from the User-Agent string of the submitter so the
-    // webhook receiver knows whether the form was filled out on mobile,
-    // tablet, or desktop. We expose it inside `values` (as `_device`) so it
-    // appears alongside the user's answers.
-    const ua = (body.userAgent ?? "").toLowerCase();
-    const deviceType = /ipad|tablet|playbook|silk|(android(?!.*mobile))/i.test(ua)
-      ? "tablet"
-      : /mobi|iphone|ipod|android.*mobile|blackberry|iemobile|opera mini/i.test(ua)
-        ? "mobile"
-        : ua
-          ? "desktop"
-          : "unknown";
-    namedValues._device = deviceType;
-    namedValues._userAgent = body.userAgent ?? null;
+    // Append optional metadata last, in fixed order: _device, _browser, _url.
+    // Each is gated by a per-form toggle (configured in form settings).
+    const ua = body.userAgent ?? "";
+    const uaLower = ua.toLowerCase();
+
+    if (form.include_device_type) {
+      const deviceType = /ipad|tablet|playbook|silk|(android(?!.*mobile))/i.test(uaLower)
+        ? "tablet"
+        : /mobi|iphone|ipod|android.*mobile|blackberry|iemobile|opera mini/i.test(uaLower)
+          ? "mobile"
+          : uaLower
+            ? "desktop"
+            : "unknown";
+      namedValues._device = deviceType;
+    }
+
+    if (form.include_browser) {
+      let browser = "unknown";
+      if (/edg\//i.test(ua)) browser = "Edge";
+      else if (/opr\/|opera/i.test(ua)) browser = "Opera";
+      else if (/chrome\//i.test(ua) && !/chromium/i.test(ua)) browser = "Chrome";
+      else if (/firefox\//i.test(ua)) browser = "Firefox";
+      else if (/safari\//i.test(ua) && !/chrome\//i.test(ua)) browser = "Safari";
+      else if (!ua) browser = "unknown";
+      namedValues._browser = browser;
+      namedValues._userAgent = ua || null;
+    }
+
+    if (form.include_page_url) {
+      namedValues._url = body.pageUrl ?? null;
+    }
 
     const payload = {
       submissionId: submission.id,

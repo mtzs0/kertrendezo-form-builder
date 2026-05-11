@@ -59,6 +59,7 @@ export async function submitForm(
       formId,
       values: serializable,
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
       testWebhookUrl: opts?.testWebhookUrl,
     },
   });
