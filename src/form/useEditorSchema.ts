@@ -64,7 +64,7 @@ export interface UseEditorSchemaResult {
   reload: () => Promise<void>;
 
   // Form meta ops
-  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>) => void;
+  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>) => void;
 
   // Group ops
   addGroup: () => Promise<string | undefined>;
