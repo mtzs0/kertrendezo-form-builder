@@ -397,12 +397,18 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 testWebhookUrl={editor.form?.test_webhook_url ?? DEFAULT_TEST_WEBHOOK_URL}
                 thankYouText={editor.form?.thank_you_text ?? ""}
                 outputUrl={editor.form?.output_url ?? ""}
+                includeDeviceType={editor.form?.include_device_type ?? false}
+                includeBrowser={editor.form?.include_browser ?? false}
+                includePageUrl={editor.form?.include_page_url ?? true}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
                 onChangeTestWebhookUrl={(v) => editor.patchForm({ test_webhook_url: v.trim() ? v.trim() : null })}
                 onChangeThankYouText={(v) => editor.patchForm({ thank_you_text: v.trim() ? v : null })}
                 onChangeOutputUrl={(v) => editor.patchForm({ output_url: v.trim() ? v.trim() : null })}
+                onChangeIncludeDeviceType={(v) => editor.patchForm({ include_device_type: v })}
+                onChangeIncludeBrowser={(v) => editor.patchForm({ include_browser: v })}
+                onChangeIncludePageUrl={(v) => editor.patchForm({ include_page_url: v })}
               />
             )}
           </TabsContent>
