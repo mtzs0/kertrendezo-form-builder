@@ -269,6 +269,61 @@ function SliderNumberInput({
   );
 }
 
+/**
+ * Integer slider that allows the thumb to be dragged or clicked to any
+ * position on the track (sub-step precision visually), while the committed
+ * value is always a whole integer between min and max.
+ */
+function IntegerSlider({
+  id,
+  min,
+  max,
+  value,
+  onChange,
+  className,
+}: {
+  id: string;
+  min: number;
+  max: number;
+  value: number;
+  onChange: (n: number) => void;
+  className?: string;
+}) {
+  // Local fractional position so the knob moves smoothly with the pointer.
+  const [pos, setPos] = useState<number>(value);
+  const dragging = useRef(false);
+
+  // Sync local position when the canonical value changes from outside.
+  if (!dragging.current && Math.round(pos) !== value) {
+    queueMicrotask(() => setPos(value));
+  }
+
+  const clampInt = (n: number) => Math.min(max, Math.max(min, Math.round(n)));
+
+  return (
+    <Slider
+      id={id}
+      min={min}
+      max={max}
+      step={0.001}
+      value={[pos]}
+      onValueChange={(v) => {
+        dragging.current = true;
+        setPos(v[0]);
+        const next = clampInt(v[0]);
+        if (next !== value) onChange(next);
+      }}
+      onValueCommit={(v) => {
+        dragging.current = false;
+        const next = clampInt(v[0]);
+        setPos(next);
+        if (next !== value) onChange(next);
+      }}
+      className={className}
+    />
+  );
+}
+
 export function FieldRenderer({ field, value, onChange, layout = "horizontal" }: Props) {
   // Display-only "Cím" element: render as a heading and stop.
   if (field.type === "label") {
@@ -578,13 +633,12 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
               onCommit={(n) => onChange(field.id, n)}
             />
             <div className="space-y-3 flex-1 min-w-0">
-              <Slider
+              <IntegerSlider
                 id={field.id}
                 min={field.min}
                 max={field.max}
-                step={1}
-                value={[current]}
-                onValueChange={(v) => onChange(field.id, snapToInt(v[0]))}
+                value={current}
+                onChange={(n) => onChange(field.id, n)}
                 className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
