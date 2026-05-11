@@ -518,6 +518,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                       if (i === 0) onChange(field.id, undefined);
                       else onChange(field.id, selectable[i - 1]);
                     }}
+                    className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
                   />
                   <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
                     {ticks.map((pct, i) => (
