@@ -633,13 +633,12 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
               onCommit={(n) => onChange(field.id, n)}
             />
             <div className="space-y-3 flex-1 min-w-0">
-              <Slider
+              <IntegerSlider
                 id={field.id}
                 min={field.min}
                 max={field.max}
-                step={1}
-                value={[current]}
-                onValueChange={(v) => onChange(field.id, snapToInt(v[0]))}
+                value={current}
+                onChange={(n) => onChange(field.id, n)}
                 className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
