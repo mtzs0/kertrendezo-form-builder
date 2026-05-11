@@ -20,6 +20,7 @@ interface RequestBody {
   formId?: string;
   values?: Record<string, unknown>;
   userAgent?: string;
+  pageUrl?: string;
   /** Optional override webhook URL — used by the "Demo küldés" button. */
   testWebhookUrl?: string;
 }
