@@ -545,6 +545,51 @@ function SettingsPanel({
                 A „Demo" gombbal kitöltött űrlap a „Demo küldés" gombra erre az URL-re küldi az adatokat (a normál webhook helyett).
               </p>
             </div>
+
+            <div className="space-y-3 pt-2 border-t border-border">
+              <div>
+                <h4 className="text-sm font-semibold">További adatok továbbítása</h4>
+                <p className="text-xs text-muted-foreground">
+                  Ezek az értékek a mezők adatai után, a webhook payload végén kerülnek elküldésre.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="settings_inc_device" className="cursor-pointer">Készülék típusa</Label>
+                  <p className="text-xs text-muted-foreground">{`Mobil / tablet / desktop, _device néven.`}</p>
+                </div>
+                <Switch
+                  id="settings_inc_device"
+                  checked={includeDeviceType}
+                  onCheckedChange={onChangeIncludeDeviceType}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="settings_inc_browser" className="cursor-pointer">Böngésző</Label>
+                  <p className="text-xs text-muted-foreground">{`Chrome / Firefox / Safari stb., _browser néven (és teljes _userAgent).`}</p>
+                </div>
+                <Switch
+                  id="settings_inc_browser"
+                  checked={includeBrowser}
+                  onCheckedChange={onChangeIncludeBrowser}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="settings_inc_url" className="cursor-pointer">Weboldal URL</Label>
+                  <p className="text-xs text-muted-foreground">{`Az oldal címe, ahol a felhasználó kitöltötte az űrlapot, _url néven (tracking URL-ek azonosítására).`}</p>
+                </div>
+                <Switch
+                  id="settings_inc_url"
+                  checked={includePageUrl}
+                  onCheckedChange={onChangeIncludePageUrl}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </TabsContent>
