@@ -116,7 +116,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
   const groupPatchBuf = useRef<Map<string, Partial<FormGroup>>>(new Map());
   const subGroupPatchBuf = useRef<Map<string, Partial<FormSubGroup>>>(new Map());
-  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>>({});
+  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>>({});
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
