@@ -61,6 +61,9 @@ export interface EditorForm {
   test_webhook_url: string | null;
   thank_you_text: string | null;
   output_url: string | null;
+  include_device_type: boolean;
+  include_browser: boolean;
+  include_page_url: boolean;
 }
 
 export interface EditorBundle {
@@ -70,6 +73,8 @@ export interface EditorBundle {
   fields: FormField[];
 }
 
+const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url";
+
 /**
  * Find or create the form row identified by slug. Returns the form id.
  * The first time this runs in a fresh DB it will create the row.
@@ -77,7 +82,7 @@ export interface EditorBundle {
 export async function ensureForm(slug: string, defaults: { title: string; description?: string }): Promise<EditorForm> {
   const { data: existing, error: selErr } = await supabase
     .from("forms")
-    .select("id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url")
+    .select(FORM_SELECT)
     .eq("slug", slug)
     .maybeSingle();
   if (selErr) throw selErr;
@@ -92,24 +97,37 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
       schema: { fields: [], groups: [], subGroups: [] },
       published: true,
     })
-    .select("id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url")
+    .select(FORM_SELECT)
     .single();
   if (insErr) throw insErr;
   return created as EditorForm;
 }
 
-/** Update form-level metadata (title, description, webhook_url). */
+/** Update form-level metadata (title, description, webhook_url, toggles). */
 export async function updateFormMeta(
   id: string,
-  patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null }>
+  patch: Partial<{
+    title: string;
+    description: string | null;
+    webhook_url: string | null;
+    test_webhook_url: string | null;
+    thank_you_text: string | null;
+    output_url: string | null;
+    include_device_type: boolean;
+    include_browser: boolean;
+    include_page_url: boolean;
+  }>
 ) {
-  const u: Database["public"]["Tables"]["forms"]["Update"] & { thank_you_text?: string | null; output_url?: string | null; test_webhook_url?: string | null } = {};
+  const u: Database["public"]["Tables"]["forms"]["Update"] = {};
   if (patch.title !== undefined) u.title = patch.title;
   if (patch.description !== undefined) u.description = patch.description;
   if (patch.webhook_url !== undefined) u.webhook_url = patch.webhook_url;
   if (patch.test_webhook_url !== undefined) u.test_webhook_url = patch.test_webhook_url;
   if (patch.thank_you_text !== undefined) u.thank_you_text = patch.thank_you_text;
   if (patch.output_url !== undefined) u.output_url = patch.output_url;
+  if (patch.include_device_type !== undefined) u.include_device_type = patch.include_device_type;
+  if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
+  if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
   if (Object.keys(u).length === 0) return;
   const { error } = await supabase.from("forms").update(u).eq("id", id);
   if (error) throw error;
