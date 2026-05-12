@@ -150,6 +150,62 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
+  // Prefill values from URL query params, matching `?internal_name=value`
+  // against each field's `internalName`. Runs whenever the schema's set of
+  // fields changes; only seeds entries that aren't already set so user
+  // input is never overwritten.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    // Also parse params after the hash (HashRouter places the route there
+    // and may carry its own query: e.g. `#/path?foo=bar`).
+    const hash = window.location.hash || "";
+    const hashQ = hash.includes("?") ? hash.slice(hash.indexOf("?") + 1) : "";
+    const hashParams = new URLSearchParams(hashQ);
+    if (params.size === 0 && hashParams.size === 0) return;
+
+    const coerce = (field: FormField, raw: string): FormValues[string] | undefined => {
+      const v = raw;
+      switch (field.type) {
+        case "slider": {
+          const n = Number(v);
+          return Number.isFinite(n) ? n : undefined;
+        }
+        case "checkbox":
+          return v.split(",").map((s) => s.trim()).filter(Boolean);
+        case "measurement": {
+          // Accept "amount:unit" or "amount" (unit defaults to first option).
+          const [a, u] = v.split(":");
+          const amount = Number(a);
+          if (!Number.isFinite(amount)) return undefined;
+          const unit = (u && u.trim()) || (field as { options?: { dataName: string }[] }).options?.[0]?.dataName || "";
+          return { amount, unit } as FormValues[string];
+        }
+        case "label":
+          return undefined;
+        default:
+          return v;
+      }
+    };
+
+    setValues((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const f of schema.fields) {
+        if (!f.internalName) continue;
+        if (next[f.id] !== undefined) continue;
+        const raw = params.get(f.internalName) ?? hashParams.get(f.internalName);
+        if (raw == null) continue;
+        const coerced = coerce(f, raw);
+        if (coerced === undefined) continue;
+        next[f.id] = coerced;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schema.fields]);
+
   // Lookup maps for group / sub-group condition checks.
   const groupById = useMemo(() => {
     const m = new Map<string, typeof schema.groups[number]>();
