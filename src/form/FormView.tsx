@@ -827,16 +827,17 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           </Button>
         )}
         {isStepped && !isFinalStep ? (
-          <Button
+          <ActionButton
             type="button"
             size="lg"
             onClick={goNext}
             className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            background={schema.buttonBackground}
           >
             Tovább <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
+          </ActionButton>
         ) : (
-          <Button
+          <ActionButton
             type="submit"
             size="lg"
             disabled={submitting}
@@ -845,9 +846,10 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
               demoSubmitRef.current = false;
             }}
             className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            background={schema.buttonBackground}
           >
             {submitting ? "Küldés…" : "Küldés"}
-          </Button>
+          </ActionButton>
         )}
       </div>
     </form>
