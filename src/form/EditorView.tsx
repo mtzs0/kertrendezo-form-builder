@@ -16,6 +16,7 @@ import { GroupsManager } from "./editor/GroupsManager";
 import { LayoutsManager } from "./editor/LayoutsManager";
 import { ConditionCanvas } from "./editor/ConditionCanvas";
 import { DemoPreview } from "./editor/DemoPreview";
+import { VisualBackgroundConfig } from "./editor/VisualBackgroundConfig";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
