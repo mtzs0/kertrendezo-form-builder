@@ -852,12 +852,30 @@ export async function loadVisualBackgroundLibrary(formId: string): Promise<strin
 
 /** Build a FormSchema from the editor bundle so the existing renderer can preview it. */
 export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "form">): FormSchema {
+  const buttonBg: VisualBackground | undefined = form.button_bg_enabled
+    ? {
+        enabled: true,
+        imageUrl: form.button_bg_image_url ?? undefined,
+        overlayColor: form.button_bg_overlay_color ?? undefined,
+        overlayOpacity:
+          form.button_bg_overlay_opacity != null
+            ? Number(form.button_bg_overlay_opacity)
+            : undefined,
+        fontColor: form.button_bg_font_color ?? undefined,
+        textStrokeWidth:
+          form.button_bg_text_stroke_width != null
+            ? Number(form.button_bg_text_stroke_width)
+            : undefined,
+        textStrokeColor: form.button_bg_text_stroke_color ?? undefined,
+      }
+    : undefined;
   return {
     title: form.title,
     description: form.description ?? undefined,
     groups: bundle.groups,
     subGroups: bundle.subGroups,
     fields: bundle.fields,
+    buttonBackground: buttonBg,
   };
 }
 

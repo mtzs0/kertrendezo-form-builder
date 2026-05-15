@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -123,6 +124,14 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
   const vbFontColor = vb?.fontColor ?? "#ffffff";
   const vbStrokeWidth = vb?.textStrokeWidth ?? 0;
   const vbStrokeColor = vb?.textStrokeColor ?? "#000000";
+  // Preload the visual-background image so the first selection doesn't flash
+  // a blank state while the browser fetches it.
+  useEffect(() => {
+    if (vb?.imageUrl) {
+      const img = new Image();
+      img.src = vb.imageUrl;
+    }
+  }, [vb?.imageUrl]);
   const renderVbLayers = (selected: boolean) => {
     if (!vb || !selected || !vb.imageUrl) return null;
     return (

@@ -150,6 +150,34 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
+  // Pre-load every visual-background image used anywhere in the schema so the
+  // first interaction (e.g. clicking a radio option) doesn't briefly show a
+  // missing image while the browser fetches it.
+  useEffect(() => {
+    const urls = new Set<string>();
+    for (const f of schema.fields) {
+      if (f.type === "radio" || f.type === "checkbox") {
+        const u = f.visualBackground?.imageUrl;
+        if (f.visualBackground?.enabled && u) urls.add(u);
+      }
+    }
+    for (const g of schema.groups) {
+      const u = g.visualBackground?.imageUrl;
+      if (g.visualBackground?.enabled && u) urls.add(u);
+    }
+    for (const s of schema.subGroups) {
+      const u = s.visualBackground?.imageUrl;
+      if (s.visualBackground?.enabled && u) urls.add(u);
+    }
+    const bb = schema.buttonBackground;
+    if (bb?.enabled && bb.imageUrl) urls.add(bb.imageUrl);
+    urls.forEach((u) => {
+      const img = new Image();
+      img.src = u;
+    });
+  }, [schema]);
+
+
   // Prefill values from URL query params, matching `?internal_name=value`
   // against each field's `internalName`. Runs whenever the schema's set of
   // fields changes; only seeds entries that aren't already set so user
@@ -691,6 +719,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           activeSubId={activeSubId}
           maxGroupIndex={maxGroupIdx}
           maxSubIndexByGroup={maxSubIdxByGroup}
+          tabsBackground={schema.buttonBackground}
           onJumpGroup={(i) => {
             if (i <= activeGroupIdx) {
               setActiveGroupIdx(i);
@@ -755,7 +784,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           </Button>
         )}
         {showDemoButton && demoMode && (
-          <Button
+          <ActionButton
             type="button"
             size="lg"
             disabled={submitting}
@@ -765,9 +794,10 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
               handleSubmit(e as unknown as React.FormEvent, { demo: true });
             }}
             className="bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            background={schema.buttonBackground}
           >
             {submitting ? "Küldés…" : "Demo küldés"}
-          </Button>
+          </ActionButton>
         )}
         {isStepped && (activeGroupIdx > 0 || activeSubIdxInGroup > 0) && (
           <Button
@@ -797,16 +827,17 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           </Button>
         )}
         {isStepped && !isFinalStep ? (
-          <Button
+          <ActionButton
             type="button"
             size="lg"
             onClick={goNext}
             className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            background={schema.buttonBackground}
           >
             Tovább <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
+          </ActionButton>
         ) : (
-          <Button
+          <ActionButton
             type="submit"
             size="lg"
             disabled={submitting}
@@ -815,11 +846,67 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
               demoSubmitRef.current = false;
             }}
             className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            background={schema.buttonBackground}
           >
             {submitting ? "Küldés…" : "Küldés"}
-          </Button>
+          </ActionButton>
         )}
       </div>
     </form>
+  );
+}
+
+interface ActionButtonProps extends React.ComponentProps<typeof Button> {
+  background?: import("./types").VisualBackground;
+}
+
+/**
+ * Wrapper around the shared `Button` that applies a per-form visual background
+ * (image + colored overlay) on top of the existing gradient styling. When the
+ * background isn't enabled it renders a normal Button with no overhead.
+ */
+function ActionButton({ background, className, children, style, ...rest }: ActionButtonProps) {
+  const vb = background?.enabled ? background : undefined;
+  if (!vb) {
+    return (
+      <Button {...rest} className={className} style={style}>
+        {children}
+      </Button>
+    );
+  }
+  const overlayColor = vb.overlayColor ?? "#000000";
+  const overlayOpacity = vb.overlayOpacity ?? 0.5;
+  const fontColor = vb.fontColor ?? "#ffffff";
+  const strokeWidth = vb.textStrokeWidth ?? 0;
+  const strokeColor = vb.textStrokeColor ?? "#000000";
+  return (
+    <Button
+      {...rest}
+      className={`${className ?? ""} relative overflow-hidden`}
+      style={{
+        ...style,
+        color: fontColor,
+        WebkitTextStroke: strokeWidth > 0 ? `${strokeWidth}px ${strokeColor}` : undefined,
+        paintOrder: "stroke fill",
+      }}
+    >
+      {vb.imageUrl && (
+        <span
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${vb.imageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
+      <span
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: overlayColor, opacity: overlayOpacity }}
+      />
+      <span className="relative z-10 inline-flex items-center">{children}</span>
+    </Button>
   );
 }
