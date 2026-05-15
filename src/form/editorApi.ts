@@ -139,6 +139,8 @@ export type FormMetaPatch = Partial<{
   include_page_url: boolean;
   /** Form-wide button visual background (applied to "Tovább"/"Küldés"). */
   buttonBackground: VisualBackground | undefined;
+  /** Form-wide tabs visual background (applied to active step nav pills). */
+  tabsBackground: VisualBackground | undefined;
 }>;
 
 /** Update form-level metadata (title, description, webhook_url, toggles). */
@@ -152,6 +154,7 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
   if (patch.output_url !== undefined) u.output_url = patch.output_url;
   if (patch.include_device_type !== undefined) u.include_device_type = patch.include_device_type;
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
+  if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
   if (patch.buttonBackground !== undefined) {
     const bg = patch.buttonBackground;
@@ -162,6 +165,16 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
     u.button_bg_font_color = bg?.fontColor ?? null;
     u.button_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
     u.button_bg_text_stroke_color = bg?.textStrokeColor ?? null;
+  }
+  if (patch.tabsBackground !== undefined) {
+    const bg = patch.tabsBackground;
+    u.tabs_bg_enabled = bg?.enabled ?? false;
+    u.tabs_bg_image_url = bg?.imageUrl ?? null;
+    u.tabs_bg_overlay_color = bg?.overlayColor ?? null;
+    u.tabs_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    u.tabs_bg_font_color = bg?.fontColor ?? null;
+    u.tabs_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    u.tabs_bg_text_stroke_color = bg?.textStrokeColor ?? null;
   }
   if (Object.keys(u).length === 0) return;
   const { error } = await sbAny.from("forms").update(u).eq("id", id);
