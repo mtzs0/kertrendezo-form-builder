@@ -571,6 +571,8 @@ export interface FieldPatch {
   repeaterConfig?: Record<string, unknown> | null;
   /** Measurement-field config blob (e.g. unitDisplay). null = clear. */
   measurementConfig?: { unitDisplay?: "dropdown" | "radio" } | null;
+  /** Visual background applied to selected radio/checkbox options. undefined = no change. */
+  visualBackground?: VisualBackground | undefined;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
@@ -604,6 +606,16 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.hideLabel !== undefined) u.hide_label = patch.hideLabel;
   if (patch.repeaterConfig !== undefined) (u as Record<string, unknown>).repeater_config = patch.repeaterConfig;
   if (patch.measurementConfig !== undefined) (u as Record<string, unknown>).measurement_config = patch.measurementConfig;
+  if ("visualBackground" in patch) {
+    const bg = patch.visualBackground;
+    (u as Record<string, unknown>).visual_bg_enabled = bg?.enabled ?? false;
+    (u as Record<string, unknown>).visual_bg_image_url = bg?.imageUrl ?? null;
+    (u as Record<string, unknown>).visual_bg_overlay_color = bg?.overlayColor ?? null;
+    (u as Record<string, unknown>).visual_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    (u as Record<string, unknown>).visual_bg_font_color = bg?.fontColor ?? null;
+    (u as Record<string, unknown>).visual_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    (u as Record<string, unknown>).visual_bg_text_stroke_color = bg?.textStrokeColor ?? null;
+  }
   if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
     // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
     if (patch.sliderCustomStops === null) {
