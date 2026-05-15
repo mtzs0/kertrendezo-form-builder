@@ -150,6 +150,34 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const [seenGroupIds, setSeenGroupIds] = useState<Set<string>>(() => new Set());
   const tree = useMemo(() => buildRenderTree(filterPlacedSchema(schema)), [schema]);
 
+  // Pre-load every visual-background image used anywhere in the schema so the
+  // first interaction (e.g. clicking a radio option) doesn't briefly show a
+  // missing image while the browser fetches it.
+  useEffect(() => {
+    const urls = new Set<string>();
+    for (const f of schema.fields) {
+      if (f.type === "radio" || f.type === "checkbox") {
+        const u = f.visualBackground?.imageUrl;
+        if (f.visualBackground?.enabled && u) urls.add(u);
+      }
+    }
+    for (const g of schema.groups) {
+      const u = g.visualBackground?.imageUrl;
+      if (g.visualBackground?.enabled && u) urls.add(u);
+    }
+    for (const s of schema.subGroups) {
+      const u = s.visualBackground?.imageUrl;
+      if (s.visualBackground?.enabled && u) urls.add(u);
+    }
+    const bb = schema.buttonBackground;
+    if (bb?.enabled && bb.imageUrl) urls.add(bb.imageUrl);
+    urls.forEach((u) => {
+      const img = new Image();
+      img.src = u;
+    });
+  }, [schema]);
+
+
   // Prefill values from URL query params, matching `?internal_name=value`
   // against each field's `internalName`. Runs whenever the schema's set of
   // fields changes; only seeds entries that aren't already set so user
