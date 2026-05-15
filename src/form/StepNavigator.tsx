@@ -23,6 +23,11 @@ interface Props {
   maxSubIndexByGroup: Record<string, number>;
   onJumpGroup: (index: number) => void;
   onJumpSub: (groupIndex: number, subId: string) => void;
+  /**
+   * Optional form-wide visual background applied to the active group pill and
+   * the active sub-pill (mirrors the action-button background).
+   */
+  tabsBackground?: VisualBackground;
 }
 
 /**
