@@ -53,6 +53,7 @@ type FormMetaInput = Partial<{
   include_browser: boolean;
   include_page_url: boolean;
   buttonBackground: VisualBackground | undefined;
+  tabsBackground: VisualBackground | undefined;
 }>;
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
