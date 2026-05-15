@@ -319,6 +319,20 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
           f.placeholder_note_value && f.placeholder_note_position
             ? { value: f.placeholder_note_value, position: f.placeholder_note_position as NotePosition }
             : undefined,
+        visualBackground:
+          f.type === "radio" || f.type === "checkbox"
+            ? (f.visual_bg_enabled || f.visual_bg_image_url
+                ? {
+                    enabled: !!f.visual_bg_enabled,
+                    imageUrl: f.visual_bg_image_url ?? undefined,
+                    overlayColor: f.visual_bg_overlay_color ?? undefined,
+                    overlayOpacity:
+                      f.visual_bg_overlay_opacity != null
+                        ? Number(f.visual_bg_overlay_opacity)
+                        : undefined,
+                  }
+                : undefined)
+            : undefined,
         options: opts
           .slice()
           .sort((a, b) => a.position - b.position)
