@@ -475,7 +475,32 @@ function SettingsPanel({
         <TabsTrigger value="webhook">Webhook</TabsTrigger>
         <TabsTrigger value="thankyou">Köszönő oldal</TabsTrigger>
         <TabsTrigger value="output">Output</TabsTrigger>
+        <TabsTrigger value="visual-bg">Vizuális háttér</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="visual-bg" className="mt-4">
+        <div className="max-w-2xl">
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Vizuális háttér</h3>
+              <p className="text-sm text-muted-foreground">
+                Háttérkép és színes átfedés a csoport-fülek aktív állapotán
+                (előnézet és élő nézet) valamint a „Tovább" / „Küldés" gombokon.
+                Ha kikapcsolod, az alapértelmezett kinézet jelenik meg.
+              </p>
+            </div>
+            <VisualBackgroundConfig
+              storageId={formId ?? "form"}
+              storageKey="form-buttons"
+              formId={formId}
+              value={buttonBackground}
+              onChange={onChangeButtonBackground}
+              title="Csoport-fülek és gombok háttere"
+              description="Ugyanaz a beállítás vonatkozik az aktív csoport-fülre és az űrlap navigációs/küldés gombjaira."
+            />
+          </div>
+        </div>
+      </TabsContent>
 
       <TabsContent value="general" className="mt-4">
         <div className="max-w-2xl">
