@@ -721,7 +721,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           activeSubId={activeSubId}
           maxGroupIndex={maxGroupIdx}
           maxSubIndexByGroup={maxSubIdxByGroup}
-          tabsBackground={schema.buttonBackground}
+          tabsBackground={schema.tabsBackground}
           onJumpGroup={(i) => {
             if (i <= activeGroupIdx) {
               setActiveGroupIdx(i);
