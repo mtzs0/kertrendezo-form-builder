@@ -32,12 +32,21 @@ const COL_CLASS: Record<number, string> = {
 function OptionNote({
   note,
   className,
+  inheritColor,
 }: {
   note: { value: string; position: NotePosition };
   className?: string;
+  /** When true, inherit the surrounding text color (used by visual-bg selected state). */
+  inheritColor?: boolean;
 }) {
   return (
-    <Markdown className={cn("text-[11px] text-muted-foreground leading-snug", className)}>
+    <Markdown
+      className={cn(
+        "text-[11px] leading-snug",
+        inheritColor ? "text-current opacity-90" : "text-muted-foreground",
+        className
+      )}
+    >
       {note.value}
     </Markdown>
   );
