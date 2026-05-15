@@ -166,6 +166,10 @@ export type Database = {
           unique_note_per_option: boolean
           updated_at: string
           use_images: boolean
+          visual_bg_enabled: boolean
+          visual_bg_image_url: string | null
+          visual_bg_overlay_color: string | null
+          visual_bg_overlay_opacity: number | null
           width_percent: number | null
           with_time: boolean
         }
@@ -203,6 +207,10 @@ export type Database = {
           unique_note_per_option?: boolean
           updated_at?: string
           use_images?: boolean
+          visual_bg_enabled?: boolean
+          visual_bg_image_url?: string | null
+          visual_bg_overlay_color?: string | null
+          visual_bg_overlay_opacity?: number | null
           width_percent?: number | null
           with_time?: boolean
         }
@@ -240,6 +248,10 @@ export type Database = {
           unique_note_per_option?: boolean
           updated_at?: string
           use_images?: boolean
+          visual_bg_enabled?: boolean
+          visual_bg_image_url?: string | null
+          visual_bg_overlay_color?: string | null
+          visual_bg_overlay_opacity?: number | null
           width_percent?: number | null
           with_time?: boolean
         }
@@ -330,6 +342,10 @@ export type Database = {
           parent_group_id: string | null
           position: number
           updated_at: string
+          visual_bg_enabled: boolean
+          visual_bg_image_url: string | null
+          visual_bg_overlay_color: string | null
+          visual_bg_overlay_opacity: number | null
           width_percent: number | null
         }
         Insert: {
@@ -344,6 +360,10 @@ export type Database = {
           parent_group_id?: string | null
           position?: number
           updated_at?: string
+          visual_bg_enabled?: boolean
+          visual_bg_image_url?: string | null
+          visual_bg_overlay_color?: string | null
+          visual_bg_overlay_opacity?: number | null
           width_percent?: number | null
         }
         Update: {
@@ -358,6 +378,10 @@ export type Database = {
           parent_group_id?: string | null
           position?: number
           updated_at?: string
+          visual_bg_enabled?: boolean
+          visual_bg_image_url?: string | null
+          visual_bg_overlay_color?: string | null
+          visual_bg_overlay_opacity?: number | null
           width_percent?: number | null
         }
         Relationships: [
@@ -448,6 +472,10 @@ export type Database = {
       forms: {
         Row: {
           active_layout_id: string | null
+          button_bg_enabled: boolean
+          button_bg_image_url: string | null
+          button_bg_overlay_color: string | null
+          button_bg_overlay_opacity: number | null
           canvas_reveal_one_by_one: boolean
           created_at: string
           description: string | null
@@ -467,6 +495,10 @@ export type Database = {
         }
         Insert: {
           active_layout_id?: string | null
+          button_bg_enabled?: boolean
+          button_bg_image_url?: string | null
+          button_bg_overlay_color?: string | null
+          button_bg_overlay_opacity?: number | null
           canvas_reveal_one_by_one?: boolean
           created_at?: string
           description?: string | null
@@ -486,6 +518,10 @@ export type Database = {
         }
         Update: {
           active_layout_id?: string | null
+          button_bg_enabled?: boolean
+          button_bg_image_url?: string | null
+          button_bg_overlay_color?: string | null
+          button_bg_overlay_opacity?: number | null
           canvas_reveal_one_by_one?: boolean
           created_at?: string
           description?: string | null
