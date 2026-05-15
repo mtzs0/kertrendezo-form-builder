@@ -12,6 +12,7 @@ import type {
   OptionLabelPosition,
   RepeaterField,
   WidthPercent,
+  VisualBackground,
 } from "./types";
 
 // The generated Database types may not yet contain `width_percent` (added in a
