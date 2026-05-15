@@ -784,7 +784,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           </Button>
         )}
         {showDemoButton && demoMode && (
-          <Button
+          <ActionButton
             type="button"
             size="lg"
             disabled={submitting}
@@ -794,9 +794,10 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
               handleSubmit(e as unknown as React.FormEvent, { demo: true });
             }}
             className="bg-amber-500 text-white hover:bg-amber-600 kr-shadow-soft hover:kr-shadow-elevated transition-all"
+            background={schema.buttonBackground}
           >
             {submitting ? "Küldés…" : "Demo küldés"}
-          </Button>
+          </ActionButton>
         )}
         {isStepped && (activeGroupIdx > 0 || activeSubIdxInGroup > 0) && (
           <Button
