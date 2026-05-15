@@ -22,9 +22,17 @@ interface Props {
   description?: string;
 }
 
-const DEFAULTS: Required<Pick<VisualBackground, "overlayColor" | "overlayOpacity">> = {
+const DEFAULTS: Required<
+  Pick<
+    VisualBackground,
+    "overlayColor" | "overlayOpacity" | "fontColor" | "textStrokeWidth" | "textStrokeColor"
+  >
+> = {
   overlayColor: "#000000",
   overlayOpacity: 0.5,
+  fontColor: "#ffffff",
+  textStrokeWidth: 0,
+  textStrokeColor: "#000000",
 };
 
 export function VisualBackgroundConfig({
@@ -39,6 +47,9 @@ export function VisualBackgroundConfig({
   const enabled = !!value?.enabled;
   const overlayColor = value?.overlayColor ?? DEFAULTS.overlayColor;
   const overlayOpacity = value?.overlayOpacity ?? DEFAULTS.overlayOpacity;
+  const fontColor = value?.fontColor ?? DEFAULTS.fontColor;
+  const textStrokeWidth = value?.textStrokeWidth ?? DEFAULTS.textStrokeWidth;
+  const textStrokeColor = value?.textStrokeColor ?? DEFAULTS.textStrokeColor;
 
   const [library, setLibrary] = useState<string[]>([]);
 
@@ -60,6 +71,9 @@ export function VisualBackgroundConfig({
       imageUrl: value?.imageUrl,
       overlayColor,
       overlayOpacity,
+      fontColor,
+      textStrokeWidth,
+      textStrokeColor,
       ...patch,
     });
   };
