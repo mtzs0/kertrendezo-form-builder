@@ -81,6 +81,13 @@ export interface EditorForm {
   button_bg_font_color: string | null;
   button_bg_text_stroke_width: number | null;
   button_bg_text_stroke_color: string | null;
+  tabs_bg_enabled: boolean;
+  tabs_bg_image_url: string | null;
+  tabs_bg_overlay_color: string | null;
+  tabs_bg_overlay_opacity: number | null;
+  tabs_bg_font_color: string | null;
+  tabs_bg_text_stroke_width: number | null;
+  tabs_bg_text_stroke_color: string | null;
 }
 
 export interface EditorBundle {
@@ -90,7 +97,7 @@ export interface EditorBundle {
   fields: FormField[];
 }
 
-const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity, button_bg_font_color, button_bg_text_stroke_width, button_bg_text_stroke_color";
+const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity, button_bg_font_color, button_bg_text_stroke_width, button_bg_text_stroke_color, tabs_bg_enabled, tabs_bg_image_url, tabs_bg_overlay_color, tabs_bg_overlay_opacity, tabs_bg_font_color, tabs_bg_text_stroke_width, tabs_bg_text_stroke_color";
 
 /**
  * Find or create the form row identified by slug. Returns the form id.
