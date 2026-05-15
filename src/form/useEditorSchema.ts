@@ -39,7 +39,21 @@ import type {
   FormGroup,
   FormSchema,
   FormSubGroup,
+  VisualBackground,
 } from "./types";
+
+type FormMetaInput = Partial<{
+  title: string;
+  description: string | null;
+  webhook_url: string | null;
+  test_webhook_url: string | null;
+  thank_you_text: string | null;
+  output_url: string | null;
+  include_device_type: boolean;
+  include_browser: boolean;
+  include_page_url: boolean;
+  buttonBackground: VisualBackground | undefined;
+}>;
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -64,7 +78,7 @@ export interface UseEditorSchemaResult {
   reload: () => Promise<void>;
 
   // Form meta ops
-  patchForm: (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>) => void;
+  patchForm: (patch: FormMetaInput) => void;
 
   // Group ops
   addGroup: () => Promise<string | undefined>;
@@ -116,7 +130,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   const fieldPatchBuf = useRef<Map<string, FieldPatch>>(new Map());
   const groupPatchBuf = useRef<Map<string, Partial<FormGroup>>>(new Map());
   const subGroupPatchBuf = useRef<Map<string, Partial<FormSubGroup>>>(new Map());
-  const formPatchBuf = useRef<Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>>({});
+  const formPatchBuf = useRef<FormMetaInput>({});
   const flushTimer = useRef<number | null>(null);
 
   // ---------- Load ----------
@@ -199,6 +213,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             position: patch.location,
             width: patch.width === undefined ? undefined : patch.width ?? null,
             color: patch.color === undefined ? undefined : (patch.color ?? null),
+            visualBackground:
+              "visualBackground" in patch ? patch.visualBackground : undefined,
           })
         ),
         ...subGroupEntries.map(([id, patch]) =>
@@ -207,6 +223,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             label: patch.label,
             position: patch.location,
             width: patch.width === undefined ? undefined : patch.width ?? null,
+            visualBackground:
+              "visualBackground" in patch ? patch.visualBackground : undefined,
           })
         ),
         ...(hasFormMeta && form ? [updateFormMeta(form.id, formMeta)] : []),
@@ -237,7 +255,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   // ---------- Mutations ----------
 
   const patchForm = useCallback(
-    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>) => {
+    (patch: FormMetaInput) => {
       setForm((f) =>
         f
           ? {
@@ -259,6 +277,17 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                 patch.include_browser !== undefined ? patch.include_browser : f.include_browser,
               include_page_url:
                 patch.include_page_url !== undefined ? patch.include_page_url : f.include_page_url,
+              ...(patch.buttonBackground !== undefined
+                ? {
+                    button_bg_enabled: patch.buttonBackground?.enabled ?? false,
+                    button_bg_image_url: patch.buttonBackground?.imageUrl ?? null,
+                    button_bg_overlay_color: patch.buttonBackground?.overlayColor ?? null,
+                    button_bg_overlay_opacity: patch.buttonBackground?.overlayOpacity ?? null,
+                    button_bg_font_color: patch.buttonBackground?.fontColor ?? null,
+                    button_bg_text_stroke_width: patch.buttonBackground?.textStrokeWidth ?? null,
+                    button_bg_text_stroke_color: patch.buttonBackground?.textStrokeColor ?? null,
+                  }
+                : {}),
             }
           : f
       );
@@ -627,6 +656,9 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       if ("optionLabelPosition" in op) fp.optionLabelPosition = op.optionLabelPosition ?? null;
       if ("fieldImagePosition" in op) fp.fieldImagePosition = op.fieldImagePosition ?? null;
       if ("placeholderImageUrl" in op) fp.placeholderImageUrl = op.placeholderImageUrl ?? null;
+      if ("visualBackground" in (patch as Record<string, unknown>)) {
+        fp.visualBackground = (patch as { visualBackground?: VisualBackground }).visualBackground;
+      }
       if ("placeholderNote" in op) {
         fp.placeholderNoteValue = op.placeholderNote?.value ?? null;
         fp.placeholderNotePosition = op.placeholderNote?.position ?? null;

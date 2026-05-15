@@ -423,6 +423,8 @@ export async function updateGroup(
     parentGroupId: string | null;
     /** Hex color (or null to clear) used by the visual canvas frame. */
     color: string | null;
+    /** Visual background applied to the active step tab. */
+    visualBackground: VisualBackground | undefined;
   }>
 ) {
   const u: Record<string, unknown> = {};
@@ -432,6 +434,16 @@ export async function updateGroup(
   if (patch.width !== undefined) u.width_percent = patch.width;
   if (patch.parentGroupId !== undefined) u.parent_group_id = patch.parentGroupId;
   if (patch.color !== undefined) u.color = patch.color;
+  if (patch.visualBackground !== undefined) {
+    const bg = patch.visualBackground;
+    u.visual_bg_enabled = bg?.enabled ?? false;
+    u.visual_bg_image_url = bg?.imageUrl ?? null;
+    u.visual_bg_overlay_color = bg?.overlayColor ?? null;
+    u.visual_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    u.visual_bg_font_color = bg?.fontColor ?? null;
+    u.visual_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    u.visual_bg_text_stroke_color = bg?.textStrokeColor ?? null;
+  }
   if (Object.keys(u).length === 0) return;
   const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
@@ -464,7 +476,7 @@ export async function createSubGroup(formId: string, groupId: string, position: 
 
 export async function updateSubGroup(
   id: string,
-  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null; groupId: string }>
+  patch: Partial<{ internalName: string; label: string; position: number; width: WidthPercent | null; groupId: string; visualBackground: VisualBackground | undefined }>
 ) {
   const u: Record<string, unknown> = {};
   if (patch.internalName !== undefined) u.internal_name = patch.internalName;
@@ -472,6 +484,16 @@ export async function updateSubGroup(
   if (patch.position !== undefined) u.position = patch.position;
   if (patch.width !== undefined) u.width_percent = patch.width;
   if (patch.groupId !== undefined) u.parent_group_id = patch.groupId;
+  if (patch.visualBackground !== undefined) {
+    const bg = patch.visualBackground;
+    u.visual_bg_enabled = bg?.enabled ?? false;
+    u.visual_bg_image_url = bg?.imageUrl ?? null;
+    u.visual_bg_overlay_color = bg?.overlayColor ?? null;
+    u.visual_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    u.visual_bg_font_color = bg?.fontColor ?? null;
+    u.visual_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    u.visual_bg_text_stroke_color = bg?.textStrokeColor ?? null;
+  }
   if (Object.keys(u).length === 0) return;
   const { error } = await sbAny.from("form_groups").update(u).eq("id", id);
   if (error) throw error;
@@ -549,6 +571,8 @@ export interface FieldPatch {
   repeaterConfig?: Record<string, unknown> | null;
   /** Measurement-field config blob (e.g. unitDisplay). null = clear. */
   measurementConfig?: { unitDisplay?: "dropdown" | "radio" } | null;
+  /** Visual background applied to selected radio/checkbox options. undefined = no change. */
+  visualBackground?: VisualBackground | undefined;
 }
 
 export async function updateField(id: string, patch: FieldPatch) {
@@ -582,6 +606,16 @@ export async function updateField(id: string, patch: FieldPatch) {
   if (patch.hideLabel !== undefined) u.hide_label = patch.hideLabel;
   if (patch.repeaterConfig !== undefined) (u as Record<string, unknown>).repeater_config = patch.repeaterConfig;
   if (patch.measurementConfig !== undefined) (u as Record<string, unknown>).measurement_config = patch.measurementConfig;
+  if ("visualBackground" in patch) {
+    const bg = patch.visualBackground;
+    (u as Record<string, unknown>).visual_bg_enabled = bg?.enabled ?? false;
+    (u as Record<string, unknown>).visual_bg_image_url = bg?.imageUrl ?? null;
+    (u as Record<string, unknown>).visual_bg_overlay_color = bg?.overlayColor ?? null;
+    (u as Record<string, unknown>).visual_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    (u as Record<string, unknown>).visual_bg_font_color = bg?.fontColor ?? null;
+    (u as Record<string, unknown>).visual_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    (u as Record<string, unknown>).visual_bg_text_stroke_color = bg?.textStrokeColor ?? null;
+  }
   if (patch.sliderCustomStops !== undefined || patch.sliderCustomStopsSpacing !== undefined) {
     // We piggyback the spacing onto the JSONB column. If clearing stops, write null.
     if (patch.sliderCustomStops === null) {

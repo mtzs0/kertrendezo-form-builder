@@ -156,7 +156,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                     }}
                   />
                   <aside className="lg:sticky lg:top-4 self-start">
-                    <FieldConfigPanel
+                    <FieldConfigPanel formId={editor.form?.id ?? null}
                       field={selectedField}
                       onChange={(patch) => selectedField && editor.patchField(selectedField.id, patch)}
                       onChangeOptions={(fid, opts) => editor.setFieldOptions(fid, opts)}
@@ -240,7 +240,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                       />
                     </div>
                   )}
-                  <FieldConfigPanel
+                  <FieldConfigPanel formId={editor.form?.id ?? null}
                     field={selectedField}
                     onChange={(patch) =>
                       selectedField && editor.patchField(selectedField.id, patch)
@@ -309,7 +309,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                   onPatchSubGroup={editor.patchSubGroup}
                   onNestGroup={editor.nestGroup}
                   fieldConfigPanel={
-                    <FieldConfigPanel
+                    <FieldConfigPanel formId={editor.form?.id ?? null}
                       field={editor.fields.find((f) => f.id === selectedFieldId) ?? null}
                       onChange={(patch) => {
                         if (selectedFieldId) editor.patchField(selectedFieldId, patch);
