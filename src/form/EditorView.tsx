@@ -462,6 +462,7 @@ function SettingsPanel({
   includeBrowser,
   includePageUrl,
   buttonBackground,
+  tabsBackground,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
@@ -472,6 +473,7 @@ function SettingsPanel({
   onChangeIncludeBrowser,
   onChangeIncludePageUrl,
   onChangeButtonBackground,
+  onChangeTabsBackground,
 }: SettingsPanelProps) {
   return (
     <Tabs defaultValue="general" className="w-full">
@@ -484,14 +486,31 @@ function SettingsPanel({
       </TabsList>
 
       <TabsContent value="visual-bg" className="mt-4">
-        <div className="max-w-2xl">
+        <div className="max-w-2xl space-y-5">
           <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
             <div>
-              <h3 className="text-lg font-semibold">Vizuális háttér</h3>
+              <h3 className="text-lg font-semibold">Csoport-fülek háttere</h3>
               <p className="text-sm text-muted-foreground">
-                Háttérkép és színes átfedés a csoport-fülek aktív állapotán
-                (előnézet és élő nézet) valamint a „Tovább" / „Küldés" gombokon.
-                Ha kikapcsolod, az alapértelmezett kinézet jelenik meg.
+                Háttérkép és színes átfedés az aktív csoport- és al-csoport-fülön
+                (előnézet és élő nézet).
+              </p>
+            </div>
+            <VisualBackgroundConfig
+              storageId={formId ?? "form"}
+              storageKey="form-tabs"
+              formId={formId}
+              value={tabsBackground}
+              onChange={onChangeTabsBackground}
+              title="Csoport-fülek háttere"
+              description="A step-navigátor aktív pilléreire alkalmazandó háttérkép és átfedés."
+            />
+          </div>
+          <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-5">
+            <div>
+              <h3 className="text-lg font-semibold">Gombok háttere</h3>
+              <p className="text-sm text-muted-foreground">
+                Háttérkép és színes átfedés a „Tovább" / „Küldés" / „Demo küldés"
+                gombokon.
               </p>
             </div>
             <VisualBackgroundConfig
@@ -500,8 +519,8 @@ function SettingsPanel({
               formId={formId}
               value={buttonBackground}
               onChange={onChangeButtonBackground}
-              title="Csoport-fülek és gombok háttere"
-              description="Ugyanaz a beállítás vonatkozik az aktív csoport-fülre és az űrlap navigációs/küldés gombjaira."
+              title="Akciógombok háttere"
+              description="A navigációs és küldés gombokra alkalmazandó háttérkép és átfedés."
             />
           </div>
         </div>
