@@ -759,6 +759,42 @@ export async function uploadOptionImage(
   return data.publicUrl;
 }
 
+/**
+ * Returns a deduped list of image URLs that have ever been used as a visual
+ * background on this form (option fields, groups, or the form's buttons).
+ * Used by the editor's image-library picker so previously uploaded images
+ * can be reused without re-uploading.
+ */
+export async function loadVisualBackgroundLibrary(formId: string): Promise<string[]> {
+  const [fieldsRes, groupsRes, formRes] = await Promise.all([
+    sbAny
+      .from("form_fields")
+      .select("visual_bg_image_url")
+      .eq("form_id", formId)
+      .not("visual_bg_image_url", "is", null),
+    sbAny
+      .from("form_groups")
+      .select("visual_bg_image_url")
+      .eq("form_id", formId)
+      .not("visual_bg_image_url", "is", null),
+    sbAny
+      .from("forms")
+      .select("button_bg_image_url")
+      .eq("id", formId)
+      .maybeSingle(),
+  ]);
+  const urls = new Set<string>();
+  for (const r of (fieldsRes.data ?? []) as Array<{ visual_bg_image_url: string | null }>) {
+    if (r.visual_bg_image_url) urls.add(r.visual_bg_image_url);
+  }
+  for (const r of (groupsRes.data ?? []) as Array<{ visual_bg_image_url: string | null }>) {
+    if (r.visual_bg_image_url) urls.add(r.visual_bg_image_url);
+  }
+  const formImg = (formRes.data as { button_bg_image_url: string | null } | null)?.button_bg_image_url;
+  if (formImg) urls.add(formImg);
+  return Array.from(urls);
+}
+
 /** Build a FormSchema from the editor bundle so the existing renderer can preview it. */
 export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "form">): FormSchema {
   return {
