@@ -12,6 +12,7 @@ import type {
   OptionLabelPosition,
   RepeaterField,
   WidthPercent,
+  VisualBackground,
 } from "./types";
 
 // The generated Database types may not yet contain `width_percent` (added in a
@@ -19,6 +20,12 @@ import type {
 // optional column so the rest of the file stays type-safe without requiring a
 // types regeneration.
 type WidthCol = { width_percent?: number | null };
+type VisualBgCols = {
+  visual_bg_enabled?: boolean | null;
+  visual_bg_image_url?: string | null;
+  visual_bg_overlay_color?: string | null;
+  visual_bg_overlay_opacity?: number | null;
+};
 type FieldExtraCols = {
   width_percent?: number | null;
   placeholder_image_url?: string | null;
@@ -30,10 +37,10 @@ type FieldExtraCols = {
   hide_label?: boolean | null;
   repeater_config?: unknown | null;
   measurement_config?: { unitDisplay?: "dropdown" | "radio" } | null;
-};
+} & VisualBgCols;
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
-  WidthCol & { parent_group_id?: string | null };
+  WidthCol & VisualBgCols & { parent_group_id?: string | null };
 // Legacy alias — sub-groups are now just rows in form_groups with parent_group_id set.
 // Kept under this name to avoid renaming the rest of the file.
 type SubGroupRow = GroupRow & { parent_group_id: string };
@@ -64,6 +71,10 @@ export interface EditorForm {
   include_device_type: boolean;
   include_browser: boolean;
   include_page_url: boolean;
+  button_bg_enabled: boolean;
+  button_bg_image_url: string | null;
+  button_bg_overlay_color: string | null;
+  button_bg_overlay_opacity: number | null;
 }
 
 export interface EditorBundle {
@@ -73,14 +84,14 @@ export interface EditorBundle {
   fields: FormField[];
 }
 
-const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url";
+const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity";
 
 /**
  * Find or create the form row identified by slug. Returns the form id.
  * The first time this runs in a fresh DB it will create the row.
  */
 export async function ensureForm(slug: string, defaults: { title: string; description?: string }): Promise<EditorForm> {
-  const { data: existing, error: selErr } = await supabase
+  const { data: existing, error: selErr } = await sbAny
     .from("forms")
     .select(FORM_SELECT)
     .eq("slug", slug)
@@ -88,7 +99,7 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
   if (selErr) throw selErr;
   if (existing) return existing as EditorForm;
 
-  const { data: created, error: insErr } = await supabase
+  const { data: created, error: insErr } = await sbAny
     .from("forms")
     .insert({
       slug,
@@ -103,22 +114,23 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
   return created as EditorForm;
 }
 
+export type FormMetaPatch = Partial<{
+  title: string;
+  description: string | null;
+  webhook_url: string | null;
+  test_webhook_url: string | null;
+  thank_you_text: string | null;
+  output_url: string | null;
+  include_device_type: boolean;
+  include_browser: boolean;
+  include_page_url: boolean;
+  /** Form-wide button visual background (applied to "Tovább"/"Küldés"). */
+  buttonBackground: VisualBackground | undefined;
+}>;
+
 /** Update form-level metadata (title, description, webhook_url, toggles). */
-export async function updateFormMeta(
-  id: string,
-  patch: Partial<{
-    title: string;
-    description: string | null;
-    webhook_url: string | null;
-    test_webhook_url: string | null;
-    thank_you_text: string | null;
-    output_url: string | null;
-    include_device_type: boolean;
-    include_browser: boolean;
-    include_page_url: boolean;
-  }>
-) {
-  const u: Database["public"]["Tables"]["forms"]["Update"] = {};
+export async function updateFormMeta(id: string, patch: FormMetaPatch) {
+  const u: Record<string, unknown> = {};
   if (patch.title !== undefined) u.title = patch.title;
   if (patch.description !== undefined) u.description = patch.description;
   if (patch.webhook_url !== undefined) u.webhook_url = patch.webhook_url;
@@ -128,8 +140,15 @@ export async function updateFormMeta(
   if (patch.include_device_type !== undefined) u.include_device_type = patch.include_device_type;
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
+  if (patch.buttonBackground !== undefined) {
+    const bg = patch.buttonBackground;
+    u.button_bg_enabled = bg?.enabled ?? false;
+    u.button_bg_image_url = bg?.imageUrl ?? null;
+    u.button_bg_overlay_color = bg?.overlayColor ?? null;
+    u.button_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+  }
   if (Object.keys(u).length === 0) return;
-  const { error } = await supabase.from("forms").update(u).eq("id", id);
+  const { error } = await sbAny.from("forms").update(u).eq("id", id);
   if (error) throw error;
 }
 
@@ -164,6 +183,19 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
     };
   };
 
+  const rowToVisualBg = (r: VisualBgCols): VisualBackground | undefined => {
+    if (!r.visual_bg_enabled && !r.visual_bg_image_url) return undefined;
+    return {
+      enabled: !!r.visual_bg_enabled,
+      imageUrl: r.visual_bg_image_url ?? undefined,
+      overlayColor: r.visual_bg_overlay_color ?? undefined,
+      overlayOpacity:
+        r.visual_bg_overlay_opacity != null
+          ? Number(r.visual_bg_overlay_opacity)
+          : undefined,
+    };
+  };
+
   // Top-level groups: parent_group_id is null/undefined.
   const groups: FormGroup[] = allGroupRows
     .filter((g) => !g.parent_group_id)
@@ -175,6 +207,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       width: asWidth(g.width_percent),
       color: ((g as unknown as { color?: string | null }).color ?? undefined) || undefined,
       condition: rowToCondition(g),
+      visualBackground: rowToVisualBg(g),
     }));
 
   // Sub-groups: rows in form_groups that have parent_group_id set.
@@ -188,6 +221,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       location: s.position,
       width: asWidth(s.width_percent),
       condition: rowToCondition(s),
+      visualBackground: rowToVisualBg(s),
     }));
 
   const optionsByField = new Map<string, OptionRow[]>();
@@ -284,6 +318,20 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
         placeholderNote:
           f.placeholder_note_value && f.placeholder_note_position
             ? { value: f.placeholder_note_value, position: f.placeholder_note_position as NotePosition }
+            : undefined,
+        visualBackground:
+          f.type === "radio" || f.type === "checkbox"
+            ? (f.visual_bg_enabled || f.visual_bg_image_url
+                ? {
+                    enabled: !!f.visual_bg_enabled,
+                    imageUrl: f.visual_bg_image_url ?? undefined,
+                    overlayColor: f.visual_bg_overlay_color ?? undefined,
+                    overlayOpacity:
+                      f.visual_bg_overlay_opacity != null
+                        ? Number(f.visual_bg_overlay_opacity)
+                        : undefined,
+                  }
+                : undefined)
             : undefined,
         options: opts
           .slice()
@@ -709,6 +757,42 @@ export async function uploadOptionImage(
   if (upErr) throw upErr;
   const { data } = supabase.storage.from("form-option-images").getPublicUrl(path);
   return data.publicUrl;
+}
+
+/**
+ * Returns a deduped list of image URLs that have ever been used as a visual
+ * background on this form (option fields, groups, or the form's buttons).
+ * Used by the editor's image-library picker so previously uploaded images
+ * can be reused without re-uploading.
+ */
+export async function loadVisualBackgroundLibrary(formId: string): Promise<string[]> {
+  const [fieldsRes, groupsRes, formRes] = await Promise.all([
+    sbAny
+      .from("form_fields")
+      .select("visual_bg_image_url")
+      .eq("form_id", formId)
+      .not("visual_bg_image_url", "is", null),
+    sbAny
+      .from("form_groups")
+      .select("visual_bg_image_url")
+      .eq("form_id", formId)
+      .not("visual_bg_image_url", "is", null),
+    sbAny
+      .from("forms")
+      .select("button_bg_image_url")
+      .eq("id", formId)
+      .maybeSingle(),
+  ]);
+  const urls = new Set<string>();
+  for (const r of (fieldsRes.data ?? []) as Array<{ visual_bg_image_url: string | null }>) {
+    if (r.visual_bg_image_url) urls.add(r.visual_bg_image_url);
+  }
+  for (const r of (groupsRes.data ?? []) as Array<{ visual_bg_image_url: string | null }>) {
+    if (r.visual_bg_image_url) urls.add(r.visual_bg_image_url);
+  }
+  const formImg = (formRes.data as { button_bg_image_url: string | null } | null)?.button_bg_image_url;
+  if (formImg) urls.add(formImg);
+  return Array.from(urls);
 }
 
 /** Build a FormSchema from the editor bundle so the existing renderer can preview it. */
