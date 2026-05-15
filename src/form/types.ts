@@ -222,6 +222,12 @@ export interface VisualBackground {
   overlayColor?: string;
   /** 0..1. Defaults to 0.5. */
   overlayOpacity?: number;
+  /** Hex string for text color when bg is active. Defaults to "#ffffff". */
+  fontColor?: string;
+  /** Text-stroke width in px. Defaults to 0. */
+  textStrokeWidth?: number;
+  /** Hex string for text-stroke color. Defaults to "#000000". */
+  textStrokeColor?: string;
 }
 
 export interface FormGroup {

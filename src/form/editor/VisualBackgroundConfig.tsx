@@ -22,9 +22,17 @@ interface Props {
   description?: string;
 }
 
-const DEFAULTS: Required<Pick<VisualBackground, "overlayColor" | "overlayOpacity">> = {
+const DEFAULTS: Required<
+  Pick<
+    VisualBackground,
+    "overlayColor" | "overlayOpacity" | "fontColor" | "textStrokeWidth" | "textStrokeColor"
+  >
+> = {
   overlayColor: "#000000",
   overlayOpacity: 0.5,
+  fontColor: "#ffffff",
+  textStrokeWidth: 0,
+  textStrokeColor: "#000000",
 };
 
 export function VisualBackgroundConfig({
@@ -39,6 +47,9 @@ export function VisualBackgroundConfig({
   const enabled = !!value?.enabled;
   const overlayColor = value?.overlayColor ?? DEFAULTS.overlayColor;
   const overlayOpacity = value?.overlayOpacity ?? DEFAULTS.overlayOpacity;
+  const fontColor = value?.fontColor ?? DEFAULTS.fontColor;
+  const textStrokeWidth = value?.textStrokeWidth ?? DEFAULTS.textStrokeWidth;
+  const textStrokeColor = value?.textStrokeColor ?? DEFAULTS.textStrokeColor;
 
   const [library, setLibrary] = useState<string[]>([]);
 
@@ -60,6 +71,9 @@ export function VisualBackgroundConfig({
       imageUrl: value?.imageUrl,
       overlayColor,
       overlayOpacity,
+      fontColor,
+      textStrokeWidth,
+      textStrokeColor,
       ...patch,
     });
   };
@@ -171,6 +185,61 @@ export function VisualBackgroundConfig({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Szöveg színe
+              </Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={fontColor}
+                  onChange={(e) => update({ fontColor: e.target.value })}
+                  className="h-9 w-12 rounded border border-border bg-background cursor-pointer"
+                />
+                <Input
+                  value={fontColor}
+                  onChange={(e) => update({ fontColor: e.target.value })}
+                  className="h-9 flex-1 text-sm"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Szöveg körvonal színe
+              </Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={textStrokeColor}
+                  onChange={(e) => update({ textStrokeColor: e.target.value })}
+                  className="h-9 w-12 rounded border border-border bg-background cursor-pointer"
+                />
+                <Input
+                  value={textStrokeColor}
+                  onChange={(e) => update({ textStrokeColor: e.target.value })}
+                  className="h-9 flex-1 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">
+              Szöveg körvonal vastagsága ({textStrokeWidth}px)
+            </Label>
+            <Slider
+              min={0}
+              max={8}
+              step={0.5}
+              value={[textStrokeWidth]}
+              onValueChange={(vals) =>
+                update({ textStrokeWidth: vals[0] ?? 0 })
+              }
+              className="py-2"
+            />
+          </div>
+
           {value?.imageUrl && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Előnézet</Label>
@@ -189,7 +258,17 @@ export function VisualBackgroundConfig({
                     opacity: overlayOpacity,
                   }}
                 />
-                <div className="relative z-10 h-full flex items-center justify-center text-white text-sm font-medium">
+                <div
+                  className="relative z-10 h-full flex items-center justify-center text-sm font-medium"
+                  style={{
+                    color: fontColor,
+                    WebkitTextStroke:
+                      textStrokeWidth > 0
+                        ? `${textStrokeWidth}px ${textStrokeColor}`
+                        : undefined,
+                    paintOrder: "stroke fill",
+                  }}
+                >
                   Példa szöveg
                 </div>
               </div>

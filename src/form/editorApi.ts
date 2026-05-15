@@ -25,6 +25,9 @@ type VisualBgCols = {
   visual_bg_image_url?: string | null;
   visual_bg_overlay_color?: string | null;
   visual_bg_overlay_opacity?: number | null;
+  visual_bg_font_color?: string | null;
+  visual_bg_text_stroke_width?: number | null;
+  visual_bg_text_stroke_color?: string | null;
 };
 type FieldExtraCols = {
   width_percent?: number | null;
@@ -75,6 +78,9 @@ export interface EditorForm {
   button_bg_image_url: string | null;
   button_bg_overlay_color: string | null;
   button_bg_overlay_opacity: number | null;
+  button_bg_font_color: string | null;
+  button_bg_text_stroke_width: number | null;
+  button_bg_text_stroke_color: string | null;
 }
 
 export interface EditorBundle {
@@ -84,7 +90,7 @@ export interface EditorBundle {
   fields: FormField[];
 }
 
-const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity";
+const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity, button_bg_font_color, button_bg_text_stroke_width, button_bg_text_stroke_color";
 
 /**
  * Find or create the form row identified by slug. Returns the form id.
@@ -146,6 +152,9 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
     u.button_bg_image_url = bg?.imageUrl ?? null;
     u.button_bg_overlay_color = bg?.overlayColor ?? null;
     u.button_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    u.button_bg_font_color = bg?.fontColor ?? null;
+    u.button_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    u.button_bg_text_stroke_color = bg?.textStrokeColor ?? null;
   }
   if (Object.keys(u).length === 0) return;
   const { error } = await sbAny.from("forms").update(u).eq("id", id);
@@ -193,6 +202,12 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
         r.visual_bg_overlay_opacity != null
           ? Number(r.visual_bg_overlay_opacity)
           : undefined,
+      fontColor: r.visual_bg_font_color ?? undefined,
+      textStrokeWidth:
+        r.visual_bg_text_stroke_width != null
+          ? Number(r.visual_bg_text_stroke_width)
+          : undefined,
+      textStrokeColor: r.visual_bg_text_stroke_color ?? undefined,
     };
   };
 
@@ -330,6 +345,12 @@ function rowToField(f: FieldRow, opts: OptionRow[]): FormField {
                       f.visual_bg_overlay_opacity != null
                         ? Number(f.visual_bg_overlay_opacity)
                         : undefined,
+                    fontColor: f.visual_bg_font_color ?? undefined,
+                    textStrokeWidth:
+                      f.visual_bg_text_stroke_width != null
+                        ? Number(f.visual_bg_text_stroke_width)
+                        : undefined,
+                    textStrokeColor: f.visual_bg_text_stroke_color ?? undefined,
                   }
                 : undefined)
             : undefined,

@@ -167,9 +167,12 @@ export type Database = {
           updated_at: string
           use_images: boolean
           visual_bg_enabled: boolean
+          visual_bg_font_color: string | null
           visual_bg_image_url: string | null
           visual_bg_overlay_color: string | null
           visual_bg_overlay_opacity: number | null
+          visual_bg_text_stroke_color: string | null
+          visual_bg_text_stroke_width: number | null
           width_percent: number | null
           with_time: boolean
         }
@@ -208,9 +211,12 @@ export type Database = {
           updated_at?: string
           use_images?: boolean
           visual_bg_enabled?: boolean
+          visual_bg_font_color?: string | null
           visual_bg_image_url?: string | null
           visual_bg_overlay_color?: string | null
           visual_bg_overlay_opacity?: number | null
+          visual_bg_text_stroke_color?: string | null
+          visual_bg_text_stroke_width?: number | null
           width_percent?: number | null
           with_time?: boolean
         }
@@ -249,9 +255,12 @@ export type Database = {
           updated_at?: string
           use_images?: boolean
           visual_bg_enabled?: boolean
+          visual_bg_font_color?: string | null
           visual_bg_image_url?: string | null
           visual_bg_overlay_color?: string | null
           visual_bg_overlay_opacity?: number | null
+          visual_bg_text_stroke_color?: string | null
+          visual_bg_text_stroke_width?: number | null
           width_percent?: number | null
           with_time?: boolean
         }
@@ -343,9 +352,12 @@ export type Database = {
           position: number
           updated_at: string
           visual_bg_enabled: boolean
+          visual_bg_font_color: string | null
           visual_bg_image_url: string | null
           visual_bg_overlay_color: string | null
           visual_bg_overlay_opacity: number | null
+          visual_bg_text_stroke_color: string | null
+          visual_bg_text_stroke_width: number | null
           width_percent: number | null
         }
         Insert: {
@@ -361,9 +373,12 @@ export type Database = {
           position?: number
           updated_at?: string
           visual_bg_enabled?: boolean
+          visual_bg_font_color?: string | null
           visual_bg_image_url?: string | null
           visual_bg_overlay_color?: string | null
           visual_bg_overlay_opacity?: number | null
+          visual_bg_text_stroke_color?: string | null
+          visual_bg_text_stroke_width?: number | null
           width_percent?: number | null
         }
         Update: {
@@ -379,9 +394,12 @@ export type Database = {
           position?: number
           updated_at?: string
           visual_bg_enabled?: boolean
+          visual_bg_font_color?: string | null
           visual_bg_image_url?: string | null
           visual_bg_overlay_color?: string | null
           visual_bg_overlay_opacity?: number | null
+          visual_bg_text_stroke_color?: string | null
+          visual_bg_text_stroke_width?: number | null
           width_percent?: number | null
         }
         Relationships: [
@@ -473,9 +491,12 @@ export type Database = {
         Row: {
           active_layout_id: string | null
           button_bg_enabled: boolean
+          button_bg_font_color: string | null
           button_bg_image_url: string | null
           button_bg_overlay_color: string | null
           button_bg_overlay_opacity: number | null
+          button_bg_text_stroke_color: string | null
+          button_bg_text_stroke_width: number | null
           canvas_reveal_one_by_one: boolean
           created_at: string
           description: string | null
@@ -496,9 +517,12 @@ export type Database = {
         Insert: {
           active_layout_id?: string | null
           button_bg_enabled?: boolean
+          button_bg_font_color?: string | null
           button_bg_image_url?: string | null
           button_bg_overlay_color?: string | null
           button_bg_overlay_opacity?: number | null
+          button_bg_text_stroke_color?: string | null
+          button_bg_text_stroke_width?: number | null
           canvas_reveal_one_by_one?: boolean
           created_at?: string
           description?: string | null
@@ -519,9 +543,12 @@ export type Database = {
         Update: {
           active_layout_id?: string | null
           button_bg_enabled?: boolean
+          button_bg_font_color?: string | null
           button_bg_image_url?: string | null
           button_bg_overlay_color?: string | null
           button_bg_overlay_opacity?: number | null
+          button_bg_text_stroke_color?: string | null
+          button_bg_text_stroke_width?: number | null
           canvas_reveal_one_by_one?: boolean
           created_at?: string
           description?: string | null
