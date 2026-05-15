@@ -403,6 +403,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 includeBrowser={editor.form?.include_browser ?? false}
                 includePageUrl={editor.form?.include_page_url ?? true}
                 buttonBackground={editor.schema.buttonBackground}
+                tabsBackground={editor.schema.tabsBackground}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
@@ -413,6 +414,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 onChangeIncludeBrowser={(v) => editor.patchForm({ include_browser: v })}
                 onChangeIncludePageUrl={(v) => editor.patchForm({ include_page_url: v })}
                 onChangeButtonBackground={(v) => editor.patchForm({ buttonBackground: v })}
+                onChangeTabsBackground={(v) => editor.patchForm({ tabsBackground: v })}
               />
             )}
           </TabsContent>
