@@ -656,6 +656,9 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
       if ("optionLabelPosition" in op) fp.optionLabelPosition = op.optionLabelPosition ?? null;
       if ("fieldImagePosition" in op) fp.fieldImagePosition = op.fieldImagePosition ?? null;
       if ("placeholderImageUrl" in op) fp.placeholderImageUrl = op.placeholderImageUrl ?? null;
+      if ("visualBackground" in (patch as Record<string, unknown>)) {
+        fp.visualBackground = (patch as { visualBackground?: VisualBackground }).visualBackground;
+      }
       if ("placeholderNote" in op) {
         fp.placeholderNoteValue = op.placeholderNote?.value ?? null;
         fp.placeholderNotePosition = op.placeholderNote?.position ?? null;
