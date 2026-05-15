@@ -19,6 +19,12 @@ import type {
 // optional column so the rest of the file stays type-safe without requiring a
 // types regeneration.
 type WidthCol = { width_percent?: number | null };
+type VisualBgCols = {
+  visual_bg_enabled?: boolean | null;
+  visual_bg_image_url?: string | null;
+  visual_bg_overlay_color?: string | null;
+  visual_bg_overlay_opacity?: number | null;
+};
 type FieldExtraCols = {
   width_percent?: number | null;
   placeholder_image_url?: string | null;
@@ -30,7 +36,7 @@ type FieldExtraCols = {
   hide_label?: boolean | null;
   repeater_config?: unknown | null;
   measurement_config?: { unitDisplay?: "dropdown" | "radio" } | null;
-};
+} & VisualBgCols;
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
   WidthCol & { parent_group_id?: string | null };
