@@ -66,6 +66,7 @@ function OptionCard({
   const useImg = !!field.useImages;
   const note = field.uniqueNotePerOption ? option.note : undefined;
   const noteIsSide = note?.position === "side";
+  const noteInherits = selected && !!field.visualBackground?.enabled;
 
   const labelEl = <span className="text-sm font-medium">{option.displayName}</span>;
   const imgEl = useImg ? (
@@ -99,11 +100,11 @@ function OptionCard({
     return (
       <div className="flex flex-col gap-2">
         {note.position === "above" && (
-          <OptionNote note={note} className={useImg ? "text-center" : "text-left"} />
+          <OptionNote note={note} inheritColor={noteInherits} className={useImg ? "text-center" : "text-left"} />
         )}
         {useImg ? stack : <div className="text-left">{labelEl}</div>}
         {note.position === "below" && (
-          <OptionNote note={note} className={useImg ? "text-center" : "text-left"} />
+          <OptionNote note={note} inheritColor={noteInherits} className={useImg ? "text-center" : "text-left"} />
         )}
       </div>
     );
@@ -112,7 +113,7 @@ function OptionCard({
     return (
       <div className="flex items-center gap-2">
         <div className="flex-1">{useImg ? stack : labelEl}</div>
-        <OptionNote note={note} />
+        <OptionNote note={note} inheritColor={noteInherits} />
       </div>
     );
   }
