@@ -855,3 +855,58 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     </form>
   );
 }
+
+interface ActionButtonProps extends React.ComponentProps<typeof Button> {
+  background?: import("./types").VisualBackground;
+}
+
+/**
+ * Wrapper around the shared `Button` that applies a per-form visual background
+ * (image + colored overlay) on top of the existing gradient styling. When the
+ * background isn't enabled it renders a normal Button with no overhead.
+ */
+function ActionButton({ background, className, children, style, ...rest }: ActionButtonProps) {
+  const vb = background?.enabled ? background : undefined;
+  if (!vb) {
+    return (
+      <Button {...rest} className={className} style={style}>
+        {children}
+      </Button>
+    );
+  }
+  const overlayColor = vb.overlayColor ?? "#000000";
+  const overlayOpacity = vb.overlayOpacity ?? 0.5;
+  const fontColor = vb.fontColor ?? "#ffffff";
+  const strokeWidth = vb.textStrokeWidth ?? 0;
+  const strokeColor = vb.textStrokeColor ?? "#000000";
+  return (
+    <Button
+      {...rest}
+      className={`${className ?? ""} relative overflow-hidden`}
+      style={{
+        ...style,
+        color: fontColor,
+        WebkitTextStroke: strokeWidth > 0 ? `${strokeWidth}px ${strokeColor}` : undefined,
+        paintOrder: "stroke fill",
+      }}
+    >
+      {vb.imageUrl && (
+        <span
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${vb.imageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
+      <span
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: overlayColor, opacity: overlayOpacity }}
+      />
+      <span className="relative z-10 inline-flex items-center">{children}</span>
+    </Button>
+  );
+}
