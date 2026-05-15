@@ -38,6 +38,8 @@ interface Props {
   onChangeOptions?: (fieldId: string, options: FieldOption[]) => void;
   /** Override the delete-button label (defaults to "Törlés"). */
   deleteLabel?: string;
+  /** Form id for image-library scoping inside the visual background block. */
+  formId?: string | null;
 }
 
 const TYPE_LABELS: Record<FieldType, string> = {
@@ -89,7 +91,7 @@ function slugifyName(s: string): string {
     .slice(0, 60);
 }
 
-export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, deleteLabel }: Props) {
+export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, deleteLabel, formId }: Props) {
   const isOptionType =
     field?.type === "radio" || field?.type === "checkbox" || field?.type === "select";
   if (!field) {
@@ -310,6 +312,7 @@ export function FieldConfigPanel({ field, onChange, onDelete, onChangeOptions, d
           field={field as OptionField}
           onChange={onChange}
           onChangeOptions={onChangeOptions}
+          formId={formId}
         />
       )}
 
@@ -523,9 +526,10 @@ interface OptionTypeConfigProps {
   field: OptionField;
   onChange: (patch: Partial<FormField> & { type?: FieldType }) => void;
   onChangeOptions?: (fieldId: string, options: FieldOption[]) => void;
+  formId?: string | null;
 }
 
-function OptionTypeConfig({ field, onChange, onChangeOptions }: OptionTypeConfigProps) {
+function OptionTypeConfig({ field, onChange, onChangeOptions, formId }: OptionTypeConfigProps) {
   const isSelect = field.type === "select";
   const isList = field.type === "radio" || field.type === "checkbox";
 
