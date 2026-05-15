@@ -709,6 +709,20 @@ function OptionTypeConfig({ field, onChange, onChangeOptions, formId }: OptionTy
         </div>
       )}
 
+      {isList && (
+        <VisualBackgroundConfig
+          storageId={field.id}
+          storageKey={`field-${field.id}`}
+          formId={formId ?? null}
+          value={(field as OptionField).visualBackground}
+          onChange={(next) =>
+            onChange({ visualBackground: next } as unknown as Partial<FormField>)
+          }
+          title="Vizuális háttér (kiválasztott állapot)"
+          description="A kiválasztott opció kártyája erre a képre + színes átfedésre vált."
+        />
+      )}
+
       {onChangeOptions && (
         <OptionsEditor
           field={field}
