@@ -251,7 +251,7 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
   // ---------- Mutations ----------
 
   const patchForm = useCallback(
-    (patch: Partial<{ title: string; description: string | null; webhook_url: string | null; test_webhook_url: string | null; thank_you_text: string | null; output_url: string | null; include_device_type: boolean; include_browser: boolean; include_page_url: boolean }>) => {
+    (patch: FormMetaInput) => {
       setForm((f) =>
         f
           ? {
@@ -273,6 +273,17 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                 patch.include_browser !== undefined ? patch.include_browser : f.include_browser,
               include_page_url:
                 patch.include_page_url !== undefined ? patch.include_page_url : f.include_page_url,
+              ...(patch.buttonBackground !== undefined
+                ? {
+                    button_bg_enabled: patch.buttonBackground?.enabled ?? false,
+                    button_bg_image_url: patch.buttonBackground?.imageUrl ?? null,
+                    button_bg_overlay_color: patch.buttonBackground?.overlayColor ?? null,
+                    button_bg_overlay_opacity: patch.buttonBackground?.overlayOpacity ?? null,
+                    button_bg_font_color: patch.buttonBackground?.fontColor ?? null,
+                    button_bg_text_stroke_width: patch.buttonBackground?.textStrokeWidth ?? null,
+                    button_bg_text_stroke_color: patch.buttonBackground?.textStrokeColor ?? null,
+                  }
+                : {}),
             }
           : f
       );
