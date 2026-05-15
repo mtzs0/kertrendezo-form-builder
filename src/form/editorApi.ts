@@ -91,7 +91,7 @@ const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_
  * The first time this runs in a fresh DB it will create the row.
  */
 export async function ensureForm(slug: string, defaults: { title: string; description?: string }): Promise<EditorForm> {
-  const { data: existing, error: selErr } = await supabase
+  const { data: existing, error: selErr } = await sbAny
     .from("forms")
     .select(FORM_SELECT)
     .eq("slug", slug)
@@ -99,7 +99,7 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
   if (selErr) throw selErr;
   if (existing) return existing as EditorForm;
 
-  const { data: created, error: insErr } = await supabase
+  const { data: created, error: insErr } = await sbAny
     .from("forms")
     .insert({
       slug,
