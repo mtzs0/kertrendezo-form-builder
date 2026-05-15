@@ -44,10 +44,46 @@ export function StepNavigator({
   maxSubIndexByGroup,
   onJumpGroup,
   onJumpSub,
+  tabsBackground,
 }: Props) {
   if (groups.length === 0) return null;
   const activeGroup = groups[activeGroupIndex];
   const subs = activeGroup?.subIds ?? [];
+
+  const vb = tabsBackground?.enabled ? tabsBackground : undefined;
+  const vbImage = vb?.imageUrl;
+  const vbOverlayColor = vb?.overlayColor ?? "#000000";
+  const vbOverlayOpacity = vb?.overlayOpacity ?? 0.5;
+  const vbFontColor = vb?.fontColor ?? "#ffffff";
+  const vbStrokeWidth = vb?.textStrokeWidth ?? 0;
+  const vbStrokeColor = vb?.textStrokeColor ?? "#000000";
+  const vbTextStyle: CSSProperties | undefined = vb
+    ? {
+        color: vbFontColor,
+        WebkitTextStroke:
+          vbStrokeWidth > 0 ? `${vbStrokeWidth}px ${vbStrokeColor}` : undefined,
+        paintOrder: "stroke fill",
+      }
+    : undefined;
+  const renderVbLayers = () =>
+    vb && vbImage ? (
+      <>
+        <span
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url(${vbImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <span
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: vbOverlayColor, opacity: vbOverlayOpacity }}
+        />
+      </>
+    ) : null;
 
   return (
     <div className="sticky top-0 z-30 -mx-5 md:-mx-8 -mt-5 md:-mt-8 mb-2">
@@ -63,16 +99,18 @@ export function StepNavigator({
                 type="button"
                 onClick={() => onJumpGroup(i)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer",
+                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer overflow-hidden",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-foreground/80 hover:bg-secondary/80",
                 )}
+                style={isActive ? vbTextStyle : undefined}
                 aria-current={isActive ? "step" : undefined}
               >
+                {isActive && renderVbLayers()}
                 <span
                   className={cn(
-                    "flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
+                    "relative z-10 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
                     isActive
                       ? "bg-primary-foreground/20 text-primary-foreground"
                       : isDone
@@ -83,7 +121,7 @@ export function StepNavigator({
                 >
                   {isDone ? <Check className="h-3.5 w-3.5" /> : i + 1}
                 </span>
-                <span className="max-w-[12rem] truncate">{g.label}</span>
+                <span className="relative z-10 max-w-[12rem] truncate">{g.label}</span>
               </button>
             );
           })}
@@ -111,14 +149,16 @@ export function StepNavigator({
                     type="button"
                     onClick={() => onJumpSub(activeGroupIndex, subId)}
                     className={cn(
-                      "px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer",
+                      "relative px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer overflow-hidden",
                       isActive
                         ? "bg-card text-primary border-transparent shadow-md"
                         : "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10",
                     )}
+                    style={isActive ? vbTextStyle : undefined}
                     aria-current={isActive ? "step" : undefined}
                   >
-                    {label}
+                    {isActive && renderVbLayers()}
+                    <span className="relative z-10">{label}</span>
                   </button>
                 );
               })}
@@ -129,3 +169,4 @@ export function StepNavigator({
     </div>
   );
 }
+
