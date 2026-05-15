@@ -148,6 +148,8 @@ export interface OptionField extends BaseField {
   placeholderImageUrl?: string;
   /** Optional placeholder note shown alongside the placeholder image (select). */
   placeholderNote?: { value: string; position: NotePosition };
+  /** Optional visual background applied to selected options (radio/checkbox only). */
+  visualBackground?: VisualBackground;
 }
 
 /**
