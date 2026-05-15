@@ -19,7 +19,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { FormView } from "@/form/FormView";
 import { isFieldVisible } from "@/form/structure";
-import type { FormField, FormGroup, FormSchema, FormSubGroup, FormValues } from "@/form/types";
+import type { FormField, FormGroup, FormSchema, FormSubGroup, FormValues, VisualBackground } from "@/form/types";
 import { useCanvasPositions } from "./canvasPositionsStore";
 import { useGroupFrames } from "./groupFramesStore";
 import { useRevealOneByOne } from "./revealModeStore";
