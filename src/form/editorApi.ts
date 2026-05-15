@@ -183,6 +183,19 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
     };
   };
 
+  const rowToVisualBg = (r: VisualBgCols): VisualBackground | undefined => {
+    if (!r.visual_bg_enabled && !r.visual_bg_image_url) return undefined;
+    return {
+      enabled: !!r.visual_bg_enabled,
+      imageUrl: r.visual_bg_image_url ?? undefined,
+      overlayColor: r.visual_bg_overlay_color ?? undefined,
+      overlayOpacity:
+        r.visual_bg_overlay_opacity != null
+          ? Number(r.visual_bg_overlay_opacity)
+          : undefined,
+    };
+  };
+
   // Top-level groups: parent_group_id is null/undefined.
   const groups: FormGroup[] = allGroupRows
     .filter((g) => !g.parent_group_id)
@@ -194,6 +207,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       width: asWidth(g.width_percent),
       color: ((g as unknown as { color?: string | null }).color ?? undefined) || undefined,
       condition: rowToCondition(g),
+      visualBackground: rowToVisualBg(g),
     }));
 
   // Sub-groups: rows in form_groups that have parent_group_id set.
@@ -207,6 +221,7 @@ export async function loadEditorBundle(formId: string): Promise<Omit<EditorBundl
       location: s.position,
       width: asWidth(s.width_percent),
       condition: rowToCondition(s),
+      visualBackground: rowToVisualBg(s),
     }));
 
   const optionsByField = new Map<string, OptionRow[]>();
