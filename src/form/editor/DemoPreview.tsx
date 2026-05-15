@@ -150,6 +150,8 @@ export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, t
     groups: placedSchema.groups,
     subGroups: placedSchema.subGroups,
     fields: visibleSchemaFields,
+    buttonBackground,
+    tabsBackground,
   };
 
   return (
