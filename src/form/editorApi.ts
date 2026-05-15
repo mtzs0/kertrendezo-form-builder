@@ -71,6 +71,10 @@ export interface EditorForm {
   include_device_type: boolean;
   include_browser: boolean;
   include_page_url: boolean;
+  button_bg_enabled: boolean;
+  button_bg_image_url: string | null;
+  button_bg_overlay_color: string | null;
+  button_bg_overlay_opacity: number | null;
 }
 
 export interface EditorBundle {
@@ -80,7 +84,7 @@ export interface EditorBundle {
   fields: FormField[];
 }
 
-const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url";
+const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity";
 
 /**
  * Find or create the form row identified by slug. Returns the form id.
