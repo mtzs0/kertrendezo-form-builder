@@ -213,6 +213,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             position: patch.location,
             width: patch.width === undefined ? undefined : patch.width ?? null,
             color: patch.color === undefined ? undefined : (patch.color ?? null),
+            visualBackground:
+              "visualBackground" in patch ? patch.visualBackground : undefined,
           })
         ),
         ...subGroupEntries.map(([id, patch]) =>
@@ -221,6 +223,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
             label: patch.label,
             position: patch.location,
             width: patch.width === undefined ? undefined : patch.width ?? null,
+            visualBackground:
+              "visualBackground" in patch ? patch.visualBackground : undefined,
           })
         ),
         ...(hasFormMeta && form ? [updateFormMeta(form.id, formMeta)] : []),
