@@ -209,6 +209,19 @@ export type FormField =
   | MeasurementField
   | RepeaterField;
 
+/**
+ * Reusable "visual background" treatment: image + colored overlay.
+ * Used by selected radio/checkbox options, active group tabs, and form action buttons.
+ */
+export interface VisualBackground {
+  enabled: boolean;
+  imageUrl?: string;
+  /** Hex string. Defaults to "#000000". */
+  overlayColor?: string;
+  /** 0..1. Defaults to 0.5. */
+  overlayOpacity?: number;
+}
+
 export interface FormGroup {
   id: string;
   internalName: string;
@@ -219,6 +232,8 @@ export interface FormGroup {
   color?: string;
   /** Optional display condition. If undefined, always shown. */
   condition?: ConditionGroup;
+  /** Optional visual background applied to the active step tab. */
+  visualBackground?: VisualBackground;
 }
 
 export interface FormSubGroup {
@@ -230,6 +245,8 @@ export interface FormSubGroup {
   width?: WidthPercent;
   /** Optional display condition. If undefined, always shown. */
   condition?: ConditionGroup;
+  /** Optional visual background applied to the active step tab. */
+  visualBackground?: VisualBackground;
 }
 
 /** Type guards for the condition rule union. */
