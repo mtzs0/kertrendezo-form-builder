@@ -186,8 +186,9 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
                 cardLayoutClass,
                 "border-border hover:border-primary/40 has-[:checked]:border-primary",
                 !vb && "has-[:checked]:bg-primary/5",
-                vb && selected && "overflow-hidden"
+                vb && "overflow-hidden"
               )}
+              style={vb && selected ? { color: vbFontColor } : undefined}
             >
               {renderVbLayers(selected)}
               <RadioGroupItem
@@ -195,7 +196,10 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
                 value={opt.dataName}
                 className={radioIndicatorClass}
               />
-              <div className="contents" style={vbContentStyle(selected)}>
+              <div
+                className={cn(useImg ? "flex flex-col gap-2 h-full w-full" : "flex-1")}
+                style={vbContentStyle(selected)}
+              >
                 <OptionCard option={opt} field={field} selected={selected} />
               </div>
             </label>
