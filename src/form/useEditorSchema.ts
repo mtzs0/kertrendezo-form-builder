@@ -289,6 +289,17 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                     button_bg_text_stroke_color: patch.buttonBackground?.textStrokeColor ?? null,
                   }
                 : {}),
+              ...(patch.tabsBackground !== undefined
+                ? {
+                    tabs_bg_enabled: patch.tabsBackground?.enabled ?? false,
+                    tabs_bg_image_url: patch.tabsBackground?.imageUrl ?? null,
+                    tabs_bg_overlay_color: patch.tabsBackground?.overlayColor ?? null,
+                    tabs_bg_overlay_opacity: patch.tabsBackground?.overlayOpacity ?? null,
+                    tabs_bg_font_color: patch.tabsBackground?.fontColor ?? null,
+                    tabs_bg_text_stroke_width: patch.tabsBackground?.textStrokeWidth ?? null,
+                    tabs_bg_text_stroke_color: patch.tabsBackground?.textStrokeColor ?? null,
+                  }
+                : {}),
             }
           : f
       );
