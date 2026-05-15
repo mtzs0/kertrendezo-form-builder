@@ -117,9 +117,47 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
   const cols = COL_CLASS[Math.max(1, Math.min(8, field.columns ?? 1))] ?? COL_CLASS[1];
 
   const useImg = !!field.useImages;
+  const vb = field.visualBackground?.enabled ? field.visualBackground : undefined;
+  const vbOverlayColor = vb?.overlayColor ?? "#000000";
+  const vbOverlayOpacity = vb?.overlayOpacity ?? 0.5;
+  const vbFontColor = vb?.fontColor ?? "#ffffff";
+  const vbStrokeWidth = vb?.textStrokeWidth ?? 0;
+  const vbStrokeColor = vb?.textStrokeColor ?? "#000000";
+  const renderVbLayers = (selected: boolean) => {
+    if (!vb || !selected || !vb.imageUrl) return null;
+    return (
+      <>
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-lg pointer-events-none"
+          style={{
+            backgroundImage: `url(${vb.imageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 rounded-lg pointer-events-none"
+          style={{ background: vbOverlayColor, opacity: vbOverlayOpacity }}
+        />
+      </>
+    );
+  };
+  const vbContentStyle = (selected: boolean): React.CSSProperties =>
+    vb && selected
+      ? {
+          color: vbFontColor,
+          WebkitTextStroke:
+            vbStrokeWidth > 0 ? `${vbStrokeWidth}px ${vbStrokeColor}` : undefined,
+          paintOrder: "stroke fill",
+          position: "relative",
+          zIndex: 1,
+        }
+      : {};
   const indicatorPosClass = useImg
-    ? "absolute top-2 right-2"
-    : "absolute right-3 top-1/2 -translate-y-1/2";
+    ? "absolute top-2 right-2 z-10"
+    : "absolute right-3 top-1/2 -translate-y-1/2 z-10";
   // Green selector, white fill while unselected; filled green with white check when selected.
   // Radio uses a circle; checkbox uses a square so the two field types are visually distinct.
   const indicatorBaseClass =
