@@ -81,6 +81,13 @@ export interface EditorForm {
   button_bg_font_color: string | null;
   button_bg_text_stroke_width: number | null;
   button_bg_text_stroke_color: string | null;
+  tabs_bg_enabled: boolean;
+  tabs_bg_image_url: string | null;
+  tabs_bg_overlay_color: string | null;
+  tabs_bg_overlay_opacity: number | null;
+  tabs_bg_font_color: string | null;
+  tabs_bg_text_stroke_width: number | null;
+  tabs_bg_text_stroke_color: string | null;
 }
 
 export interface EditorBundle {
@@ -90,7 +97,7 @@ export interface EditorBundle {
   fields: FormField[];
 }
 
-const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity, button_bg_font_color, button_bg_text_stroke_width, button_bg_text_stroke_color";
+const FORM_SELECT = "id, slug, title, description, published, webhook_url, test_webhook_url, thank_you_text, output_url, include_device_type, include_browser, include_page_url, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity, button_bg_font_color, button_bg_text_stroke_width, button_bg_text_stroke_color, tabs_bg_enabled, tabs_bg_image_url, tabs_bg_overlay_color, tabs_bg_overlay_opacity, tabs_bg_font_color, tabs_bg_text_stroke_width, tabs_bg_text_stroke_color";
 
 /**
  * Find or create the form row identified by slug. Returns the form id.
@@ -132,6 +139,8 @@ export type FormMetaPatch = Partial<{
   include_page_url: boolean;
   /** Form-wide button visual background (applied to "Tovább"/"Küldés"). */
   buttonBackground: VisualBackground | undefined;
+  /** Form-wide tabs visual background (applied to active step nav pills). */
+  tabsBackground: VisualBackground | undefined;
 }>;
 
 /** Update form-level metadata (title, description, webhook_url, toggles). */
@@ -145,6 +154,7 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
   if (patch.output_url !== undefined) u.output_url = patch.output_url;
   if (patch.include_device_type !== undefined) u.include_device_type = patch.include_device_type;
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
+  if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
   if (patch.buttonBackground !== undefined) {
     const bg = patch.buttonBackground;
@@ -155,6 +165,16 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
     u.button_bg_font_color = bg?.fontColor ?? null;
     u.button_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
     u.button_bg_text_stroke_color = bg?.textStrokeColor ?? null;
+  }
+  if (patch.tabsBackground !== undefined) {
+    const bg = patch.tabsBackground;
+    u.tabs_bg_enabled = bg?.enabled ?? false;
+    u.tabs_bg_image_url = bg?.imageUrl ?? null;
+    u.tabs_bg_overlay_color = bg?.overlayColor ?? null;
+    u.tabs_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+    u.tabs_bg_font_color = bg?.fontColor ?? null;
+    u.tabs_bg_text_stroke_width = bg?.textStrokeWidth ?? null;
+    u.tabs_bg_text_stroke_color = bg?.textStrokeColor ?? null;
   }
   if (Object.keys(u).length === 0) return;
   const { error } = await sbAny.from("forms").update(u).eq("id", id);
@@ -869,6 +889,23 @@ export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "for
         textStrokeColor: form.button_bg_text_stroke_color ?? undefined,
       }
     : undefined;
+  const tabsBg: VisualBackground | undefined = form.tabs_bg_enabled
+    ? {
+        enabled: true,
+        imageUrl: form.tabs_bg_image_url ?? undefined,
+        overlayColor: form.tabs_bg_overlay_color ?? undefined,
+        overlayOpacity:
+          form.tabs_bg_overlay_opacity != null
+            ? Number(form.tabs_bg_overlay_opacity)
+            : undefined,
+        fontColor: form.tabs_bg_font_color ?? undefined,
+        textStrokeWidth:
+          form.tabs_bg_text_stroke_width != null
+            ? Number(form.tabs_bg_text_stroke_width)
+            : undefined,
+        textStrokeColor: form.tabs_bg_text_stroke_color ?? undefined,
+      }
+    : undefined;
   return {
     title: form.title,
     description: form.description ?? undefined,
@@ -876,6 +913,7 @@ export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "for
     subGroups: bundle.subGroups,
     fields: bundle.fields,
     buttonBackground: buttonBg,
+    tabsBackground: tabsBg,
   };
 }
 

@@ -19,7 +19,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { FormView } from "@/form/FormView";
 import { isFieldVisible } from "@/form/structure";
-import type { FormField, FormGroup, FormSchema, FormSubGroup, FormValues } from "@/form/types";
+import type { FormField, FormGroup, FormSchema, FormSubGroup, FormValues, VisualBackground } from "@/form/types";
 import { useCanvasPositions } from "./canvasPositionsStore";
 import { useGroupFrames } from "./groupFramesStore";
 import { useRevealOneByOne } from "./revealModeStore";
@@ -33,6 +33,10 @@ interface Props {
   testWebhookUrl?: string | null | undefined;
   /** When true, the floating "Demo" debug button is shown. Defaults to true. */
   showDemoButton?: boolean;
+  /** Form-wide button visual background. */
+  buttonBackground?: VisualBackground;
+  /** Form-wide tabs visual background. */
+  tabsBackground?: VisualBackground;
 }
 
 /** Returns true if the user hasn't supplied any value for this field yet. */
@@ -45,7 +49,7 @@ function isAnswered(field: FormField, values: FormValues): boolean {
   return true;
 }
 
-export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, testWebhookUrl, showDemoButton = true }: Props) {
+export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, testWebhookUrl, showDemoButton = true, buttonBackground, tabsBackground }: Props) {
   const positions = useCanvasPositions(formId);
   const frames = useGroupFrames(formId);
   const [revealOneByOne] = useRevealOneByOne(formId);
@@ -146,6 +150,8 @@ export function DemoPreview({ fields, groups, subGroups, formId, thankYouText, t
     groups: placedSchema.groups,
     subGroups: placedSchema.subGroups,
     fields: visibleSchemaFields,
+    buttonBackground,
+    tabsBackground,
   };
 
   return (

@@ -51,7 +51,7 @@ export function usePublishedForm(slug = "default"): UseFormResult {
       try {
         const { data: row, error: selErr } = await sb
           .from("forms")
-          .select("id, slug, title, description, published, webhook_url, thank_you_text, active_layout_id")
+          .select("id, slug, title, description, published, webhook_url, thank_you_text, active_layout_id, button_bg_enabled, button_bg_image_url, button_bg_overlay_color, button_bg_overlay_opacity, button_bg_font_color, button_bg_text_stroke_width, button_bg_text_stroke_color, tabs_bg_enabled, tabs_bg_image_url, tabs_bg_overlay_color, tabs_bg_overlay_opacity, tabs_bg_font_color, tabs_bg_text_stroke_width, tabs_bg_text_stroke_color")
           .eq("slug", slug)
           .eq("published", true)
           .maybeSingle();

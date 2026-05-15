@@ -171,6 +171,8 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     }
     const bb = schema.buttonBackground;
     if (bb?.enabled && bb.imageUrl) urls.add(bb.imageUrl);
+    const tb = schema.tabsBackground;
+    if (tb?.enabled && tb.imageUrl) urls.add(tb.imageUrl);
     urls.forEach((u) => {
       const img = new Image();
       img.src = u;
@@ -719,7 +721,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
           activeSubId={activeSubId}
           maxGroupIndex={maxGroupIdx}
           maxSubIndexByGroup={maxSubIdxByGroup}
-          tabsBackground={schema.buttonBackground}
+          tabsBackground={schema.tabsBackground}
           onJumpGroup={(i) => {
             if (i <= activeGroupIdx) {
               setActiveGroupIdx(i);
