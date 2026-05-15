@@ -391,6 +391,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
               <div className="py-16 text-center text-muted-foreground">Betöltés…</div>
             ) : (
               <SettingsPanel
+                formId={editor.form?.id ?? null}
                 title={editor.form?.title ?? ""}
                 description={editor.form?.description ?? ""}
                 webhookUrl={editor.form?.webhook_url ?? ""}
@@ -400,6 +401,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 includeDeviceType={editor.form?.include_device_type ?? false}
                 includeBrowser={editor.form?.include_browser ?? false}
                 includePageUrl={editor.form?.include_page_url ?? true}
+                buttonBackground={editor.schema.buttonBackground}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
                 onChangeDescription={(v) => editor.patchForm({ description: v || null })}
                 onChangeWebhookUrl={(v) => editor.patchForm({ webhook_url: v.trim() ? v.trim() : null })}
@@ -409,6 +411,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 onChangeIncludeDeviceType={(v) => editor.patchForm({ include_device_type: v })}
                 onChangeIncludeBrowser={(v) => editor.patchForm({ include_browser: v })}
                 onChangeIncludePageUrl={(v) => editor.patchForm({ include_page_url: v })}
+                onChangeButtonBackground={(v) => editor.patchForm({ buttonBackground: v })}
               />
             )}
           </TabsContent>
