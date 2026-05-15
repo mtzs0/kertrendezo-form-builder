@@ -889,6 +889,23 @@ export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "for
         textStrokeColor: form.button_bg_text_stroke_color ?? undefined,
       }
     : undefined;
+  const tabsBg: VisualBackground | undefined = form.tabs_bg_enabled
+    ? {
+        enabled: true,
+        imageUrl: form.tabs_bg_image_url ?? undefined,
+        overlayColor: form.tabs_bg_overlay_color ?? undefined,
+        overlayOpacity:
+          form.tabs_bg_overlay_opacity != null
+            ? Number(form.tabs_bg_overlay_opacity)
+            : undefined,
+        fontColor: form.tabs_bg_font_color ?? undefined,
+        textStrokeWidth:
+          form.tabs_bg_text_stroke_width != null
+            ? Number(form.tabs_bg_text_stroke_width)
+            : undefined,
+        textStrokeColor: form.tabs_bg_text_stroke_color ?? undefined,
+      }
+    : undefined;
   return {
     title: form.title,
     description: form.description ?? undefined,
@@ -896,6 +913,7 @@ export function bundleToSchema(form: EditorForm, bundle: Omit<EditorBundle, "for
     subGroups: bundle.subGroups,
     fields: bundle.fields,
     buttonBackground: buttonBg,
+    tabsBackground: tabsBg,
   };
 }
 
