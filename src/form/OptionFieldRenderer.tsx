@@ -221,16 +221,22 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
             htmlFor={`${field.id}_${opt.dataName}`}
             className={cn(
               cardLayoutClass,
-              "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+              "border-border hover:border-primary/40 has-[:checked]:border-primary",
+              !vb && "has-[:checked]:bg-primary/5",
+              vb && "overflow-hidden"
             )}
+            style={vb && checked ? { color: vbFontColor } : undefined}
           >
+            {renderVbLayers(checked)}
             <Checkbox
               id={`${field.id}_${opt.dataName}`}
               checked={checked}
               onCheckedChange={(v) => toggle(opt.dataName, Boolean(v))}
               className={checkboxIndicatorClass}
             />
-            <OptionCard option={opt} field={field} selected={checked} />
+            <div className="relative z-10 w-full" style={vbContentStyle(checked)}>
+              <OptionCard option={opt} field={field} selected={checked} />
+            </div>
           </label>
         );
       })}
