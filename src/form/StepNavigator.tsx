@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
+import type { CSSProperties } from "react";
+import type { VisualBackground } from "./types";
 
 export interface StepGroup {
   id: string;
