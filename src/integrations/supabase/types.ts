@@ -508,6 +508,13 @@ export type Database = {
           published: boolean
           schema: Json
           slug: string
+          tabs_bg_enabled: boolean
+          tabs_bg_font_color: string | null
+          tabs_bg_image_url: string | null
+          tabs_bg_overlay_color: string | null
+          tabs_bg_overlay_opacity: number | null
+          tabs_bg_text_stroke_color: string | null
+          tabs_bg_text_stroke_width: number | null
           test_webhook_url: string | null
           thank_you_text: string | null
           title: string
@@ -534,6 +541,13 @@ export type Database = {
           published?: boolean
           schema?: Json
           slug: string
+          tabs_bg_enabled?: boolean
+          tabs_bg_font_color?: string | null
+          tabs_bg_image_url?: string | null
+          tabs_bg_overlay_color?: string | null
+          tabs_bg_overlay_opacity?: number | null
+          tabs_bg_text_stroke_color?: string | null
+          tabs_bg_text_stroke_width?: number | null
           test_webhook_url?: string | null
           thank_you_text?: string | null
           title: string
@@ -560,6 +574,13 @@ export type Database = {
           published?: boolean
           schema?: Json
           slug?: string
+          tabs_bg_enabled?: boolean
+          tabs_bg_font_color?: string | null
+          tabs_bg_image_url?: string | null
+          tabs_bg_overlay_color?: string | null
+          tabs_bg_overlay_opacity?: number | null
+          tabs_bg_text_stroke_color?: string | null
+          tabs_bg_text_stroke_width?: number | null
           test_webhook_url?: string | null
           thank_you_text?: string | null
           title?: string
