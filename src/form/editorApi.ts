@@ -40,7 +40,7 @@ type FieldExtraCols = {
 } & VisualBgCols;
 // `parent_group_id` was added after the last Supabase types regeneration.
 type GroupRow = Database["public"]["Tables"]["form_groups"]["Row"] &
-  WidthCol & { parent_group_id?: string | null };
+  WidthCol & VisualBgCols & { parent_group_id?: string | null };
 // Legacy alias — sub-groups are now just rows in form_groups with parent_group_id set.
 // Kept under this name to avoid renaming the rest of the file.
 type SubGroupRow = GroupRow & { parent_group_id: string };
