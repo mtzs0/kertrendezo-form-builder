@@ -28,6 +28,7 @@ import { WIDTH_OPTIONS } from "@/form/types";
 import { OptionsEditor } from "./OptionsEditor";
 import { ImageUploader } from "./ImageUploader";
 import { RepeaterChildrenEditor } from "./RepeaterChildrenEditor";
+import { VisualBackgroundConfig } from "./VisualBackgroundConfig";
 
 interface Props {
   field: FormField | null;
