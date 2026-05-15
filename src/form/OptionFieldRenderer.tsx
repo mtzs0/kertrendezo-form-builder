@@ -184,15 +184,20 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
               htmlFor={`${field.id}_${opt.dataName}`}
               className={cn(
                 cardLayoutClass,
-                "border-border hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                "border-border hover:border-primary/40 has-[:checked]:border-primary",
+                !vb && "has-[:checked]:bg-primary/5",
+                vb && selected && "overflow-hidden"
               )}
             >
+              {renderVbLayers(selected)}
               <RadioGroupItem
                 id={`${field.id}_${opt.dataName}`}
                 value={opt.dataName}
                 className={radioIndicatorClass}
               />
-              <OptionCard option={opt} field={field} selected={selected} />
+              <div className="contents" style={vbContentStyle(selected)}>
+                <OptionCard option={opt} field={field} selected={selected} />
+              </div>
             </label>
           );
         })}
