@@ -196,10 +196,7 @@ export function OptionFieldRenderer({ field, value, onChange }: Props) {
                 value={opt.dataName}
                 className={radioIndicatorClass}
               />
-              <div
-                className={cn(useImg ? "flex flex-col gap-2 h-full w-full" : "flex-1")}
-                style={vbContentStyle(selected)}
-              >
+              <div className="relative z-10 w-full" style={vbContentStyle(selected)}>
                 <OptionCard option={opt} field={field} selected={selected} />
               </div>
             </label>
