@@ -422,6 +422,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
 }
 
 interface SettingsPanelProps {
+  formId: string | null;
   title: string;
   description: string;
   webhookUrl: string;
@@ -431,6 +432,7 @@ interface SettingsPanelProps {
   includeDeviceType: boolean;
   includeBrowser: boolean;
   includePageUrl: boolean;
+  buttonBackground: import("./types").VisualBackground | undefined;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
@@ -440,9 +442,11 @@ interface SettingsPanelProps {
   onChangeIncludeDeviceType: (value: boolean) => void;
   onChangeIncludeBrowser: (value: boolean) => void;
   onChangeIncludePageUrl: (value: boolean) => void;
+  onChangeButtonBackground: (value: import("./types").VisualBackground | undefined) => void;
 }
 
 function SettingsPanel({
+  formId,
   title,
   description,
   webhookUrl,
@@ -452,6 +456,7 @@ function SettingsPanel({
   includeDeviceType,
   includeBrowser,
   includePageUrl,
+  buttonBackground,
   onChangeTitle,
   onChangeDescription,
   onChangeWebhookUrl,
@@ -461,6 +466,7 @@ function SettingsPanel({
   onChangeIncludeDeviceType,
   onChangeIncludeBrowser,
   onChangeIncludePageUrl,
+  onChangeButtonBackground,
 }: SettingsPanelProps) {
   return (
     <Tabs defaultValue="general" className="w-full">
