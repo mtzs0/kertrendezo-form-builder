@@ -114,22 +114,23 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
   return created as EditorForm;
 }
 
+export type FormMetaPatch = Partial<{
+  title: string;
+  description: string | null;
+  webhook_url: string | null;
+  test_webhook_url: string | null;
+  thank_you_text: string | null;
+  output_url: string | null;
+  include_device_type: boolean;
+  include_browser: boolean;
+  include_page_url: boolean;
+  /** Form-wide button visual background (applied to "Tovább"/"Küldés"). */
+  buttonBackground: VisualBackground | undefined;
+}>;
+
 /** Update form-level metadata (title, description, webhook_url, toggles). */
-export async function updateFormMeta(
-  id: string,
-  patch: Partial<{
-    title: string;
-    description: string | null;
-    webhook_url: string | null;
-    test_webhook_url: string | null;
-    thank_you_text: string | null;
-    output_url: string | null;
-    include_device_type: boolean;
-    include_browser: boolean;
-    include_page_url: boolean;
-  }>
-) {
-  const u: Database["public"]["Tables"]["forms"]["Update"] = {};
+export async function updateFormMeta(id: string, patch: FormMetaPatch) {
+  const u: Record<string, unknown> = {};
   if (patch.title !== undefined) u.title = patch.title;
   if (patch.description !== undefined) u.description = patch.description;
   if (patch.webhook_url !== undefined) u.webhook_url = patch.webhook_url;
@@ -139,8 +140,15 @@ export async function updateFormMeta(
   if (patch.include_device_type !== undefined) u.include_device_type = patch.include_device_type;
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
+  if (patch.buttonBackground !== undefined) {
+    const bg = patch.buttonBackground;
+    u.button_bg_enabled = bg?.enabled ?? false;
+    u.button_bg_image_url = bg?.imageUrl ?? null;
+    u.button_bg_overlay_color = bg?.overlayColor ?? null;
+    u.button_bg_overlay_opacity = bg?.overlayOpacity ?? null;
+  }
   if (Object.keys(u).length === 0) return;
-  const { error } = await supabase.from("forms").update(u).eq("id", id);
+  const { error } = await sbAny.from("forms").update(u).eq("id", id);
   if (error) throw error;
 }
 
