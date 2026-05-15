@@ -350,6 +350,8 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 formId={editor.form?.id ?? null}
                 thankYouText={editor.form?.thank_you_text ?? null}
                 testWebhookUrl={editor.form?.test_webhook_url ?? DEFAULT_TEST_WEBHOOK_URL}
+                buttonBackground={editor.schema.buttonBackground}
+                tabsBackground={editor.schema.tabsBackground}
               />
             )}
           </TabsContent>
