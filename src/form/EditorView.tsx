@@ -436,6 +436,7 @@ interface SettingsPanelProps {
   includeBrowser: boolean;
   includePageUrl: boolean;
   buttonBackground: import("./types").VisualBackground | undefined;
+  tabsBackground: import("./types").VisualBackground | undefined;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
   onChangeWebhookUrl: (value: string) => void;
@@ -446,6 +447,7 @@ interface SettingsPanelProps {
   onChangeIncludeBrowser: (value: boolean) => void;
   onChangeIncludePageUrl: (value: boolean) => void;
   onChangeButtonBackground: (value: import("./types").VisualBackground | undefined) => void;
+  onChangeTabsBackground: (value: import("./types").VisualBackground | undefined) => void;
 }
 
 function SettingsPanel({
