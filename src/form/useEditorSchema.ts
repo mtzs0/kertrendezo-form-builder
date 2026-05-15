@@ -39,7 +39,21 @@ import type {
   FormGroup,
   FormSchema,
   FormSubGroup,
+  VisualBackground,
 } from "./types";
+
+type FormMetaInput = Partial<{
+  title: string;
+  description: string | null;
+  webhook_url: string | null;
+  test_webhook_url: string | null;
+  thank_you_text: string | null;
+  output_url: string | null;
+  include_device_type: boolean;
+  include_browser: boolean;
+  include_page_url: boolean;
+  buttonBackground: VisualBackground | undefined;
+}>;
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
