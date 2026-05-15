@@ -33,6 +33,10 @@ interface Props {
   testWebhookUrl?: string | null | undefined;
   /** When true, the floating "Demo" debug button is shown. Defaults to true. */
   showDemoButton?: boolean;
+  /** Form-wide button visual background. */
+  buttonBackground?: VisualBackground;
+  /** Form-wide tabs visual background. */
+  tabsBackground?: VisualBackground;
 }
 
 /** Returns true if the user hasn't supplied any value for this field yet. */
