@@ -271,6 +271,12 @@ export interface FormSchema {
   groups: FormGroup[];
   subGroups: FormSubGroup[];
   fields: FormField[];
+  /**
+   * Optional form-wide visual background applied to BOTH the step navigator's
+   * active group/sub tab pills AND the action buttons ("Tovább" / "Küldés" /
+   * "Demo küldés"). Stored on the `forms` row in the `button_bg_*` columns.
+   */
+  buttonBackground?: VisualBackground;
 }
 
 /** A single repeater instance: child internalName → its value. */
