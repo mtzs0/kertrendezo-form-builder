@@ -22,6 +22,11 @@ import type { FormSchema, FormValues, FormField, VisualBackground } from "./type
 const GROUP_LEVEL_SUB = "__group_level__";
 const DEFAULT_TEST_WEBHOOK_URL = "n.dakexpo.hu/webhook-test/278a29c4-bb5e-4221-b895-7436d1e74d82";
 
+function resolveVisualBackground(background?: VisualBackground): VisualBackground | undefined {
+  if (!background?.enabled) return undefined;
+  return background;
+}
+
 interface Props {
   schema: FormSchema;
   /** "horizontal" = desktop/tablet wide layout, "vertical" = mobile stacked. */
@@ -866,7 +871,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 }
 
 interface ActionButtonProps extends React.ComponentProps<typeof Button> {
-  background?: import("./types").VisualBackground;
+  background?: VisualBackground;
 }
 
 /**
