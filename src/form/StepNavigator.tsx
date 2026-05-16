@@ -149,6 +149,7 @@ export function StepNavigator({
               {subs.map((subId) => {
                 const isActive = subId === activeSubId;
                 const label = activeGroup.subLabels[subId] ?? "—";
+                const activeBg = isActive ? resolveBg(activeGroup.subBackgrounds?.[subId]) : undefined;
                 return (
                   <button
                     key={subId}
@@ -160,10 +161,10 @@ export function StepNavigator({
                         ? "bg-card text-primary border-transparent shadow-md"
                         : "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10",
                     )}
-                    style={isActive ? vbTextStyle : undefined}
+                    style={textStyleFor(activeBg)}
                     aria-current={isActive ? "step" : undefined}
                   >
-                    {isActive && renderVbLayers()}
+                    {renderVbLayers(activeBg)}
                     <span className="relative z-10">{label}</span>
                   </button>
                 );
