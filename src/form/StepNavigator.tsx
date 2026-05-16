@@ -6,9 +6,12 @@ import type { VisualBackground } from "./types";
 export interface StepGroup {
   id: string;
   label: string;
+  /** Optional group-specific visual background used when no form-wide tab image is set. */
+  background?: VisualBackground;
   /** Sub-step ids belonging to this group, in order. May be empty. */
   subIds: string[];
   subLabels: Record<string, string>;
+  subBackgrounds?: Record<string, VisualBackground | undefined>;
 }
 
 interface Props {
@@ -50,29 +53,31 @@ export function StepNavigator({
   const activeGroup = groups[activeGroupIndex];
   const subs = activeGroup?.subIds ?? [];
 
-  const vb = tabsBackground?.enabled ? tabsBackground : undefined;
-  const vbImage = vb?.imageUrl;
-  const vbOverlayColor = vb?.overlayColor ?? "#000000";
-  const vbOverlayOpacity = vb?.overlayOpacity ?? 0.5;
-  const vbFontColor = vb?.fontColor ?? "#ffffff";
-  const vbStrokeWidth = vb?.textStrokeWidth ?? 0;
-  const vbStrokeColor = vb?.textStrokeColor ?? "#000000";
-  const vbTextStyle: CSSProperties | undefined = vb
-    ? {
-        color: vbFontColor,
-        WebkitTextStroke:
-          vbStrokeWidth > 0 ? `${vbStrokeWidth}px ${vbStrokeColor}` : undefined,
-        paintOrder: "stroke fill",
-      }
-    : undefined;
-  const renderVbLayers = () =>
-    vb && vbImage ? (
+  const formTabsBg = tabsBackground?.enabled ? tabsBackground : undefined;
+  const resolveBg = (specific?: VisualBackground): VisualBackground | undefined => {
+    const enabledSpecific = specific?.enabled ? specific : undefined;
+    if (formTabsBg?.imageUrl) return formTabsBg;
+    if (enabledSpecific?.imageUrl) return enabledSpecific;
+    return formTabsBg ?? enabledSpecific;
+  };
+  const textStyleFor = (vb?: VisualBackground): CSSProperties | undefined => {
+    if (!vb) return undefined;
+    const strokeWidth = vb.textStrokeWidth ?? 0;
+    return {
+      color: vb.fontColor ?? "#ffffff",
+      WebkitTextStroke:
+        strokeWidth > 0 ? `${strokeWidth}px ${vb.textStrokeColor ?? "#000000"}` : undefined,
+      paintOrder: "stroke fill",
+    };
+  };
+  const renderVbLayers = (vb?: VisualBackground) =>
+    vb?.imageUrl ? (
       <>
         <span
           aria-hidden
           className="absolute inset-0 pointer-events-none"
           style={{
-            backgroundImage: `url(${vbImage})`,
+            backgroundImage: `url(${vb.imageUrl})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -80,7 +85,7 @@ export function StepNavigator({
         <span
           aria-hidden
           className="absolute inset-0 pointer-events-none"
-          style={{ background: vbOverlayColor, opacity: vbOverlayOpacity }}
+          style={{ background: vb.overlayColor ?? "#000000", opacity: vb.overlayOpacity ?? 0.5 }}
         />
       </>
     ) : null;
@@ -93,6 +98,7 @@ export function StepNavigator({
           {groups.map((g, i) => {
             const isActive = i === activeGroupIndex;
             const isDone = i < maxGroupIndex;
+            const activeBg = isActive ? resolveBg(g.background) : undefined;
             return (
               <button
                 key={g.id}
@@ -104,10 +110,10 @@ export function StepNavigator({
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-foreground/80 hover:bg-secondary/80",
                 )}
-                style={isActive ? vbTextStyle : undefined}
+                style={textStyleFor(activeBg)}
                 aria-current={isActive ? "step" : undefined}
               >
-                {isActive && renderVbLayers()}
+                {renderVbLayers(activeBg)}
                 <span
                   className={cn(
                     "relative z-10 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold",
