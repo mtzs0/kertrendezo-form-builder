@@ -16,7 +16,7 @@ import {
 } from "./structure";
 import { submitForm } from "./api";
 import { StepNavigator, type StepGroup } from "./StepNavigator";
-import type { FormSchema, FormValues, FormField } from "./types";
+import type { FormSchema, FormValues, FormField, VisualBackground } from "./types";
 
 /** "group-level" pseudo sub-step id for fields directly on a group. */
 const GROUP_LEVEL_SUB = "__group_level__";
@@ -699,8 +699,15 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
   const stepNavGroups: StepGroup[] = groupSteps.map((g) => ({
     id: g.id,
     label: g.label,
+    background: groupById.get(g.id)?.visualBackground,
     subIds: subStepsByGroup[g.id]?.ids ?? [],
     subLabels: subStepsByGroup[g.id]?.labels ?? {},
+    subBackgrounds: Object.fromEntries(
+      (subStepsByGroup[g.id]?.ids ?? []).map((subId) => [
+        subId,
+        subId === GROUP_LEVEL_SUB ? undefined : subGroupById.get(subId)?.visualBackground,
+      ]),
+    ),
   }));
 
   
@@ -868,7 +875,7 @@ interface ActionButtonProps extends React.ComponentProps<typeof Button> {
  * background isn't enabled it renders a normal Button with no overhead.
  */
 function ActionButton({ background, className, children, style, ...rest }: ActionButtonProps) {
-  const vb = background?.enabled ? background : undefined;
+  const vb = resolveVisualBackground(background);
   if (!vb) {
     return (
       <Button {...rest} className={className} style={style}>
