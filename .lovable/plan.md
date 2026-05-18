@@ -1,57 +1,67 @@
-## Vizuális háttér (Visual Background)
+## Goal
 
-A reusable "visual background" treatment (image + colored overlay) will be added to three places: option-type fields (radio/checkbox), groups (their step tab), and the form-wide "Tovább"/"Küldés" buttons. All three share the same shape: `{ enabled, imageUrl, overlayColor (default #000000), overlayOpacity (default 0.5) }`. Images uploaded anywhere become reusable across all three surfaces via a small image-library picker that reads previously uploaded URLs.
+Pre-emptively add explicit `GRANT` statements for every existing `public` table so that when Supabase enforces the new default on **October 30, 2026**, nothing in the app breaks. Also establish the grant pattern as the standard for all future migrations.
 
-### 1. Database migration
+## What will be done
 
-Add 4 columns to each of:
+### 1. One-time "safety net" migration
 
-- `form_fields` — `visual_bg_enabled bool not null default false`, `visual_bg_image_url text`, `visual_bg_overlay_color text`, `visual_bg_overlay_opacity numeric` (only used when `type in ('radio','checkbox')`)
-- `form_groups` — same 4 columns (used by both groups and sub-groups since they share the table)
-- `forms` — `button_bg_enabled`, `button_bg_image_url`, `button_bg_overlay_color`, `button_bg_overlay_opacity` (action-button background)
+A single SQL migration that, for each existing table in the `public` schema:
 
-### 2. Image library (no new table)
+- Grants the appropriate Data API access to the three Supabase roles (`anon`, `authenticated`, `service_role`).
+- Leaves existing RLS policies untouched — grants are the table-level gate; RLS still controls *which rows* each role can see.
 
-A small helper `loadVisualBackgroundLibrary(formId)` does a `select` on each of the 3 tables for non-null image URLs scoped to `form_id`, then dedupes. The existing public storage bucket `form-option-images` keeps storing uploads (under a new `visual-bg/` prefix); a shared `<VisualBackgroundPicker>` shows the existing `<ImageUploader>` plus a thumbnail grid of previously used URLs to click-to-select.
+Tables covered (all currently in `public`):
 
-### 3. Reusable `<VisualBackgroundConfig>` editor block
+- `forms`
+- `form_fields`
+- `form_field_options`
+- `form_field_conditions`
+- `form_field_canvas_positions`
+- `form_groups`
+- `form_group_canvas_frames`
+- `form_layouts`
+- `form_submissions`
 
-New component used in 3 places: option-field config, group settings dialog, and form settings tab. UI:
+### 2. Per-table grant strategy
 
-- Master "Vizuális háttér" Switch
-- When ON: image uploader + library grid, color picker (default `#000000`), opacity slider 0–100% (default 50%), live preview tile
+Grants mirror what the app already does today through RLS, so behavior is identical before and after:
 
-### 4. Option fields (radio + checkbox)
+| Table | anon | authenticated | service_role |
+|---|---|---|---|
+| `forms` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_fields` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_field_options` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_field_conditions` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_field_canvas_positions` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_groups` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_group_canvas_frames` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_layouts` | SELECT, INSERT, UPDATE, DELETE | SELECT, INSERT, UPDATE, DELETE | ALL |
+| `form_submissions` | INSERT | INSERT | ALL |
 
-- `OptionField` type gains `visualBackground?: VisualBackground` (radio/checkbox only — UI hides for `select`)
-- `FieldConfigPanel`: render `<VisualBackgroundConfig>` block for radio/checkbox
-- `OptionFieldRenderer`: when an option is **selected** AND `visualBackground.enabled`, replace the card's normal selected styling with the uploaded background image (`background-size: cover; position: center; no-repeat`) plus an absolutely-positioned overlay `<div>` using `overlayColor` at `overlayOpacity`. Card text + indicator stay visible above the overlay (white text).
+Why anon gets broad access on the editor tables: the project currently has `TEMP anyone can …` RLS policies on every editor table (no auth implemented yet), so the anon role already needs those operations. When auth is added later, those temp policies — not the grants — are what should be tightened.
 
-### 5. Groups
+`form_submissions` is the only locked-down table today (anon can insert into published forms, can't read), so its grants stay minimal.
 
-- `FormGroup` and `FormSubGroup` types gain `visualBackground?`
-- `ConditionCanvas`: add a `Cog` icon button in every group/sub-group frame header. Clicking opens a `<GroupSettingsDialog>` (new component, shadcn `Dialog`) containing:
-  - Internal name, label, color (existing fields, lifted from inline editing for consistency)
-  - `<VisualBackgroundConfig>` block
-- `useEditorSchema.patchGroup`/`patchSubGroup` already accept `Partial<FormGroup>` — extend with `visualBackground` and pipe through `editorApi.updateGroup`/`updateSubGroup`
-- `StepNavigator`: accept a `groupBackgrounds: Record<string, VisualBackground>` prop. When the active tab has an enabled background, render the active pill with `background-image: url(...)`, `background-size: cover`, plus the overlay div. (Inactive tabs unchanged.)
-- `FormView`: pass `schema.groups[*].visualBackground` to `StepNavigator`
+### 3. Convention for future migrations
 
-### 6. Action buttons (form-level)
+From now on, every new `public` table I create will include in the same migration:
 
-- Settings tab gets a new section "Gombok háttere" using `<VisualBackgroundConfig>`
-- `forms` table gains `button_bg_*` columns wired through `EditorForm`, `updateFormMeta`, `useEditorSchema.patchForm`
-- `FormView` accepts `buttonBackground?: VisualBackground` (passed from EditorView/Embed). Applied to the "Tovább" and "Küldés" buttons (and "Demo küldés"). Implementation: when enabled, swap the button's gradient classes for an inline-style `background-image` + an inner overlay span; keep text/icon white.
+```sql
+grant select, insert, update, delete on public.<new_table> to anon, authenticated;
+grant all on public.<new_table> to service_role;
+alter table public.<new_table> enable row level security;
+-- + RLS policies
+```
 
-### 7. Image fit (per spec)
+This way the project stays compatible whether or not the Oct 30, 2026 enforcement sweep touches existing projects.
 
-Both option cards and tab pills will use `background-size: cover; background-position: center; background-repeat: no-repeat` — taller images are cropped top/bottom, wider images are cropped left/right.
+## Out of scope
 
-### Technical notes
+- **No RLS policy changes.** Existing access rules are preserved exactly.
+- **No code changes.** `supabase-js` calls in `src/form/*` keep working identically.
+- **No auth rollout.** Tightening the `TEMP anyone can …` policies is a separate future task (recommended once auth is added), not part of this safety net.
 
-- `editorApi.ts`: extend `FieldExtraCols`, `FieldPatch`, `updateField`, `rowToField` (option case), `updateGroup`/`updateSubGroup` patch shape, `EditorForm` interface, `updateFormMeta`, `loadEditorBundle` (read group bg cols + form bg cols)
-- `useEditorSchema.ts`: extend `patchForm` signature, group/sub-group patch buffers already merge generically — only the schema mapping needs tweaks
-- All UI strings remain in Hungarian
-- Default overlay = `#000000` / `0.5` are stored as defaults the moment the toggle flips on (so DB always has values when enabled)
+## Risk
 
-After your approval I'll start with the migration, then implement the rest in one pass.
+Very low. `GRANT` is additive on tables that already have those grants implicitly — re-granting is a no-op. RLS continues to be the real access gate.
