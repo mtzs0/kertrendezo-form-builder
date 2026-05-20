@@ -158,6 +158,7 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
+  if (patch.published !== undefined) u.published = patch.published;
   if (patch.buttonBackground !== undefined) {
     const bg = patch.buttonBackground;
     u.button_bg_enabled = bg?.enabled ?? false;
