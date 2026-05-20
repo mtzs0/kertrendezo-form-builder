@@ -52,6 +52,7 @@ type FormMetaInput = Partial<{
   include_device_type: boolean;
   include_browser: boolean;
   include_page_url: boolean;
+  published: boolean;
   buttonBackground: VisualBackground | undefined;
   tabsBackground: VisualBackground | undefined;
 }>;
@@ -278,6 +279,8 @@ export function useEditorSchema(slug: string, defaults: { title: string; descrip
                 patch.include_browser !== undefined ? patch.include_browser : f.include_browser,
               include_page_url:
                 patch.include_page_url !== undefined ? patch.include_page_url : f.include_page_url,
+              published:
+                patch.published !== undefined ? patch.published : f.published,
               ...(patch.buttonBackground !== undefined
                 ? {
                     button_bg_enabled: patch.buttonBackground?.enabled ?? false,

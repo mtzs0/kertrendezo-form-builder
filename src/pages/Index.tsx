@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,29 +9,71 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { DemoPreview } from "@/form/editor/DemoPreview";
 import { useDoubleHotkey, useIsMobile } from "@/form/hooks";
 import { usePublishedForm } from "@/form/usePublishedForm";
-import { EditorView } from "@/form/EditorView";
+import {
+  getAdminPassword,
+  getHotkeyKey,
+  getHotkeyModifier,
+} from "@/form/adminAccess";
 
-/**
- * What the user sees when they land on `/`.
- * Flip this back to "form" to make the public end-user form the default again.
- */
-const DEFAULT_VIEW = "editor" as "editor" | "form";
+const EditorView = lazy(() =>
+  import("@/form/EditorView").then((m) => ({ default: m.EditorView }))
+);
 
 const Index = () => {
   const isMobile = useIsMobile();
-  const [confirmEditor, setConfirmEditor] = useState(false);
-  const [editorOpen, setEditorOpen] = useState<boolean>(DEFAULT_VIEW === "editor");
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
   const { schema, title, description, formId, form, loading } = usePublishedForm("default");
 
-  useDoubleHotkey(() => {
-    if (!editorOpen) setConfirmEditor(true);
-  });
+  // When the form isn't published, default to opening the editor (admin
+  // hasn't shipped yet). When published, the live view loads by default
+  // and the editor is only reachable via hotkey + password.
+  useEffect(() => {
+    if (loading) return;
+    if (form && !form.published && !editorOpen) {
+      setEditorOpen(true);
+    }
+  }, [loading, form, editorOpen]);
+
+  useDoubleHotkey(
+    () => {
+      if (!editorOpen) {
+        setPasswordInput("");
+        setPasswordOpen(true);
+      }
+    },
+    { key: getHotkeyKey(), modifier: getHotkeyModifier() }
+  );
+
+  const tryUnlock = () => {
+    if (passwordInput === getAdminPassword()) {
+      setPasswordOpen(false);
+      setPasswordInput("");
+      setEditorOpen(true);
+    } else {
+      toast.error("Hibás jelszó");
+    }
+  };
 
   if (editorOpen) {
-    return <EditorView slug="default" onExit={() => setEditorOpen(false)} />;
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+            Szerkesztő betöltése…
+          </div>
+        }
+      >
+        <EditorView slug="default" onExit={() => setEditorOpen(false)} />
+      </Suspense>
+    );
   }
 
   return (
@@ -66,31 +108,41 @@ const Index = () => {
               formId={formId}
               thankYouText={form?.thank_you_text ?? null}
               showDemoButton={false}
+              buttonBackground={schema.buttonBackground}
+              tabsBackground={schema.tabsBackground}
             />
           )}
 
         </div>
       </section>
 
-      <AlertDialog open={confirmEditor} onOpenChange={setConfirmEditor}>
+      <AlertDialog open={passwordOpen} onOpenChange={setPasswordOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Szerkesztő nézet megnyitása?</AlertDialogTitle>
+            <AlertDialogTitle>Szerkesztő nézet</AlertDialogTitle>
             <AlertDialogDescription>
-              A szerkesztő nézetben módosíthatod az űrlap mezőit, csoportjait és
-              feltételeit. Folytatod?
+              Add meg az admin jelszót a szerkesztő nézet megnyitásához.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Mégse</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmEditor(false);
-                setEditorOpen(true);
+          <div className="space-y-2">
+            <Label htmlFor="admin_pw">Jelszó</Label>
+            <Input
+              id="admin_pw"
+              type="password"
+              autoFocus
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  tryUnlock();
+                }
               }}
-            >
-              Megnyitás
-            </AlertDialogAction>
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPasswordInput("")}>Mégse</AlertDialogCancel>
+            <AlertDialogAction onClick={tryUnlock}>Megnyitás</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

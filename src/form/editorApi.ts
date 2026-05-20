@@ -137,6 +137,8 @@ export type FormMetaPatch = Partial<{
   include_device_type: boolean;
   include_browser: boolean;
   include_page_url: boolean;
+  /** Whether the form is published (controls default landing view). */
+  published: boolean;
   /** Form-wide button visual background (applied to "Tovább"/"Küldés"). */
   buttonBackground: VisualBackground | undefined;
   /** Form-wide tabs visual background (applied to active step nav pills). */
@@ -156,6 +158,7 @@ export async function updateFormMeta(id: string, patch: FormMetaPatch) {
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_browser !== undefined) u.include_browser = patch.include_browser;
   if (patch.include_page_url !== undefined) u.include_page_url = patch.include_page_url;
+  if (patch.published !== undefined) u.published = patch.published;
   if (patch.buttonBackground !== undefined) {
     const bg = patch.buttonBackground;
     u.button_bg_enabled = bg?.enabled ?? false;
