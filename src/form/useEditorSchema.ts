@@ -52,6 +52,7 @@ type FormMetaInput = Partial<{
   include_device_type: boolean;
   include_browser: boolean;
   include_page_url: boolean;
+  published: boolean;
   buttonBackground: VisualBackground | undefined;
   tabsBackground: VisualBackground | undefined;
 }>;
