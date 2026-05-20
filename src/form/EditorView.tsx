@@ -17,6 +17,18 @@ import { LayoutsManager } from "./editor/LayoutsManager";
 import { ConditionCanvas } from "./editor/ConditionCanvas";
 import { DemoPreview } from "./editor/DemoPreview";
 import { VisualBackgroundConfig } from "./editor/VisualBackgroundConfig";
+import {
+  DEFAULT_HOTKEY_KEY,
+  DEFAULT_HOTKEY_MOD,
+  describeHotkey,
+  getAdminPassword,
+  getHotkeyKey,
+  getHotkeyModifier,
+  setAdminPassword,
+  setHotkey,
+  type HotkeyModifier,
+} from "./adminAccess";
+import { toast } from "sonner";
 
 interface Props {
   /** Form slug to edit. Defaults to "default". */
