@@ -137,6 +137,8 @@ export type FormMetaPatch = Partial<{
   include_device_type: boolean;
   include_browser: boolean;
   include_page_url: boolean;
+  /** Whether the form is published (controls default landing view). */
+  published: boolean;
   /** Form-wide button visual background (applied to "Tovább"/"Küldés"). */
   buttonBackground: VisualBackground | undefined;
   /** Form-wide tabs visual background (applied to active step nav pills). */
