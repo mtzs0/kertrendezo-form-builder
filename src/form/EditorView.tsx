@@ -737,3 +737,138 @@ function SettingsPanel({
     </Tabs>
   );
 }
+
+function AccessSettings({
+  published,
+  onChangePublished,
+}: {
+  published: boolean;
+  onChangePublished: (v: boolean) => void;
+}) {
+  const [hotkeyKey, setHotkeyKeyState] = useState(() => getHotkeyKey());
+  const [hotkeyMod, setHotkeyModState] = useState<HotkeyModifier>(() => getHotkeyModifier());
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+
+  const saveHotkey = () => {
+    const k = (hotkeyKey || DEFAULT_HOTKEY_KEY).trim().slice(0, 1).toLowerCase() || DEFAULT_HOTKEY_KEY;
+    setHotkey(k, hotkeyMod);
+    setHotkeyKeyState(k);
+    toast.success(`Hotkey mentve: ${describeHotkey(k, hotkeyMod)}`);
+  };
+
+  const changePassword = () => {
+    if (currentPw !== getAdminPassword()) {
+      toast.error("Hibás jelenlegi jelszó");
+      return;
+    }
+    if (!newPw || newPw.length < 4) {
+      toast.error("Az új jelszó legalább 4 karakter legyen");
+      return;
+    }
+    if (newPw !== newPw2) {
+      toast.error("A két új jelszó nem egyezik");
+      return;
+    }
+    setAdminPassword(newPw);
+    setCurrentPw("");
+    setNewPw("");
+    setNewPw2("");
+    toast.success("Jelszó frissítve");
+  };
+
+  return (
+    <div className="max-w-2xl space-y-5">
+      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">Publikálás</h3>
+          <p className="text-sm text-muted-foreground">
+            Bekapcsolva az oldal megnyitásakor az élő űrlap töltődik be alapértelmezetten,
+            és a szerkesztő csak a hotkey + jelszó megadásával érhető el.
+            Kikapcsolva az oldal automatikusan a szerkesztőt nyitja meg.
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="published_toggle" className="cursor-pointer">
+            Élő űrlap publikálva
+          </Label>
+          <Switch
+            id="published_toggle"
+            checked={published}
+            onCheckedChange={onChangePublished}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">Belépési hotkey</h3>
+          <p className="text-sm text-muted-foreground">
+            A megadott billentyűkombinációt kétszer egymás után megnyomva
+            (600 ms-en belül) megjelenik a jelszó-ablak.
+          </p>
+        </div>
+        <div className="grid grid-cols-[1fr_140px_auto] gap-2 items-end">
+          <div className="space-y-1.5">
+            <Label htmlFor="hotkey_key">Billentyű</Label>
+            <Input
+              id="hotkey_key"
+              value={hotkeyKey}
+              maxLength={1}
+              onChange={(e) => setHotkeyKeyState(e.target.value.toLowerCase())}
+              placeholder="k"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="hotkey_mod">Modifier</Label>
+            <select
+              id="hotkey_mod"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={hotkeyMod}
+              onChange={(e) => setHotkeyModState(e.target.value as HotkeyModifier)}
+            >
+              <option value="ctrl">Ctrl / Cmd</option>
+              <option value="alt">Alt</option>
+              <option value="shift">Shift</option>
+              <option value="none">Nincs (csak betű)</option>
+            </select>
+          </div>
+          <Button type="button" onClick={saveHotkey}>Mentés</Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Aktuális: <span className="font-mono">{describeHotkey(hotkeyKey, hotkeyMod)}</span>
+          {" "}(alap: {describeHotkey(DEFAULT_HOTKEY_KEY, DEFAULT_HOTKEY_MOD)})
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card kr-shadow-soft p-5 md:p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">Admin jelszó</h3>
+          <p className="text-sm text-muted-foreground">
+            A hotkey megnyomása után megjelenő jelszó-kérőhöz használt jelszó.
+            Csak ebben a böngészőben tárolódik (localStorage).
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="cur_pw">Jelenlegi jelszó</Label>
+          <Input id="cur_pw" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="new_pw">Új jelszó</Label>
+            <Input id="new_pw" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new_pw2">Új jelszó újra</Label>
+            <Input id="new_pw2" type="password" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button type="button" onClick={changePassword}>Jelszó módosítása</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
