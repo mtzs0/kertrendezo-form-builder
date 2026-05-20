@@ -451,6 +451,7 @@ interface SettingsPanelProps {
   includeDeviceType: boolean;
   includeBrowser: boolean;
   includePageUrl: boolean;
+  published: boolean;
   buttonBackground: import("./types").VisualBackground | undefined;
   tabsBackground: import("./types").VisualBackground | undefined;
   onChangeTitle: (value: string) => void;
@@ -462,6 +463,7 @@ interface SettingsPanelProps {
   onChangeIncludeDeviceType: (value: boolean) => void;
   onChangeIncludeBrowser: (value: boolean) => void;
   onChangeIncludePageUrl: (value: boolean) => void;
+  onChangePublished: (value: boolean) => void;
   onChangeButtonBackground: (value: import("./types").VisualBackground | undefined) => void;
   onChangeTabsBackground: (value: import("./types").VisualBackground | undefined) => void;
 }
@@ -477,6 +479,7 @@ function SettingsPanel({
   includeDeviceType,
   includeBrowser,
   includePageUrl,
+  published,
   buttonBackground,
   tabsBackground,
   onChangeTitle,
@@ -488,6 +491,7 @@ function SettingsPanel({
   onChangeIncludeDeviceType,
   onChangeIncludeBrowser,
   onChangeIncludePageUrl,
+  onChangePublished,
   onChangeButtonBackground,
   onChangeTabsBackground,
 }: SettingsPanelProps) {
@@ -499,7 +503,16 @@ function SettingsPanel({
         <TabsTrigger value="thankyou">Köszönő oldal</TabsTrigger>
         <TabsTrigger value="output">Output</TabsTrigger>
         <TabsTrigger value="visual-bg">Vizuális háttér</TabsTrigger>
+        <TabsTrigger value="access">Belépés</TabsTrigger>
       </TabsList>
+
+      <TabsContent value="access" className="mt-4">
+        <AccessSettings
+          published={published}
+          onChangePublished={onChangePublished}
+        />
+      </TabsContent>
+
 
       <TabsContent value="visual-bg" className="mt-4">
         <div className="max-w-2xl space-y-5">
