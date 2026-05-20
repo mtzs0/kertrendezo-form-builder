@@ -416,6 +416,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 includeDeviceType={editor.form?.include_device_type ?? false}
                 includeBrowser={editor.form?.include_browser ?? false}
                 includePageUrl={editor.form?.include_page_url ?? true}
+                published={editor.form?.published ?? false}
                 buttonBackground={editor.schema.buttonBackground}
                 tabsBackground={editor.schema.tabsBackground}
                 onChangeTitle={(v) => editor.patchForm({ title: v })}
@@ -427,6 +428,7 @@ export function EditorView({ slug = "default", onExit }: Props) {
                 onChangeIncludeDeviceType={(v) => editor.patchForm({ include_device_type: v })}
                 onChangeIncludeBrowser={(v) => editor.patchForm({ include_browser: v })}
                 onChangeIncludePageUrl={(v) => editor.patchForm({ include_page_url: v })}
+                onChangePublished={(v) => editor.patchForm({ published: v })}
                 onChangeButtonBackground={(v) => editor.patchForm({ buttonBackground: v })}
                 onChangeTabsBackground={(v) => editor.patchForm({ tabsBackground: v })}
               />
