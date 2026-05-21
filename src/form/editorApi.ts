@@ -112,15 +112,22 @@ export async function ensureForm(slug: string, defaults: { title: string; descri
   if (selErr) throw selErr;
   if (existing) return existing as EditorForm;
 
+  // Capture the current auth user so we can set owner_id on insert.
+  const { data: userData } = await supabase.auth.getUser();
+  const ownerId = userData.user?.id ?? null;
+
+  const insertPayload: Record<string, unknown> = {
+    slug,
+    title: defaults.title,
+    description: defaults.description ?? null,
+    schema: { fields: [], groups: [], subGroups: [] },
+    published: true,
+  };
+  if (ownerId) insertPayload.owner_id = ownerId;
+
   const { data: created, error: insErr } = await sbAny
     .from("forms")
-    .insert({
-      slug,
-      title: defaults.title,
-      description: defaults.description ?? null,
-      schema: { fields: [], groups: [], subGroups: [] },
-      published: true,
-    })
+    .insert(insertPayload)
     .select(FORM_SELECT)
     .single();
   if (insErr) throw insErr;
