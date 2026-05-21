@@ -69,9 +69,13 @@ Deno.serve(async (req) => {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
+  // Prefer `cf-connecting-ip` (set by the edge and not spoofable by the
+  // client). Fall back to the *rightmost* value in x-forwarded-for, which is
+  // the address closest to our infrastructure — clients can prepend extra
+  // entries, but the last one is appended by the trusted proxy.
   const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ||
     "unknown";
 
   if (rateLimited(ip)) {
