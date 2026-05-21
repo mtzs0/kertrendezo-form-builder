@@ -505,6 +505,7 @@ export type Database = {
           include_device_type: boolean
           include_page_url: boolean
           output_url: string | null
+          owner_id: string | null
           published: boolean
           schema: Json
           slug: string
@@ -538,6 +539,7 @@ export type Database = {
           include_device_type?: boolean
           include_page_url?: boolean
           output_url?: string | null
+          owner_id?: string | null
           published?: boolean
           schema?: Json
           slug: string
@@ -571,6 +573,7 @@ export type Database = {
           include_device_type?: boolean
           include_page_url?: boolean
           output_url?: string | null
+          owner_id?: string | null
           published?: boolean
           schema?: Json
           slug?: string
@@ -602,7 +605,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_form: { Args: { _form_id: string }; Returns: boolean }
+      is_form_owner: { Args: { _form_id: string }; Returns: boolean }
     }
     Enums: {
       field_type:
