@@ -42,41 +42,48 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // ----- Resolve / create the submission row -----
-    let submissionId = body.submissionId ?? null;
-
-    if (!submissionId) {
-      if (!body.formId) {
-        return json({ ok: false, error: "formId or submissionId is required" }, 400);
-      }
-
-      // Verify the form exists and is published before inserting.
-      const { data: formCheck, error: formErr } = await admin
-        .from("forms")
-        .select("id, published")
-        .eq("id", body.formId)
-        .maybeSingle();
-      if (formErr || !formCheck) {
-        return json({ ok: false, error: "Form not found" }, 404);
-      }
-      if (!formCheck.published) {
-        return json({ ok: false, error: "Form is not published" }, 400);
-      }
-
-      const { data: ins, error: insErr } = await admin
-        .from("form_submissions")
-        .insert({
-          form_id: body.formId,
-          values: body.values ?? {},
-          user_agent: body.userAgent ?? null,
-        })
-        .select("id")
-        .single();
-      if (insErr || !ins) {
-        console.error("Insert submission failed", insErr);
-        return json({ ok: false, error: "Failed to store submission" }, 500);
-      }
-      submissionId = ins.id;
+    // SECURITY: the legacy `{ submissionId }` relay mode is disabled — it
+    // allowed any anon caller to re-trigger a webhook for any existing
+    // submission by guessing UUIDs. The public submit path must always go
+    // through `{ formId, values }`, which validates the form is published
+    // and creates a new submission row.
+    if (body.submissionId && !body.formId) {
+      return json({ ok: false, error: "Direct submissionId relays are not supported" }, 400);
     }
+
+    let submissionId: string | null = null;
+
+    if (!body.formId) {
+      return json({ ok: false, error: "formId is required" }, 400);
+    }
+
+    // Verify the form exists and is published before inserting.
+    const { data: formCheck, error: formErr } = await admin
+      .from("forms")
+      .select("id, published")
+      .eq("id", body.formId)
+      .maybeSingle();
+    if (formErr || !formCheck) {
+      return json({ ok: false, error: "Form not found" }, 404);
+    }
+    if (!formCheck.published) {
+      return json({ ok: false, error: "Form is not published" }, 400);
+    }
+
+    const { data: ins, error: insErr } = await admin
+      .from("form_submissions")
+      .insert({
+        form_id: body.formId,
+        values: body.values ?? {},
+        user_agent: body.userAgent ?? null,
+      })
+      .select("id")
+      .single();
+    if (insErr || !ins) {
+      console.error("Insert submission failed", insErr);
+      return json({ ok: false, error: "Failed to store submission" }, 500);
+    }
+    submissionId = ins.id;
 
     // ----- Load full submission + form (with webhook url) -----
     const { data: submission, error: subErr } = await admin

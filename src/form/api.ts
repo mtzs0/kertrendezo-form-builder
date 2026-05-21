@@ -16,9 +16,12 @@ export interface FormRecord {
  * Anonymous reads are allowed by RLS for `published = true` rows.
  */
 export async function loadPublishedForm(slug = "default"): Promise<FormRecord | null> {
+  // NOTE: webhook_url is intentionally NOT selected here — that column is not
+  // readable by anon under the current RLS / column-grant rules. The edge
+  // function reads it server-side via the service role.
   const { data, error } = await supabase
     .from("forms")
-    .select("id, slug, title, description, schema, webhook_url, published")
+    .select("id, slug, title, description, schema, published")
     .eq("slug", slug)
     .eq("published", true)
     .maybeSingle();
@@ -29,9 +32,9 @@ export async function loadPublishedForm(slug = "default"): Promise<FormRecord | 
   }
   if (!data) return null;
 
-  // Cast JSONB schema to our typed shape.
   return {
     ...data,
+    webhook_url: null,
     schema: data.schema as unknown as FormSchema,
   };
 }
