@@ -29,15 +29,12 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { session, ready } = useAuthSession();
   const [authOpen, setAuthOpen] = useState(false);
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const { schema, title, description, formId, form, loading } = usePublishedForm("default");
 
-  // When the form isn't published, auto-open the editor — BUT only for
-  // signed-in users. Anonymous visitors must always go through Ctrl+K + login.
+  // When the form isn't published, auto-open the editor for signed-in users.
   useEffect(() => {
     if (loading || !ready) return;
     if (session && form && !form.published && !editorOpen) {
@@ -45,28 +42,13 @@ const Index = () => {
     }
   }, [loading, ready, session, form, editorOpen]);
 
-  // After login, auto-claim the loaded form if it has no owner yet (one-time
-  // bootstrap so the very first admin gets ownership of the existing form).
-  useEffect(() => {
-    if (!session || !formId) return;
-    (async () => {
-      const { error } = await supabase.rpc("claim_form", { _form_id: formId });
-      if (error) {
-        // Silent — already owned, or another user owns it. That's fine.
-        console.debug("claim_form skipped", error.message);
-      }
-    })();
-  }, [session, formId]);
-
   useDoubleHotkey(
     () => {
       if (editorOpen) return;
       if (session) {
         setEditorOpen(true);
       } else {
-        setEmail("");
         setPassword("");
-        setMode("signin");
         setAuthOpen(true);
       }
     },
@@ -74,32 +56,28 @@ const Index = () => {
   );
 
   const submitAuth = async () => {
-    if (!email || !password) {
-      toast.error("Add meg az emailt és a jelszót");
+    if (!password) {
+      toast.error("Add meg a jelszót");
       return;
     }
     setBusy(true);
     try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Bejelentkezve");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
-        });
-        if (error) throw error;
-        toast.success("Fiók létrehozva — most jelentkezz be");
-        setMode("signin");
-        setBusy(false);
-        return;
-      }
+      const { data, error } = await supabase.functions.invoke("admin-unlock", {
+        body: { password },
+      });
+      if (error) throw error;
+      if (!data?.token_hash || !data?.email) throw new Error("Érvénytelen válasz");
+      const { error: vErr } = await supabase.auth.verifyOtp({
+        email: data.email,
+        token_hash: data.token_hash,
+        type: "magiclink",
+      });
+      if (vErr) throw vErr;
+      toast.success("Bejelentkezve");
       setAuthOpen(false);
       setEditorOpen(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Hitelesítési hiba");
+      toast.error(e instanceof Error ? e.message : "Hibás jelszó");
     } finally {
       setBusy(false);
     }
