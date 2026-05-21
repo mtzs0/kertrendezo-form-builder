@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Option images are publicly readable" ON storage.objects;
