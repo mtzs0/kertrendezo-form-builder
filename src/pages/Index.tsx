@@ -139,31 +139,18 @@ const Index = () => {
       <AlertDialog open={authOpen} onOpenChange={setAuthOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {mode === "signin" ? "Admin bejelentkezés" : "Admin fiók létrehozása"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Admin bejelentkezés</AlertDialogTitle>
             <AlertDialogDescription>
-              {mode === "signin"
-                ? "Jelentkezz be a szerkesztő megnyitásához."
-                : "Hozz létre egy admin fiókot. Az első létrehozó kapja meg a meglévő űrlapot."}
+              Add meg a jelszót a szerkesztő megnyitásához.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1">
-              <Label htmlFor="admin_email">Email</Label>
-              <Input
-                id="admin_email"
-                type="email"
-                autoFocus
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
             <div className="space-y-1">
               <Label htmlFor="admin_pw">Jelszó</Label>
               <Input
                 id="admin_pw"
                 type="password"
+                autoFocus
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => {
@@ -174,18 +161,11 @@ const Index = () => {
                 }}
               />
             </div>
-            <button
-              type="button"
-              className="text-xs text-muted-foreground underline"
-              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-            >
-              {mode === "signin" ? "Még nincs fiókod? Regisztráció" : "Van fiókod? Bejelentkezés"}
-            </button>
           </div>
           <AlertDialogFooter>
             <Button variant="outline" onClick={() => setAuthOpen(false)} disabled={busy}>Mégse</Button>
             <Button onClick={submitAuth} disabled={busy}>
-              {busy ? "…" : mode === "signin" ? "Bejelentkezés" : "Regisztráció"}
+              {busy ? "…" : "Bejelentkezés"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
