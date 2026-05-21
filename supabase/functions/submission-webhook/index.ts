@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // Verify the form exists and is published before inserting.
     const { data: formCheck, error: formErr } = await admin
       .from("forms")
-      .select("id, published")
+      .select("id, published, owner_id")
       .eq("id", body.formId)
       .maybeSingle();
     if (formErr || !formCheck) {
@@ -68,6 +68,24 @@ Deno.serve(async (req) => {
     }
     if (!formCheck.published) {
       return json({ ok: false, error: "Form is not published" }, 400);
+    }
+
+    // SECURITY: a caller-supplied `testWebhookUrl` lets the function POST the
+    // submission payload to an arbitrary URL. Restrict this to the form's
+    // authenticated owner so anonymous callers cannot exfiltrate data via SSRF.
+    if (body.testWebhookUrl) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const token = authHeader.toLowerCase().startsWith("bearer ")
+        ? authHeader.slice(7).trim()
+        : "";
+      let callerId: string | null = null;
+      if (token) {
+        const { data: claims } = await admin.auth.getClaims(token);
+        callerId = (claims?.claims?.sub as string | undefined) ?? null;
+      }
+      if (!callerId || callerId !== formCheck.owner_id) {
+        return json({ ok: false, error: "Not authorized to use testWebhookUrl" }, 403);
+      }
     }
 
     const { data: ins, error: insErr } = await admin
