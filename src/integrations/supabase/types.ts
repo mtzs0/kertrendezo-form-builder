@@ -607,6 +607,7 @@ export type Database = {
     Functions: {
       claim_form: { Args: { _form_id: string }; Returns: boolean }
       is_form_owner: { Args: { _form_id: string }; Returns: boolean }
+      user_owns_field: { Args: { _field_id: string }; Returns: boolean }
     }
     Enums: {
       field_type:
