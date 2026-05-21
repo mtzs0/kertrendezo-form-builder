@@ -68,7 +68,6 @@ const Index = () => {
       if (error) throw error;
       if (!data?.token_hash || !data?.email) throw new Error("Érvénytelen válasz");
       const { error: vErr } = await supabase.auth.verifyOtp({
-        email: data.email,
         token_hash: data.token_hash,
         type: "magiclink",
       });
