@@ -1,8 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -11,12 +9,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { DemoPreview } from "@/form/editor/DemoPreview";
 import { useDoubleHotkey, useIsMobile } from "@/form/hooks";
 import { usePublishedForm } from "@/form/usePublishedForm";
+import { useAuthSession } from "@/form/useAuthSession";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  getAdminPassword,
   getHotkeyKey,
   getHotkeyModifier,
 } from "@/form/adminAccess";
@@ -27,38 +27,81 @@ const EditorView = lazy(() =>
 
 const Index = () => {
   const isMobile = useIsMobile();
-  const [passwordOpen, setPasswordOpen] = useState(false);
-  const [passwordInput, setPasswordInput] = useState("");
+  const { session, ready } = useAuthSession();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const { schema, title, description, formId, form, loading } = usePublishedForm("default");
 
-  // When the form isn't published, default to opening the editor (admin
-  // hasn't shipped yet). When published, the live view loads by default
-  // and the editor is only reachable via hotkey + password.
+  // When the form isn't published, auto-open the editor — BUT only for
+  // signed-in users. Anonymous visitors must always go through Ctrl+K + login.
   useEffect(() => {
-    if (loading) return;
-    if (form && !form.published && !editorOpen) {
+    if (loading || !ready) return;
+    if (session && form && !form.published && !editorOpen) {
       setEditorOpen(true);
     }
-  }, [loading, form, editorOpen]);
+  }, [loading, ready, session, form, editorOpen]);
+
+  // After login, auto-claim the loaded form if it has no owner yet (one-time
+  // bootstrap so the very first admin gets ownership of the existing form).
+  useEffect(() => {
+    if (!session || !formId) return;
+    (async () => {
+      const { error } = await supabase.rpc("claim_form", { _form_id: formId });
+      if (error) {
+        // Silent — already owned, or another user owns it. That's fine.
+        console.debug("claim_form skipped", error.message);
+      }
+    })();
+  }, [session, formId]);
 
   useDoubleHotkey(
     () => {
-      if (!editorOpen) {
-        setPasswordInput("");
-        setPasswordOpen(true);
+      if (editorOpen) return;
+      if (session) {
+        setEditorOpen(true);
+      } else {
+        setEmail("");
+        setPassword("");
+        setMode("signin");
+        setAuthOpen(true);
       }
     },
     { key: getHotkeyKey(), modifier: getHotkeyModifier() }
   );
 
-  const tryUnlock = () => {
-    if (passwordInput === getAdminPassword()) {
-      setPasswordOpen(false);
-      setPasswordInput("");
+  const submitAuth = async () => {
+    if (!email || !password) {
+      toast.error("Add meg az emailt és a jelszót");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (mode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Bejelentkezve");
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
+        if (error) throw error;
+        toast.success("Fiók létrehozva — most jelentkezz be");
+        setMode("signin");
+        setBusy(false);
+        return;
+      }
+      setAuthOpen(false);
       setEditorOpen(true);
-    } else {
-      toast.error("Hibás jelszó");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Hitelesítési hiba");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -112,37 +155,60 @@ const Index = () => {
               tabsBackground={schema.tabsBackground}
             />
           )}
-
         </div>
       </section>
 
-      <AlertDialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+      <AlertDialog open={authOpen} onOpenChange={setAuthOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Szerkesztő nézet</AlertDialogTitle>
+            <AlertDialogTitle>
+              {mode === "signin" ? "Admin bejelentkezés" : "Admin fiók létrehozása"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Add meg az admin jelszót a szerkesztő nézet megnyitásához.
+              {mode === "signin"
+                ? "Jelentkezz be a szerkesztő megnyitásához."
+                : "Hozz létre egy admin fiókot. Az első létrehozó kapja meg a meglévő űrlapot."}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="admin_pw">Jelszó</Label>
-            <Input
-              id="admin_pw"
-              type="password"
-              autoFocus
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  tryUnlock();
-                }
-              }}
-            />
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="admin_email">Email</Label>
+              <Input
+                id="admin_email"
+                type="email"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="admin_pw">Jelszó</Label>
+              <Input
+                id="admin_pw"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    submitAuth();
+                  }
+                }}
+              />
+            </div>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground underline"
+              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            >
+              {mode === "signin" ? "Még nincs fiókod? Regisztráció" : "Van fiókod? Bejelentkezés"}
+            </button>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPasswordInput("")}>Mégse</AlertDialogCancel>
-            <AlertDialogAction onClick={tryUnlock}>Megnyitás</AlertDialogAction>
+            <Button variant="outline" onClick={() => setAuthOpen(false)} disabled={busy}>Mégse</Button>
+            <Button onClick={submitAuth} disabled={busy}>
+              {busy ? "…" : mode === "signin" ? "Bejelentkezés" : "Regisztráció"}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
