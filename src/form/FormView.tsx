@@ -739,6 +739,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 
   return (
     <form
+      ref={formRef}
       onSubmit={(e) => {
         const isDemo = demoSubmitRef.current;
         demoSubmitRef.current = false;
