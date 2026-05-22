@@ -56,7 +56,7 @@ const Embed = () => {
   }, [loading]);
 
   return (
-    <main ref={rootRef} className="min-h-0 bg-transparent">
+    <main ref={rootRef} className="min-h-0 bg-white">
       <div className="w-full px-3 md:px-4 py-3 md:py-4">
         {loading ? (
           <div className="py-12 text-center text-muted-foreground">Betöltés…</div>
