@@ -17,5 +17,23 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      function sendHeightToParent() {
+        // Calculate the total height of the page content
+        const height = document.documentElement.scrollHeight || document.body.scrollHeight;
+        // Send the height to the parent window (Elementor)
+        window.parent.postMessage({ type: 'resize-iframe', height: height }, '*');
+      }
+      // Send the height when the page first loads
+      window.addEventListener('load', sendHeightToParent);
+      // Use ResizeObserver to detect when the form expands or shrinks dynamically
+      if (window.ResizeObserver) {
+        const observer = new ResizeObserver(sendHeightToParent);
+        observer.observe(document.body);
+      } else {
+        // Fallback for older browsers
+        window.addEventListener('resize', sendHeightToParent);
+      }
+    </script>
   </body>
 </html>
