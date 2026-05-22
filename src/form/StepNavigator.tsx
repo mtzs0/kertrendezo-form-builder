@@ -105,7 +105,7 @@ export function StepNavigator({
                 type="button"
                 onClick={() => onJumpGroup(i)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer overflow-hidden",
+                  "relative shrink-0 flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer overflow-hidden",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-foreground/80 hover:bg-secondary/80",
@@ -156,7 +156,7 @@ export function StepNavigator({
                     type="button"
                     onClick={() => onJumpSub(activeGroupIndex, subId)}
                     className={cn(
-                      "relative px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer overflow-hidden",
+                      "relative shrink-0 px-4 md:px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all border cursor-pointer overflow-hidden",
                       isActive
                         ? "bg-card text-primary border-transparent shadow-md"
                         : "bg-transparent text-primary-foreground border-primary-foreground/40 hover:bg-primary-foreground/10",

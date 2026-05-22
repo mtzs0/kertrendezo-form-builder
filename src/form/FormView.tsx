@@ -355,6 +355,26 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
     ? (activeSubByGroup[activeGroup.id] ?? subStepsByGroup[activeGroup.id]?.ids[0] ?? null)
     : null;
 
+  // On mobile, when the active step changes, scroll the form back to the top
+  // so the user sees the newly-revealed fields instead of staying at their
+  // previous scroll position.
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const didMountStepRef = useRef(false);
+  useEffect(() => {
+    if (!isStepped) return;
+    if (!didMountStepRef.current) {
+      didMountStepRef.current = true;
+      return;
+    }
+    if (typeof window === "undefined") return;
+    if (window.innerWidth >= 768) return;
+    const el = formRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const top = window.scrollY + rect.top - 8;
+    window.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+  }, [activeGroupIdx, activeSubId, isStepped]);
+
   // Mark active group + sub-group as seen the moment they become active.
   // "Seen" is sticky — once entered, the id stays in the set.
   useEffect(() => {
@@ -719,6 +739,7 @@ export function FormView({ schema, layout, formId, showDemoButton, thankYouText,
 
   return (
     <form
+      ref={formRef}
       onSubmit={(e) => {
         const isDemo = demoSubmitRef.current;
         demoSubmitRef.current = false;
