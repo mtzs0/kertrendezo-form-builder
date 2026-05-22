@@ -15,12 +15,12 @@ const Embed = () => {
   const { schema, formId, form, loading } = usePublishedForm("default");
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Make the page background transparent while mounted.
+  // Make the page background white while mounted.
   useEffect(() => {
     const prevHtml = document.documentElement.style.background;
     const prevBody = document.body.style.background;
-    document.documentElement.style.background = "transparent";
-    document.body.style.background = "transparent";
+    document.documentElement.style.background = "#ffffff";
+    document.body.style.background = "#ffffff";
     return () => {
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
@@ -56,7 +56,7 @@ const Embed = () => {
   }, [loading]);
 
   return (
-    <main ref={rootRef} className="min-h-0 bg-transparent">
+    <main ref={rootRef} className="min-h-0 bg-white">
       <div className="w-full px-3 md:px-4 py-3 md:py-4">
         {loading ? (
           <div className="py-12 text-center text-muted-foreground">Betöltés…</div>
