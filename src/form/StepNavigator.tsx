@@ -105,7 +105,7 @@ export function StepNavigator({
                 type="button"
                 onClick={() => onJumpGroup(i)}
                 className={cn(
-                  "relative flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer overflow-hidden",
+                  "relative shrink-0 flex items-center gap-2 px-4 md:px-5 py-3 text-sm md:text-[0.95rem] font-medium whitespace-nowrap rounded-t-xl transition-all cursor-pointer overflow-hidden",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-foreground/80 hover:bg-secondary/80",
