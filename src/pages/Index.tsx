@@ -97,7 +97,7 @@ const Index = () => {
   }
 
   return (
-    <main className="min-h-screen kr-surface">
+    <main className="min-h-screen bg-white">
       <section
         className="w-full mx-auto"
         style={{ minHeight: isMobile ? "auto" : "800px" }}
