@@ -472,7 +472,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                   onChange={(n) => onChange(field.id, n)}
                   className="py-3 [&_[role=slider]]:h-9 [&_[role=slider]]:w-9 [&>span:first-child]:h-5"
                 />
-                <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2">
+                <div className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 hidden md:block">
                   {ticks.map((pct, i) => (
                     <span
                       key={i}
@@ -482,7 +482,7 @@ export function FieldRenderer({ field, value, onChange, layout = "horizontal" }:
                   ))}
                 </div>
               </div>
-              <div className="relative h-4 text-[10px] text-muted-foreground">
+              <div className="relative h-4 text-[10px] text-muted-foreground hidden md:block">
                 <span className="absolute left-0">
                   {field.min}{field.unit ? ` ${field.unit}` : ""}
                 </span>
