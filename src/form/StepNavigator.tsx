@@ -90,11 +90,36 @@ export function StepNavigator({
       </>
     ) : null;
 
+  const groupsScrollRef = useRef<HTMLDivElement>(null);
+  const subsScrollRef = useRef<HTMLDivElement>(null);
+  const activeGroupBtnRef = useRef<HTMLButtonElement>(null);
+  const activeSubBtnRef = useRef<HTMLButtonElement>(null);
+
+  const centerInScroller = (scroller: HTMLElement | null, btn: HTMLElement | null) => {
+    if (!scroller || !btn) return;
+    const target = btn.offsetLeft + btn.offsetWidth / 2 - scroller.clientWidth / 2;
+    scroller.scrollTo({ left: Math.max(0, target), behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    centerInScroller(groupsScrollRef.current, activeGroupBtnRef.current);
+  }, [activeGroupIndex]);
+
+  useEffect(() => {
+    centerInScroller(subsScrollRef.current, activeSubBtnRef.current);
+  }, [activeGroupIndex, activeSubId]);
+
+  const hideScrollbar: CSSProperties = { scrollbarWidth: "none", msOverflowStyle: "none" } as CSSProperties;
+
   return (
     <div className="sticky top-0 z-30 -mx-5 md:-mx-8 -mt-5 md:-mt-8 mb-2">
       <div className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border rounded-t-2xl overflow-hidden">
         {/* Row 1: top-level groups */}
-        <div className="flex items-stretch gap-1 px-3 md:px-4 pt-3 overflow-x-auto">
+        <div
+          ref={groupsScrollRef}
+          className="flex items-stretch gap-1 px-3 md:px-4 pt-3 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+          style={hideScrollbar}
+        >
           {groups.map((g, i) => {
             const isActive = i === activeGroupIndex;
             const isDone = i < maxGroupIndex;
@@ -102,6 +127,7 @@ export function StepNavigator({
             return (
               <button
                 key={g.id}
+                ref={isActive ? activeGroupBtnRef : undefined}
                 type="button"
                 onClick={() => onJumpGroup(i)}
                 className={cn(
@@ -145,7 +171,11 @@ export function StepNavigator({
               }}
               aria-hidden
             />
-            <div className="absolute inset-0 flex items-end px-3 md:px-6 pb-3 gap-2 overflow-x-auto">
+            <div
+              ref={subsScrollRef}
+              className="absolute inset-0 flex items-end px-3 md:px-6 pb-3 gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden"
+              style={hideScrollbar}
+            >
               {subs.map((subId) => {
                 const isActive = subId === activeSubId;
                 const label = activeGroup.subLabels[subId] ?? "—";
@@ -153,6 +183,7 @@ export function StepNavigator({
                 return (
                   <button
                     key={subId}
+                    ref={isActive ? activeSubBtnRef : undefined}
                     type="button"
                     onClick={() => onJumpSub(activeGroupIndex, subId)}
                     className={cn(
